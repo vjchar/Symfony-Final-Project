@@ -5,6 +5,7 @@ namespace App\Controller\Admin;
 use App\Entity\Vehicle;
 use App\Form\VehicleType;
 use App\Repository\VehicleRepository;
+use App\Service\AuditLogger;
 use App\Service\VehicleImageStorage;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -13,10 +14,12 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Attribute\MapQueryParameter;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 /**
  * v15 admin-vehicles.php: paginated vehicle list beside a create/edit form.
  */
+#[IsGranted('ROLE_ADMIN')]
 final class VehicleController extends AbstractController
 {
     private const PER_PAGE = 12;
@@ -27,6 +30,7 @@ final class VehicleController extends AbstractController
         VehicleRepository $vehicleRepository,
         EntityManagerInterface $entityManager,
         VehicleImageStorage $vehicleImages,
+        AuditLogger $auditLogger,
         #[MapQueryParameter] int $edit = 0,
         #[MapQueryParameter] int $page = 1,
     ): Response {
@@ -46,6 +50,7 @@ final class VehicleController extends AbstractController
 
             $entityManager->persist($vehicle);
             $entityManager->flush();
+            $auditLogger->log($editing ? 'vehicle_updated' : 'vehicle_created', 'vehicle', $vehicle->getId());
             $this->addFlash('success', $editing ? 'Vehicle updated.' : 'Vehicle created.');
 
             return $this->redirectToRoute('app_admin_vehicles', ['edit' => $vehicle->getId()], Response::HTTP_SEE_OTHER);

@@ -4,11 +4,14 @@ namespace App\Tests\Controller\Admin;
 
 use App\Entity\Addon;
 use App\Repository\AddonRepository;
+use App\Tests\LogsInUsers;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 
 final class AddonControllerTest extends WebTestCase
 {
+    use LogsInUsers;
+
     private const KEY = 'test-roof-rack';
 
     private KernelBrowser $client;
@@ -16,6 +19,7 @@ final class AddonControllerTest extends WebTestCase
     protected function setUp(): void
     {
         $this->client = static::createClient();
+        $this->loginAsAdmin($this->client);
         $this->removeTestAddon();
     }
 

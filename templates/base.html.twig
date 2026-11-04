@@ -92,24 +92,45 @@
                     {% endfor %}
                 </nav>
 
-                {% block header_account %}
+                {% set current_user = app.user %}
+                {% if current_user %}
+                    <a
+                        class="notification-link"
+                        href="{{ page_url('notifications') }}"
+                        aria-label="Notifications">
+                        <i class="bi bi-bell" aria-hidden="true"></i>
+                    </a>
+
+                    <a class="account-link" href="{{ page_url(current_user.admin ? 'admin' : 'account') }}">
+                        <i class="bi bi-person-circle" aria-hidden="true"></i>
+                        <span>{{ current_user.firstName }}</span>
+                    </a>
+                {% else %}
                     <a class="account-link" href="{{ page_url('login') }}">
                         <i class="bi bi-person" aria-hidden="true"></i>
                         <span>Sign In</span>
                     </a>
-                {% endblock %}
+                {% endif %}
 
-                {% block header_book_button %}
+                {% if not current_user or not current_user.admin %}
                     <a class="mockup-book-button" href="{{ page_url('booking') }}">
                         Book a Car
                     </a>
-                {% endblock %}
+                {% endif %}
             </div>
         </div>
     </header>
 
     <main id="main-content">
-        {% block setup_notice %}{% endblock %}
+        {% if route != 'app_setup' and not admin_exists() %}
+            <div class="setup-notice">
+                <div class="container">
+                    <i class="bi bi-shield-lock" aria-hidden="true"></i>
+                    <span>Administrator setup is required.</span>
+                    <a href="{{ path('app_setup') }}">Create administrator</a>
+                </div>
+            </div>
+        {% endif %}
 
         {% set flashes = app.flashes %}
         {% if flashes is not empty %}

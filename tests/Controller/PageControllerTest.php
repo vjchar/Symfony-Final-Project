@@ -2,11 +2,14 @@
 
 namespace App\Tests\Controller;
 
+use App\Tests\LogsInUsers;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 
 final class PageControllerTest extends WebTestCase
 {
+    use LogsInUsers;
+
     /** @return iterable<array{string, string}> */
     public static function publicPages(): iterable
     {
@@ -74,18 +77,20 @@ final class PageControllerTest extends WebTestCase
     public function testAdminDashboardUsesOperationsLayout(): void
     {
         $client = static::createClient();
+        $this->loginAsAdmin($client);
         $client->request('GET', '/admin');
 
         self::assertResponseIsSuccessful();
         self::assertSelectorExists('body.is-admin-context');
         self::assertSelectorTextContains('.admin-nav .active', 'Dashboard');
-        self::assertSelectorTextContains('.admin-dashboard-hero h1', 'Administrator');
+        self::assertSelectorTextContains('.admin-dashboard-hero h1', 'Vina');
         self::assertSelectorNotExists('.cta-band');
     }
 
     public function testAdminPlaceholderKeepsAdminLayout(): void
     {
         $client = static::createClient();
+        $this->loginAsAdmin($client);
         $client->request('GET', '/coming-soon/admin-bookings');
 
         self::assertSelectorExists('body.is-admin-context');

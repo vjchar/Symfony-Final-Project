@@ -1,0 +1,37 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}My Account | VJ Car Rental{% endblock %}
+
+{% block body %}
+<section class="account-hero pattern-layer">
+    <div class="container">
+        <div><span class="section-kicker">Customer dashboard</span><h1>Hello, {{ app.user.firstName }}</h1><p>See what needs your attention and continue your rental journey from one secure account.</p></div>
+        <div class="account-hero__actions"><a class="btn btn-primary" href="{{ page_url('booking') }}">Book a Vehicle</a><a class="btn btn-outline" href="{{ page_url('profile') }}">Edit Profile</a></div>
+    </div>
+</section>
+<section class="content-section account-section">
+    <div class="container">
+        <div class="dashboard-grid">
+            <section class="dashboard-panel dashboard-panel--wide">
+                <div class="dashboard-panel__header"><div><span class="section-kicker">Recent activity</span><h2>Your latest bookings</h2></div><a href="{{ page_url('my-bookings') }}">View all</a></div>
+                <div class="dashboard-empty"><i class="bi bi-car-front"></i><h3>No bookings yet</h3><p>Browse the fleet and reserve the right vehicle for your next trip.</p><a class="btn btn-primary" href="{{ path('app_vehicle_index') }}">Explore Vehicles</a></div>
+            </section>
+
+            <aside class="dashboard-panel dashboard-panel--wide dashboard-panel--tools">
+                <span class="section-kicker">Quick actions</span><h2>Customer tools</h2>
+                <nav class="dashboard-links">
+                    <a href="{{ page_url('my-bookings') }}"><i class="bi bi-calendar3"></i><span><strong>My Bookings</strong><small>View status and continue your next step</small></span></a>
+                    <a href="{{ page_url('saved-bookings') }}"><i class="bi bi-bookmark"></i><span><strong>Saved Bookings</strong><small>Resume booking drafts without reserving the vehicle</small></span></a>
+                    <a href="{{ page_url('favorites') }}"><i class="bi bi-heart"></i><span><strong>Favorites</strong><small>Your saved vehicles</small></span></a>
+                    <a href="{{ page_url('documents') }}"><i class="bi bi-person-vcard"></i><span><strong>Rental Documents</strong><small>License and ID verification</small></span></a>
+                    <a href="{{ page_url('payments') }}"><i class="bi bi-credit-card"></i><span><strong>Payments</strong><small>Submit and track payments</small></span></a>
+                    <a href="{{ page_url('notifications') }}"><i class="bi bi-bell"></i><span><strong>Notifications</strong><small>Booking and account updates</small></span></a>
+                    <a href="{{ page_url('rate-trip') }}"><i class="bi bi-star"></i><span><strong>Rate a Trip</strong><small>Review a completed rental</small></span></a>
+                    <a href="{{ path('app_contact') }}"><i class="bi bi-headset"></i><span><strong>Get Support</strong><small>Send a secure message</small></span></a>
+                </nav>
+                <form method="post" action="{{ path('app_logout') }}" class="mt-3"><input type="hidden" name="_csrf_token" value="{{ csrf_token('logout') }}"><button class="btn btn-outline w-100" type="submit"><i class="bi bi-box-arrow-right"></i> Sign Out</button></form>
+            </aside>
+        </div>
+    </div>
+</section>
+{% endblock %}

@@ -3,11 +3,14 @@
 namespace App\Tests\Controller;
 
 use App\Entity\ContactMessage;
+use App\Tests\LogsInUsers;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 
 final class ContactTest extends WebTestCase
 {
+    use LogsInUsers;
+
     private const EMAIL = 'contact-test@test.vj';
 
     private KernelBrowser $client;
@@ -79,6 +82,7 @@ final class ContactTest extends WebTestCase
         $em->persist((new ContactMessage())->setName('Juan')->setEmail(self::EMAIL)->setSubject('Other inquiry')->setMessage('A message that is long enough.'));
         $em->flush();
 
+        $this->loginAsAdmin($this->client);
         $crawler = $this->client->request('GET', '/admin');
 
         $stat = $crawler->filterXPath('//article[contains(@class, "dashboard-stat")][.//small[text()="New messages"]]');

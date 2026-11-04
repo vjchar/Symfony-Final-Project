@@ -3,8 +3,10 @@
 namespace App\Controller;
 
 use App\Entity\ContactMessage;
+use App\Entity\User;
 use App\Form\ContactType;
 use App\Repository\AddonRepository;
+use App\Service\AuditLogger;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -47,15 +49,20 @@ final class PageController extends AbstractController
     }
 
     #[Route('/contact', name: 'app_contact', methods: ['GET', 'POST'])]
-    public function contact(Request $request, EntityManagerInterface $entityManager): Response
+    public function contact(Request $request, EntityManagerInterface $entityManager, AuditLogger $auditLogger): Response
     {
         $message = new ContactMessage();
+        // v15 prefills the form for a signed-in customer
+        if (($user = $this->getUser()) instanceof User) {
+            $message->setName($user->getName())->setEmail($user->getEmail())->setPhone($user->getPhone());
+        }
         $form = $this->createForm(ContactType::class, $message);
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
             $entityManager->persist($message);
             $entityManager->flush();
+            $auditLogger->log('contact_message_created', 'contact_message', $message->getId());
             $this->addFlash('success', 'Your message was received. Our team will respond through your email address.');
 
             return $this->redirectToRoute('app_contact', [], Response::HTTP_SEE_OTHER);

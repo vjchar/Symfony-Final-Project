@@ -56,6 +56,13 @@
             <i class="bi bi-box-arrow-up-right"></i>
             <span>View customer site</span>
         </a>
+        <form method="post" action="{{ path('app_logout') }}">
+            <input type="hidden" name="_csrf_token" value="{{ csrf_token('logout') }}">
+            <button type="submit">
+                <i class="bi bi-box-arrow-right"></i>
+                <span>Sign out</span>
+            </button>
+        </form>
     </div>
 </aside>
 

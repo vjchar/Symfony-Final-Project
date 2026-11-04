@@ -4,12 +4,15 @@ namespace App\Tests\Controller\Admin;
 
 use App\Entity\Vehicle;
 use App\Repository\VehicleRepository;
+use App\Tests\LogsInUsers;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 
 final class VehicleControllerTest extends WebTestCase
 {
+    use LogsInUsers;
+
     private const SLUG = 'test-toyota-vios';
 
     private KernelBrowser $client;
@@ -20,6 +23,7 @@ final class VehicleControllerTest extends WebTestCase
     protected function setUp(): void
     {
         $this->client = static::createClient();
+        $this->loginAsAdmin($this->client);
         $this->removeTestVehicle();
     }
 

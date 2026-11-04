@@ -7,7 +7,7 @@
     <div class="container">
         <div class="admin-dashboard-hero__copy">
             <span class="section-kicker">Operations dashboard</span>
-            <h1>{{ greeting }}, {% block admin_first_name %}Administrator{% endblock %}</h1>
+            <h1>{{ greeting }}, {{ app.user.firstName }}</h1>
             <p>
                 Monitor reservations, verification, payments, active rentals,
                 returns, and fleet readiness from one clear operations view.
@@ -37,6 +37,7 @@
         <div class="admin-stats admin-dashboard-stats" aria-label="Operations summary">
             {% for stat in [
                 {mod: 'fleet', icon: 'bi-car-front', label: 'Active vehicles', value: counts.vehicles, text: 'Bookable fleet records'},
+                {mod: 'customer', icon: 'bi-people', label: 'Active customers', value: counts.customers, text: 'Enabled customer accounts'},
                 {mod: 'clear', icon: 'bi-check2-circle', label: 'Ready to rent', value: counts.available, text: 'Available right now'},
                 {mod: counts.maintenance > 0 ? 'attention' : 'clear', icon: 'bi-tools', label: 'In maintenance', value: counts.maintenance, text: counts.maintenance > 0 ? 'Service downtime in progress' : 'No vehicles in service'},
                 {mod: 'booking', icon: 'bi-plus-circle', label: 'Active add-ons', value: counts.addons, text: 'Offered during booking'},

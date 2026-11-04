@@ -2,6 +2,7 @@
 
 namespace App\Twig;
 
+use App\Repository\UserRepository;
 use App\Service\VehicleImageStorage;
 use Symfony\Component\Routing\Exception\RouteNotFoundException;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
@@ -40,7 +41,17 @@ final class AppExtension
     public function __construct(
         private readonly UrlGeneratorInterface $urlGenerator,
         private readonly VehicleImageStorage $vehicleImages,
+        private readonly UserRepository $userRepository,
     ) {
+    }
+
+    /**
+     * v15 admin_exists(): drives the "Administrator setup is required" notice.
+     */
+    #[AsTwigFunction('admin_exists')]
+    public function adminExists(): bool
+    {
+        return $this->userRepository->countActiveAdmins() > 0;
     }
 
     /**

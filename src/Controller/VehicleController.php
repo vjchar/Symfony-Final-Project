@@ -3,11 +3,14 @@
 namespace App\Controller;
 
 use App\Entity\Vehicle;
+use App\Form\Model\VehicleFilter;
+use App\Form\VehicleFilterType;
 use App\Repository\VehicleRepository;
 use Symfony\Bridge\Doctrine\Attribute\MapEntity;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpKernel\Attribute\MapQueryParameter;
 use Symfony\Component\Routing\Attribute\Route;
 
 /**
@@ -15,16 +18,41 @@ use Symfony\Component\Routing\Attribute\Route;
  */
 final class VehicleController extends AbstractController
 {
+    private const PER_PAGE = 12;
     private const RECENT_SESSION_KEY = 'recent_vehicle_slugs';
 
     #[Route('/vehicles', name: 'app_vehicle_index', methods: ['GET'])]
-    public function index(VehicleRepository $vehicleRepository): Response
-    {
-        $vehicles = $vehicleRepository->findBy(['isActive' => true], ['id' => 'ASC']);
+    public function index(
+        Request $request,
+        VehicleRepository $vehicleRepository,
+        #[MapQueryParameter] int $page = 1,
+    ): Response {
+        $filter = new VehicleFilter();
+        $filterForm = $this->createForm(VehicleFilterType::class, $filter, [
+            'action' => $this->generateUrl('app_vehicle_index'),
+            'brands' => $vehicleRepository->findActiveBrands(),
+        ]);
+        $filterForm->handleRequest($request);
+
+        $results = $vehicleRepository->search($filter, max(1, $page), self::PER_PAGE);
+        $total = \count($results);
+        $pageCount = max(1, (int) ceil($total / self::PER_PAGE));
+
+        if ($page > $pageCount) {
+            $results = $vehicleRepository->search($filter, $page = $pageCount, self::PER_PAGE);
+        }
 
         return $this->render('vehicle/index.html.twig', [
-            'vehicles' => $vehicles,
-            'fleet_size' => \count($vehicles),
+            'vehicles' => iterator_to_array($results),
+            'total' => $total,
+            'fleet_size' => $vehicleRepository->count(['isActive' => true]),
+            // a view, not the form: invalid values just fall back to defaults, so the page stays 200 like v15
+            'filter_form' => $filterForm->createView(),
+            'filter' => $filter,
+            'active_filters' => $filter->toQuery(),
+            'categories' => ['All', ...Vehicle::CATEGORIES],
+            'page' => max(1, $page),
+            'page_count' => $pageCount,
         ]);
     }
 
@@ -38,9 +66,6 @@ final class VehicleController extends AbstractController
             throw $this->createNotFoundException();
         }
 
-        $related = $vehicleRepository->findBy(['category' => $vehicle->getCategory(), 'isActive' => true], ['id' => 'ASC']);
-        $related = array_slice(array_values(array_filter($related, static fn (Vehicle $other): bool => $other !== $vehicle)), 0, 3);
-
         // Session browsing history, newest first, like v15's $_SESSION["recent_vehicle_slugs"].
         $session = $request->getSession();
         $recentSlugs = array_slice(array_values(array_diff((array) $session->get(self::RECENT_SESSION_KEY, []), [$vehicle->getSlug()])), 0, 4);
@@ -48,7 +73,7 @@ final class VehicleController extends AbstractController
 
         return $this->render('vehicle/show.html.twig', [
             'vehicle' => $vehicle,
-            'related' => $related,
+            'related' => $vehicleRepository->findRelated($vehicle),
             'recently_viewed' => $recentSlugs ? $vehicleRepository->findBy(['slug' => $recentSlugs, 'isActive' => true], ['id' => 'ASC']) : [],
         ]);
     }

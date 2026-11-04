@@ -34,7 +34,26 @@
 
 <section class="content-section admin-section admin-dashboard">
     <div class="container">
-        {% block dashboard_stats %}{% endblock %}
+        <div class="admin-stats admin-dashboard-stats" aria-label="Operations summary">
+            {% for stat in [
+                {mod: 'fleet', icon: 'bi-car-front', label: 'Active vehicles', value: counts.vehicles, text: 'Bookable fleet records'},
+                {mod: 'clear', icon: 'bi-check2-circle', label: 'Ready to rent', value: counts.available, text: 'Available right now'},
+                {mod: counts.maintenance > 0 ? 'attention' : 'clear', icon: 'bi-tools', label: 'In maintenance', value: counts.maintenance, text: counts.maintenance > 0 ? 'Service downtime in progress' : 'No vehicles in service'},
+                {mod: 'booking', icon: 'bi-plus-circle', label: 'Active add-ons', value: counts.addons, text: 'Offered during booking'},
+                {mod: counts.new_messages > 0 ? 'attention' : 'clear', icon: 'bi-envelope', label: 'New messages', value: counts.new_messages, text: counts.new_messages > 0 ? 'Needs a reply' : 'Inbox is clear'},
+            ] %}
+                <article class="dashboard-stat dashboard-stat--{{ stat.mod }}">
+                    <span class="dashboard-stat__icon" aria-hidden="true">
+                        <i class="bi {{ stat.icon }}"></i>
+                    </span>
+                    <span class="dashboard-stat__content">
+                        <small>{{ stat.label }}</small>
+                        <strong>{{ stat.value }}</strong>
+                        <span>{{ stat.text }}</span>
+                    </span>
+                </article>
+            {% endfor %}
+        </div>
 
         <div class="dashboard-workspace">
             <section class="dashboard-panel dashboard-recent-bookings">
@@ -87,6 +106,32 @@
                     {% endfor %}
                 </nav>
             </aside>
+        </div>
+        <div class="dashboard-insights">
+            <section class="dashboard-panel dashboard-status-panel">
+                <div class="dashboard-panel__header">
+                    <div>
+                        <span class="section-kicker">Fleet mix</span>
+                        <h2>Vehicles by category</h2>
+                        <p>Distribution of bookable vehicles across every category.</p>
+                    </div>
+                    <a class="dashboard-panel__link" href="{{ page_url('admin-vehicles') }}">
+                        Manage fleet
+                        <i class="bi bi-arrow-right" aria-hidden="true"></i>
+                    </a>
+                </div>
+                <div class="dashboard-status-bars">
+                    {% for category, total in category_counts %}
+                        <div class="dashboard-status-row">
+                            <span>{{ category }}</span>
+                            <span class="dashboard-status-row__track" aria-hidden="true">
+                                <i style="--dashboard-bar-size: {{ max(4, (total / category_maximum * 100)|round) }}%;"></i>
+                            </span>
+                            <strong>{{ total }}</strong>
+                        </div>
+                    {% endfor %}
+                </div>
+            </section>
         </div>
     </div>
 </section>

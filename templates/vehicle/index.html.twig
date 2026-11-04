@@ -35,10 +35,57 @@
             </div>
         </div>
 
-        {% block fleet_filters %}{% endblock %}
+        {{ form_start(filter_form, {attr: {class: 'advanced-filters'}}) }}
+            <div class="advanced-filters__header">
+                <div>
+                    <i class="bi bi-sliders" aria-hidden="true"></i>
+                    <strong>Refine results</strong>
+                </div>
+
+                <a href="{{ path('app_vehicle_index') }}">Reset filters</a>
+            </div>
+
+            <div class="advanced-filters__grid">
+                <label>
+                    <span>Search</span>
+                    <div class="input-group">
+                        <span class="input-group-text">
+                            <i class="bi bi-search" aria-hidden="true"></i>
+                        </span>
+                        {{ form_widget(filter_form.search) }}
+                    </div>
+                </label>
+
+                {% for field in ['category', 'brand', 'fuel', 'seats', 'transmission', 'status', 'max_price', 'sort'] %}
+                    <label>
+                        <span>{{ filter_form[field].vars.label }}</span>
+                        {{ form_widget(filter_form[field]) }}
+                    </label>
+                {% endfor %}
+
+                <div class="advanced-filters__submit">
+                    <button class="btn btn-primary" type="submit">
+                        <i class="bi bi-search" aria-hidden="true"></i>
+                        Apply Filters
+                    </button>
+                </div>
+            </div>
+        {{ form_end(filter_form, {render_rest: false}) }}
+
+        <nav class="filter-pills fleet-filter-pills" aria-label="Vehicle categories">
+            {% for category_option in categories %}
+                {% set is_active_category = filter.category == category_option %}
+                <a
+                    class="{{ is_active_category ? 'active' }}"
+                    href="{{ path('app_vehicle_index', active_filters|merge({category: category_option})|filter(v => v != 'All')) }}"
+                    {% if is_active_category %}aria-current="page"{% endif %}>
+                    {{ category_option == 'All' ? 'All Vehicles' : category_option }}
+                </a>
+            {% endfor %}
+        </nav>
 
         <div class="fleet-results-header">
-            <p><strong>{{ total ?? vehicles|length }}</strong> vehicles found</p>
+            <p><strong>{{ total }}</strong> vehicles found</p>
             <span>Live fleet availability &bull; dates checked against current reservations</span>
         </div>
 
@@ -59,7 +106,38 @@
             </div>
         {% endif %}
 
-        {% block fleet_pagination %}{% endblock %}
+        {% if page_count > 1 %}
+            <nav class="fleet-pagination" aria-label="Vehicle result pages">
+                {% if page > 1 %}
+                    <a href="{{ path('app_vehicle_index', active_filters|merge({page: page - 1})) }}">
+                        <i class="bi bi-arrow-left" aria-hidden="true"></i>
+                        <span>Previous</span>
+                    </a>
+                {% else %}
+                    <span class="is-disabled" aria-disabled="true">
+                        <i class="bi bi-arrow-left" aria-hidden="true"></i>
+                        <span>Previous</span>
+                    </span>
+                {% endif %}
+
+                <span>
+                    Page <strong>{{ page }}</strong>
+                    of <strong>{{ page_count }}</strong>
+                </span>
+
+                {% if page < page_count %}
+                    <a href="{{ path('app_vehicle_index', active_filters|merge({page: page + 1})) }}">
+                        <span>Next</span>
+                        <i class="bi bi-arrow-right" aria-hidden="true"></i>
+                    </a>
+                {% else %}
+                    <span class="is-disabled" aria-disabled="true">
+                        <span>Next</span>
+                        <i class="bi bi-arrow-right" aria-hidden="true"></i>
+                    </span>
+                {% endif %}
+            </nav>
+        {% endif %}
     </div>
 </section>
 

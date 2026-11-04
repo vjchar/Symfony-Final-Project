@@ -6,15 +6,73 @@ use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 
 final class VehicleControllerTest extends WebTestCase
 {
-    public function testFleetListsActiveVehicles(): void
+    public function testFleetListsActiveVehiclesTwelvePerPage(): void
     {
         $client = static::createClient();
         $crawler = $client->request('GET', '/vehicles');
 
         self::assertResponseIsSuccessful();
         self::assertSelectorTextContains('.fleet-toolbar', '75 prepared vehicles');
-        self::assertCount(75, $crawler->filter('.fleet-page .vehicle-card'));
+        self::assertSelectorTextContains('.fleet-results-header', '75 vehicles found');
+        self::assertCount(12, $crawler->filter('.fleet-page .vehicle-card'));
+        self::assertSelectorTextContains('.fleet-pagination', 'Page 1 of 7');
         self::assertSelectorTextContains('.mockup-link.active', 'Vehicles');
+
+        $crawler = $client->request('GET', '/vehicles?page=7');
+        self::assertCount(3, $crawler->filter('.fleet-page .vehicle-card'));
+    }
+
+    public function testFiltersUseV15QueryParameters(): void
+    {
+        $client = static::createClient();
+        $crawler = $client->request('GET', '/vehicles?category=EV&max_price=5000&sort=price-asc');
+
+        $prices = $crawler->filter('.fleet-page .vehicle-price-row strong')->each(
+            static fn ($node): int => (int) preg_replace('/\D/', '', strtok($node->text(), '/')),
+        );
+        self::assertNotEmpty($prices);
+        self::assertSame($prices, array_values(array_filter($prices, static fn (int $p): bool => $p <= 5000)));
+        $sorted = $prices;
+        sort($sorted);
+        self::assertSame($sorted, $prices);
+        self::assertSelectorTextContains('.fleet-filter-pills a.active', 'EV');
+        self::assertSame('5000', $crawler->filter('select[name="max_price"] option[selected]')->attr('value'));
+    }
+
+    public function testSearchMatchesBrandAndModel(): void
+    {
+        $client = static::createClient();
+        $client->request('GET', '/vehicles?search=toyota hilux');
+
+        self::assertSelectorTextContains('.fleet-results-header', '2 vehicles found');
+    }
+
+    public function testInvalidFilterValuesResetToDefaults(): void
+    {
+        $client = static::createClient();
+        $client->request('GET', '/vehicles?category=Bogus&seats=99');
+
+        self::assertResponseIsSuccessful();
+        self::assertSelectorTextContains('.fleet-results-header', '75 vehicles found');
+    }
+
+    public function testCategoryPillsKeepOtherFilters(): void
+    {
+        $client = static::createClient();
+        $crawler = $client->request('GET', '/vehicles?transmission=Manual');
+
+        $pickupLink = $crawler->filter('.fleet-filter-pills a')->eq(3)->attr('href');
+        self::assertStringContainsString('transmission=Manual', $pickupLink);
+        self::assertStringContainsString('category=Pickup', $pickupLink);
+    }
+
+    public function testNoResultsShowsEmptyState(): void
+    {
+        $client = static::createClient();
+        $client->request('GET', '/vehicles?search=zzzz');
+
+        self::assertSelectorTextContains('.empty-state h3', 'No vehicles match those filters.');
+        self::assertSelectorNotExists('.fleet-pagination');
     }
 
     public function testVehicleCardUsesPlainImagePathForV15ImageStyles(): void

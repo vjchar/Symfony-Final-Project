@@ -1,0 +1,77 @@
+{#
+    Reusable vehicle catalog card, ported from v15 vehicle_card() in includes/components.php.
+    Variables: vehicle, compact (bool, default false), show_compare (bool, default false).
+#}
+{% set compact = compact ?? false %}
+{% set detail_url = path('app_vehicle_show', {slug: vehicle.slug}) %}
+<article class="vehicle-card{{ compact ? ' vehicle-card--compact' }}">
+    <a
+        class="vehicle-image-wrap"
+        href="{{ detail_url }}"
+    >
+        <img
+            src="{{ vehicle_image(vehicle.image) }}"
+            alt="{{ vehicle.name }}"
+            loading="lazy"
+            decoding="async"
+        >
+    </a>
+
+    <div class="vehicle-card-body">
+        <div class="d-flex align-items-center justify-content-between gap-2">
+            <span class="vehicle-category">{{ vehicle.category }}</span>
+            <span class="fleet-state fleet-state--{{ vehicle.availabilityStatus|status_class }}">
+                {{ vehicle.availabilityStatus|humanize_label }}
+            </span>
+        </div>
+
+        <h3>
+            <a href="{{ detail_url }}">
+                {{ vehicle.name }}
+            </a>
+        </h3>
+
+        {% if not compact %}
+            <div class="vehicle-rating vehicle-rating--new">
+                <i class="bi bi-stars" aria-hidden="true"></i>
+                <strong>New to the fleet</strong>
+            </div>
+
+            <div class="vehicle-specs" aria-label="Vehicle specifications">
+                <span>
+                    <i class="bi bi-people" aria-hidden="true"></i>
+                    {{ vehicle.seats }} seats
+                </span>
+                <span>
+                    <i class="bi bi-gear" aria-hidden="true"></i>
+                    {{ vehicle.transmission }}
+                </span>
+            </div>
+
+            {% if show_compare ?? false %}
+                <a
+                    class="compare-toggle"
+                    href="{{ page_url('compare') }}"
+                >
+                    <i class="bi bi-columns-gap" aria-hidden="true"></i>
+                    <span>Compare this vehicle</span>
+                </a>
+            {% endif %}
+        {% endif %}
+
+        <div class="vehicle-price-row">
+            <strong>
+                {{ vehicle.price|money }}<small>/ day</small>
+            </strong>
+
+            {% if not compact %}
+                <a
+                    href="{{ page_url('booking') }}"
+                    aria-label="Book {{ vehicle.name }}"
+                >
+                    <i class="bi bi-arrow-right" aria-hidden="true"></i>
+                </a>
+            {% endif %}
+        </div>
+    </div>
+</article>

@@ -2,6 +2,7 @@
 
 namespace App\Twig;
 
+use App\Service\VehicleImageStorage;
 use Symfony\Component\Routing\Exception\RouteNotFoundException;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Twig\Attribute\AsTwigFilter;
@@ -38,7 +39,17 @@ final class AppExtension
 
     public function __construct(
         private readonly UrlGeneratorInterface $urlGenerator,
+        private readonly VehicleImageStorage $vehicleImages,
     ) {
+    }
+
+    /**
+     * Public path of a fleet photo, or the v15 placeholder when the file is missing.
+     */
+    #[AsTwigFunction('vehicle_image')]
+    public function vehicleImage(?string $filename): string
+    {
+        return '/'.$this->vehicleImages->publicPath($filename);
     }
 
     /**

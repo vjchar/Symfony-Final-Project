@@ -99,7 +99,63 @@
         </form>
     </div>
 </section>
-{# fleet-preview #}
+<section class="content-section fleet-preview pattern-layer">
+    <div class="container">
+        <div class="section-heading heading-with-action">
+            <div>
+                <span class="section-kicker">Explore our fleet</span>
+                <h2>Find the perfect car<br>for your next trip</h2>
+            </div>
+            <a class="btn btn-outline" href="{{ page_url('vehicles') }}">View All Vehicles</a>
+        </div>
+        <nav class="filter-pills" aria-label="Browse vehicle categories">
+            <a class="active" href="{{ page_url('vehicles') }}">All Vehicles</a>
+            <a href="{{ page_url('vehicles', {category: 'Luxury'}) }}">Luxury</a>
+            <a href="{{ page_url('vehicles', {category: 'SUV'}) }}">SUV</a>
+            <a href="{{ page_url('vehicles', {category: 'Pickup'}) }}">Pickup</a>
+            <a href="{{ page_url('vehicles', {category: 'Van'}) }}">Van</a>
+            <a href="{{ page_url('vehicles', {category: 'EV'}) }}">EV</a>
+        </nav>
+        <div class="row g-3 featured-vehicle-row">
+            {% for featured in featured_vehicles %}
+                <div class="col-xl-3 col-md-6" data-grid-item>
+                    {{ include('components/_vehicle_card.html.twig', {vehicle: featured}) }}
+                </div>
+            {% endfor %}
+        </div>
+        <p class="mobile-swipe-hint"><i class="bi bi-arrow-left-right"></i> Swipe to browse featured vehicles</p>
+        <div class="trust-strip">
+            <div>
+                <i class="bi bi-clipboard2-check"></i>
+                <span>
+                    <small>Easy Booking</small>
+                    <strong>Book your car in just<br>a few simple steps.</strong>
+                </span>
+            </div>
+            <div>
+                <i class="bi bi-shield"></i>
+                <span>
+                    <small>Clean &amp; Safe Cars</small>
+                    <strong>Well-maintained cars<br>for your safety.</strong>
+                </span>
+            </div>
+            <div>
+                <i class="bi bi-currency-dollar"></i>
+                <span>
+                    <small>Clear Pricing</small>
+                    <strong>Review your total<br>before confirmation.</strong>
+                </span>
+            </div>
+            <div>
+                <i class="bi bi-people-fill"></i>
+                <span>
+                    <small>Local Support</small>
+                    <strong>Help from booking<br>through vehicle return.</strong>
+                </span>
+            </div>
+        </div>
+    </div>
+</section>
 <section class="content-section how-section pattern-layer">
     <div class="container">
         <div class="row align-items-center g-4">
@@ -149,7 +205,63 @@
         </div>
     </div>
 </section>
-{# fleet-shelves #}
+<section class="content-section fleet-shelves pattern-layer">
+    <div class="container">
+        <span class="section-kicker">Our fleet</span>
+        {% for category_name, category_vehicles in vehicles_by_category %}
+            {% set section_id = 'fleet-' ~ category_name|lower %}
+            <div
+                class="fleet-shelf"
+                id="{{ section_id }}"
+                data-fleet-carousel>
+                <div class="fleet-shelf__heading">
+                    <h2>{{ category_name }}</h2>
+                    <div class="fleet-carousel__actions">
+                        <span class="fleet-carousel__hint">
+                            <i class="bi bi-arrow-left-right" aria-hidden="true"></i>
+                            Scroll to browse
+                        </span>
+                        <div
+                            class="fleet-carousel__controls"
+                            aria-label="{{ category_name }} carousel controls">
+                            <button
+                                type="button"
+                                data-carousel-previous
+                                aria-controls="{{ section_id }}-cars"
+                                aria-label="Show previous {{ category_name }} vehicles"
+                                disabled>
+                                <i class="bi bi-chevron-left" aria-hidden="true"></i>
+                            </button>
+                            <button
+                                type="button"
+                                data-carousel-next
+                                aria-controls="{{ section_id }}-cars"
+                                aria-label="Show next {{ category_name }} vehicles">
+                                <i class="bi bi-chevron-right" aria-hidden="true"></i>
+                            </button>
+                        </div>
+                        <a
+                            class="fleet-carousel__view-all"
+                            href="{{ path('app_vehicle_index', {category: category_name}) }}">
+                            View All
+                        </a>
+                    </div>
+                </div>
+                <div
+                    class="fleet-carousel__viewport"
+                    id="{{ section_id }}-cars"
+                    tabindex="0"
+                    aria-label="{{ category_name }} vehicles; use the arrow buttons or scroll horizontally to browse">
+                    <div class="fleet-shelf__cars">
+                        {% for category_vehicle in category_vehicles %}
+                            {{ include('components/_vehicle_card.html.twig', {vehicle: category_vehicle, compact: true}) }}
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+</section>
 <section class="content-section difference-section pattern-layer">
     <div class="container">
         <div class="row align-items-center g-4 g-xl-5">
@@ -278,4 +390,8 @@
         </div>
     </div>
 </section>
+{% endblock %}
+
+{% block page_scripts %}
+    <script src="{{ asset('js/fleet-carousel.js') }}" defer></script>
 {% endblock %}

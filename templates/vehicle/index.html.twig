@@ -1,0 +1,100 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Our Vehicles | VJ Car Rental{% endblock %}
+{% block description %}Browse and filter {{ fleet_size }} VJ Car Rental vehicles with current date availability.{% endblock %}
+
+{% block body %}
+<section class="page-hero pattern-layer">
+    <div class="container">
+        <span class="section-kicker">Explore the fleet</span>
+        <h1>Find your exact car</h1>
+        <p>
+            Filter by category, brand, seating, fuel, price, and rental dates.
+            Availability is checked against current reservations so you can choose with confidence.
+        </p>
+    </div>
+</section>
+
+<section class="content-section fleet-page">
+    <div class="container">
+        <div class="fleet-toolbar fleet-toolbar--v2">
+            <div>
+                <span class="section-kicker">{{ fleet_size }} prepared vehicles</span>
+                <h2>Available for your next trip</h2>
+            </div>
+
+            <div class="fleet-toolbar-actions">
+                <a class="btn btn-outline" href="{{ page_url('favorites') }}">
+                    <i class="bi bi-heart" aria-hidden="true"></i>
+                    Favorites
+                </a>
+                <a class="btn btn-outline" href="{{ page_url('compare') }}">
+                    <i class="bi bi-columns-gap" aria-hidden="true"></i>
+                    Compare Cars
+                </a>
+            </div>
+        </div>
+
+        {% block fleet_filters %}{% endblock %}
+
+        <div class="fleet-results-header">
+            <p><strong>{{ total ?? vehicles|length }}</strong> vehicles found</p>
+            <span>Live fleet availability &bull; dates checked against current reservations</span>
+        </div>
+
+        {% if vehicles is empty %}
+            <div class="empty-state">
+                <i class="bi bi-car-front" aria-hidden="true"></i>
+                <h3>No vehicles match those filters.</h3>
+                <p>Reset a filter or try another brand, price, or seating capacity.</p>
+                <a class="btn btn-primary" href="{{ path('app_vehicle_index') }}">Reset Filters</a>
+            </div>
+        {% else %}
+            <div class="row g-4">
+                {% for vehicle in vehicles %}
+                    <div class="col-xl-3 col-lg-4 col-md-6">
+                        {{ include('components/_vehicle_card.html.twig', {vehicle: vehicle, show_compare: true}) }}
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        {% block fleet_pagination %}{% endblock %}
+    </div>
+</section>
+
+<section class="content-section service-promise pattern-layer">
+    <div class="container">
+        <div class="trust-strip">
+            <div>
+                <i class="bi bi-calendar-check" aria-hidden="true"></i>
+                <span>
+                    <small>Date-based availability</small>
+                    <strong>Conflicts checked against<br>saved reservations.</strong>
+                </span>
+            </div>
+            <div>
+                <i class="bi bi-columns-gap" aria-hidden="true"></i>
+                <span>
+                    <small>Easy comparison</small>
+                    <strong>Compare up to three<br>vehicles side by side.</strong>
+                </span>
+            </div>
+            <div>
+                <i class="bi bi-receipt" aria-hidden="true"></i>
+                <span>
+                    <small>Current pricing</small>
+                    <strong>Rates, deposits, extras,<br>and discounts verified.</strong>
+                </span>
+            </div>
+            <div>
+                <i class="bi bi-headset" aria-hidden="true"></i>
+                <span>
+                    <small>Account support</small>
+                    <strong>Manage trips and request<br>help securely.</strong>
+                </span>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

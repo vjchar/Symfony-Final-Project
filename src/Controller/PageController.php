@@ -2,6 +2,7 @@
 
 namespace App\Controller;
 
+use App\Repository\AddonRepository;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
@@ -34,10 +35,10 @@ final class PageController extends AbstractController
     }
 
     #[Route('/services', name: 'app_services', methods: ['GET'])]
-    public function services(): Response
+    public function services(AddonRepository $addonRepository): Response
     {
         return $this->render('page/services.html.twig', [
-            'addons' => [],
+            'addons' => $addonRepository->findBy(['isActive' => true], ['id' => 'ASC']),
         ]);
     }
 

@@ -1,0 +1,93 @@
+{% extends 'admin/base.html.twig' %}
+
+{% block title %}Administration | VJ Car Rental{% endblock %}
+
+{% block admin_body %}
+<section class="admin-hero admin-dashboard-hero">
+    <div class="container">
+        <div class="admin-dashboard-hero__copy">
+            <span class="section-kicker">Operations dashboard</span>
+            <h1>{{ greeting }}, {% block admin_first_name %}Administrator{% endblock %}</h1>
+            <p>
+                Monitor reservations, verification, payments, active rentals,
+                returns, and fleet readiness from one clear operations view.
+            </p>
+
+            <div class="admin-dashboard-hero__meta" aria-label="Dashboard date and purpose">
+                <span>
+                    <i class="bi bi-calendar3" aria-hidden="true"></i>
+                    {{ 'now'|date('l, F j, Y') }}
+                </span>
+                <span>
+                    <i class="bi bi-grid-1x2" aria-hidden="true"></i>
+                    Live operations overview
+                </span>
+            </div>
+        </div>
+
+        <div class="d-flex flex-wrap gap-2">
+            <a class="btn btn-primary admin-dashboard-hero__action" href="{{ page_url('admin-bookings') }}"><i class="bi bi-calendar2-check" aria-hidden="true"></i> Review bookings</a>
+            <a class="btn btn-outline-light admin-dashboard-hero__action" href="{{ page_url('admin-calendar') }}"><i class="bi bi-calendar3" aria-hidden="true"></i> Rental calendar</a>
+        </div>
+    </div>
+</section>
+
+<section class="content-section admin-section admin-dashboard">
+    <div class="container">
+        {% block dashboard_stats %}{% endblock %}
+
+        <div class="dashboard-workspace">
+            <section class="dashboard-panel dashboard-recent-bookings">
+                <div class="dashboard-panel__header">
+                    <div>
+                        <span class="section-kicker">Latest activity</span>
+                        <h2>Recent bookings</h2>
+                        <p>Newest reservations and their current status.</p>
+                    </div>
+
+                    <a class="dashboard-panel__link" href="{{ page_url('admin-bookings') }}">
+                        View all
+                        <i class="bi bi-arrow-right" aria-hidden="true"></i>
+                    </a>
+                </div>
+
+                <div class="dashboard-empty">
+                    <span class="dashboard-empty__icon" aria-hidden="true">
+                        <i class="bi bi-calendar2-plus"></i>
+                    </span>
+                    <strong>No bookings yet</strong>
+                    <p>New customer reservations will appear here.</p>
+                </div>
+            </section>
+            <aside class="dashboard-panel dashboard-operations-queue">
+                <div class="dashboard-panel__header">
+                    <div>
+                        <span class="section-kicker">Immediate work</span>
+                        <h2>Operations queue</h2>
+                        <p>Open the areas that need daily attention.</p>
+                    </div>
+                </div>
+                <nav class="dashboard-queue" aria-label="Operations shortcuts">
+                    {% for item in [
+                        {page: 'admin-vehicles', icon: 'bi-car-front', title: 'Vehicles', text: 'Fleet records and pricing'},
+                        {page: 'admin-addons', icon: 'bi-plus-circle', title: 'Add-ons', text: 'Optional rental extras'},
+                        {page: 'admin-users', icon: 'bi-people', title: 'Users', text: 'Customers and staff'},
+                        {page: 'admin-reports', icon: 'bi-bar-chart-line', title: 'Reports', text: 'Export and print summaries'},
+                    ] %}
+                        <a href="{{ page_url(item.page) }}">
+                            <span class="dashboard-queue__icon" aria-hidden="true">
+                                <i class="bi {{ item.icon }}"></i>
+                            </span>
+                            <span class="dashboard-queue__copy">
+                                <strong>{{ item.title }}</strong>
+                                <small>{{ item.text }}</small>
+                            </span>
+                            <i class="bi bi-chevron-right dashboard-queue__arrow" aria-hidden="true"></i>
+                        </a>
+                    {% endfor %}
+                </nav>
+            </aside>
+        </div>
+    </div>
+</section>
+{% endblock %}

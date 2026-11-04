@@ -1,24 +1,253 @@
-<!DOCTYPE html>
-<html>
-    <head>
-        <meta charset="UTF-8">
-        <title>{% block title %}Welcome!{% endblock %}</title>
-        <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 128 128%22><text y=%221.2em%22 font-size=%2296%22>⚫️</text><text y=%221.3em%22 x=%220.2em%22 font-size=%2276%22 fill=%22%23fff%22>sf</text></svg>">
-        {% block stylesheets %}
-        {% endblock %}
+{#
+    Shared document layout: the v15 includes/header.php and includes/footer.php in one Twig layout.
+#}
+{% set route = app.request.attributes.get('_route') ?? '' %}
+{# admin/base.html.twig overrides this block, like v15's $isAdminRoute check #}
+{% set is_admin_route = block('admin_context') is defined and block('admin_context')|trim is not empty %}
+{% set active_nav = route == 'app_home' ? 'index'
+    : route starts with 'app_vehicle' ? 'vehicles'
+    : route in ['app_services', 'app_faq'] ? 'services'
+    : route == 'app_about' ? 'about'
+    : route == 'app_contact' ? 'contact'
+    : '' %}
+{% set nav_items = {index: 'Home', vehicles: 'Vehicles', services: 'Services', about: 'About Us', contact: 'Contact'} %}
+<!doctype html>
+<html lang="en">
 
-        {% block javascripts %}
-            {% block importmap %}{{ importmap('app') }}{% endblock %}
-        {% endblock %}
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="{% block description %}Reliable, clean, and affordable car rentals for every journey.{% endblock %}">
+    <meta name="theme-color" content="#0f2d5c">
+    <title>{% block title %}VJ Car Rental{% endblock %}</title>
 
-        {% set frankenphp_hot_reload = app.request.server.get('FRANKENPHP_HOT_RELOAD') %}
-        {% if frankenphp_hot_reload %}
-        <meta name="frankenphp-hot-reload:url" content="{{ frankenphp_hot_reload }}">
-        <script src="https://cdn.jsdelivr.net/npm/idiomorph"></script>
-        <script src="https://cdn.jsdelivr.net/npm/frankenphp-hot-reload/+esm" type="module"></script>
+    <link rel="icon" href="{{ asset('favicon.ico') }}" sizes="any">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@700;800&display=swap"
+        rel="stylesheet">
+    <link href="{{ asset('css/vendor/bootstrap.css') }}" rel="stylesheet">
+    <link href="{{ asset('css/vendor/bootstrap-icons.css') }}" rel="stylesheet">
+    <link href="{{ asset('css/tailwind.css') }}" rel="stylesheet">
+    <link href="{{ asset('css/style.css') }}" rel="stylesheet">
+    <link href="{{ asset('css/operations.css') }}" rel="stylesheet">
+    <link href="{{ asset('css/components.css') }}" rel="stylesheet">
+    <link href="{{ asset('css/vehicle-images.css') }}" rel="stylesheet">
+    <link href="{{ asset('css/responsive.css') }}" rel="stylesheet">
+    <link href="{{ asset('css/ui.css') }}" rel="stylesheet">
+    {% block stylesheets %}{% endblock %}
+
+    {% block javascripts %}
+        {% block importmap %}{{ importmap('app') }}{% endblock %}
+    {% endblock %}
+</head>
+
+<body
+    class="{% block body_class %}{{ is_admin_route ? 'is-admin-context' }}{% endblock %}"
+    data-page="{{ route }}"
+    data-auth="{{ app.user ? 'authenticated' : 'guest' }}"
+    data-turbo="false">
+    <a class="skip-link" href="#main-content">Skip to content</a>
+
+    <header class="site-header" id="siteHeader">
+        <div class="container mockup-header__inner">
+            <a
+                class="mockup-logo"
+                href="{{ path('app_home') }}"
+                aria-label="VJ Car Rental home">
+                <img
+                    src="{{ asset('images/logo/Logo.png') }}"
+                    alt="VJ Car Rental - Your Journey Starts Here"
+                    decoding="async"
+                    fetchpriority="high">
+            </a>
+
+            <input
+                class="mockup-menu-control"
+                id="siteMenuControl"
+                type="checkbox"
+                aria-controls="siteMenu"
+                aria-expanded="false"
+                aria-label="Open or close the page menu">
+
+            <label
+                class="mockup-menu-toggle"
+                for="siteMenuControl"
+                aria-hidden="true">
+                <span></span>
+                <span></span>
+                <span></span>
+            </label>
+
+            <div class="mockup-menu" id="siteMenu">
+                <nav class="mockup-links" aria-label="Primary navigation">
+                    {% for page, label in nav_items %}
+                        <a
+                            class="mockup-link{{ active_nav == page ? ' active' }}"
+                            href="{{ page_url(page) }}"
+                            {% if active_nav == page %}aria-current="page"{% endif %}>
+                            {{ label }}
+                        </a>
+                    {% endfor %}
+                </nav>
+
+                {% block header_account %}
+                    <a class="account-link" href="{{ page_url('login') }}">
+                        <i class="bi bi-person" aria-hidden="true"></i>
+                        <span>Sign In</span>
+                    </a>
+                {% endblock %}
+
+                {% block header_book_button %}
+                    <a class="mockup-book-button" href="{{ page_url('booking') }}">
+                        Book a Car
+                    </a>
+                {% endblock %}
+            </div>
+        </div>
+    </header>
+
+    <main id="main-content">
+        {% block setup_notice %}{% endblock %}
+
+        {% set flashes = app.flashes %}
+        {% if flashes is not empty %}
+            <div class="container flash-stack" aria-live="polite">
+                {% for type, messages in flashes %}
+                    {% for message in messages %}
+                        <div class="alert alert-{{ type }}" role="alert">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                {% endfor %}
+            </div>
         {% endif %}
-    </head>
-    <body>
+
         {% block body %}{% endblock %}
-    </body>
+    </main>
+
+    {% if not is_admin_route %}
+        <section class="cta-band section-shell">
+            <div class="container">
+                <div class="cta-band__inner">
+                    <div>
+                        <h2>Ready to hit the road?</h2>
+                        <p>
+                            Book your car today and enjoy a smooth and worry-free journey
+                            with VJ Car Rental.
+                        </p>
+                    </div>
+
+                    <a class="btn btn-light" href="{{ page_url('booking') }}">
+                        Book Your Car Now
+                        <i class="bi bi-arrow-right" aria-hidden="true"></i>
+                    </a>
+                </div>
+            </div>
+        </section>
+    {% endif %}
+
+    <footer class="site-footer">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-brand">
+                    <a class="footer-logo" href="{{ path('app_home') }}">
+                        <img
+                            src="{{ asset('images/logo/Logo.png') }}"
+                            alt="VJ Car Rental - Your Journey Starts Here"
+                            loading="lazy"
+                            decoding="async">
+                    </a>
+
+                    <p>
+                        Premium cars. Reliable service.<br>
+                        Your journey, our commitment.
+                    </p>
+
+                    <ul class="footer-contact list-unstyled">
+                        <li>
+                            <i class="bi bi-geo-alt" aria-hidden="true"></i>
+                            <span>Manjuyod, Negros Oriental, Philippines</span>
+                        </li>
+                        <li>
+                            <i class="bi bi-telephone" aria-hidden="true"></i>
+                            <span>+63 994 894 5174</span>
+                        </li>
+                        <li>
+                            <i class="bi bi-envelope" aria-hidden="true"></i>
+                            <span>bernardinovjcharles@gmail.com</span>
+                        </li>
+                        <li>
+                            <i class="bi bi-clock" aria-hidden="true"></i>
+                            <span>Mon-Sun: 7:00 AM-9:00 PM</span>
+                        </li>
+                    </ul>
+                </div>
+
+                <nav class="footer-column" aria-label="Company links">
+                    <h3>Company</h3>
+                    <a href="{{ page_url('index') }}">Home</a>
+                    <a href="{{ page_url('about') }}">About Us</a>
+                    <a href="{{ page_url('vehicles') }}">Our Fleet</a>
+                    <a href="{{ page_url('services') }}">Services</a>
+                    <a href="{{ page_url('contact') }}">Contact Us</a>
+                    <a href="{{ page_url('terms') }}">Terms &amp; Conditions</a>
+                    <a href="{{ page_url('privacy') }}">Privacy Policy</a>
+                </nav>
+
+                <nav class="footer-column" aria-label="Rental tools">
+                    <h3>Rental Tools</h3>
+                    <a href="{{ page_url('compare') }}">Compare Vehicles</a>
+                    <a href="{{ page_url('favorites') }}">Saved Favorites</a>
+                    <a href="{{ page_url('my-bookings') }}">My Bookings</a>
+                    <a href="{{ page_url('manage-booking') }}">Manage Booking</a>
+                    <a href="{{ page_url('documents') }}">My Documents</a>
+                    <a href="{{ page_url('payments') }}">My Payments</a>
+                    <a href="{{ page_url('account') }}">My Account</a>
+                </nav>
+
+                <div class="footer-column footer-support">
+                    <h3>Customer Support</h3>
+                    <p>Questions about a booking or vehicle? Our team is ready to help.</p>
+                    <a href="{{ page_url('faq') }}">Frequently Asked Questions</a>
+                    <a href="{{ page_url('rate-trip') }}">Rate a Completed Trip</a>
+                    <a href="{{ page_url('notifications') }}">Notifications</a>
+                    <a href="{{ page_url('login') }}">Account Sign In</a>
+
+                    <a class="btn btn-outline-light btn-sm" href="{{ page_url('contact') }}">
+                        <i class="bi bi-headset" aria-hidden="true"></i>
+                        Contact Support
+                    </a>
+
+                    <span class="footer-label">Follow us</span>
+                    <div class="social-links" aria-label="Social platforms">
+                        <span role="img" aria-label="Facebook">
+                            <i class="bi bi-facebook" aria-hidden="true"></i>
+                        </span>
+                        <span role="img" aria-label="X">
+                            <i class="bi bi-twitter-x" aria-hidden="true"></i>
+                        </span>
+                        <span role="img" aria-label="Instagram">
+                            <i class="bi bi-instagram" aria-hidden="true"></i>
+                        </span>
+                        <span role="img" aria-label="TikTok">
+                            <i class="bi bi-tiktok" aria-hidden="true"></i>
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="footer-bottom">
+                <span>&copy; {{ 'now'|date('Y') }} VJ Car Rental. All rights reserved.</span>
+                <span>VJ Car Rental — Version 15</span>
+            </div>
+        </div>
+    </footer>
+
+    <script src="{{ asset('js/vendor/bootstrap.bundle.js') }}" defer></script>
+    <script src="{{ asset('js/app.js') }}" defer></script>
+    {% block page_scripts %}{% endblock %}
+</body>
+
 </html>

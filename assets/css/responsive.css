@@ -1,0 +1,570 @@
+/*
+ * FILE: assets/css/responsive.css
+ * PURPOSE: Responsive layout rules for desktop, tablet, and mobile screens.
+ * USAGE: Contains media queries and responsive corrections for desktop, tablet, and mobile screen sizes.
+ * Maintenance: keep selectors in this file aligned with its styling responsibility.
+ */
+
+/*
+ * Responsive layout layer
+ * --------------------------------------------------------------------------
+ * This file intentionally loads last. It corrects spacing and responsive
+ * behavior without hiding the original brand styles in compressed CSS.
+ */
+
+:root {
+  --layout-content-width: 1320px;
+  --layout-readable-width: 760px;
+  --layout-control-height: 48px;
+  --layout-card-radius: 18px;
+}
+
+html {
+  min-width: 320px;
+}
+
+body {
+  display: flex;
+  min-height: 100dvh;
+  flex-direction: column;
+  background-position: center top, center top;
+  background-repeat: no-repeat, repeat-y;
+  background-size: cover, max(100%, 1180px) auto;
+}
+
+body::before {
+  background-position: center top;
+  background-repeat: repeat-y;
+  background-size: max(100%, 1180px) auto;
+}
+
+main {
+  width: 100%;
+  min-width: 0;
+  flex: 1 0 auto;
+}
+
+.container {
+  width: min(100% - (2 * var(--page-gutter)), var(--layout-content-width));
+  max-width: var(--layout-content-width);
+  margin-inline: auto;
+}
+
+.content-section {
+  padding-block: clamp(52px, 6vw, 88px);
+}
+
+.page-hero--compact,
+.admin-page-heading,
+.account-hero {
+  padding-block: clamp(44px, 6vw, 74px);
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+p,
+a,
+span,
+strong,
+small,
+label,
+th,
+td {
+  overflow-wrap: anywhere;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  text-wrap: balance;
+}
+
+p {
+  text-wrap: pretty;
+}
+
+.form,
+.dashboard-panel,
+.admin-editor,
+.booking-summary-card,
+.admin-table-wrap,
+.vehicle-card {
+  min-width: 0;
+}
+
+.form-control,
+.form-select {
+  min-height: var(--layout-control-height);
+  padding: 0.7rem 0.85rem;
+  border-radius: 10px;
+  line-height: 1.35;
+}
+
+textarea.form-control {
+  min-height: 132px;
+  resize: vertical;
+}
+
+.form-label {
+  margin-bottom: 0.45rem;
+  line-height: 1.35;
+}
+
+.form-check-input {
+  width: 1.15rem;
+  height: 1.15rem;
+  margin-top: 0.2rem;
+}
+
+.btn,
+.mockup-link,
+.account-link,
+.notification-link,
+.footer-column a,
+.admin-nav a,
+.admin-nav button {
+  min-height: 44px;
+}
+
+.btn.is-loading {
+  position: relative;
+  cursor: wait;
+  opacity: 0.78;
+  pointer-events: none;
+}
+
+.btn.is-loading::after {
+  display: inline-block;
+  width: 0.9rem;
+  height: 0.9rem;
+  margin-left: 0.55rem;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  content: "";
+  animation: button-spinner 650ms linear infinite;
+  vertical-align: -0.1rem;
+}
+
+@keyframes button-spinner {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.password-field {
+  position: relative;
+}
+
+.password-field .form-control {
+  padding-right: 3.25rem;
+}
+
+.password-toggle {
+  position: absolute;
+  top: 50%;
+  right: 0.4rem;
+  display: inline-grid;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  color: var(--navy);
+  background: transparent;
+  place-items: center;
+  transform: translateY(-50%);
+}
+
+.password-toggle:hover,
+.password-toggle:focus-visible {
+  color: var(--blue-bright);
+  background: rgba(47, 142, 208, 0.09);
+}
+
+.character-counter,
+.selected-file-feedback {
+  display: block;
+  margin-top: 0.45rem;
+  color: var(--muted);
+  font-size: 0.76rem;
+  line-height: 1.4;
+}
+
+.character-counter {
+  text-align: right;
+}
+
+.flash-stack {
+  padding-top: 1rem;
+}
+
+.flash-stack .alert {
+  margin-bottom: 0;
+  padding-right: 3.25rem;
+  border-radius: 12px;
+}
+
+.booking-summary-card {
+  top: 96px;
+  width: 100%;
+  max-height: calc(100dvh - 118px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.booking-summary-card.is-updating {
+  cursor: wait;
+}
+
+.booking-summary-card.estimate-is-stale .summary-total strong {
+  opacity: 0.62;
+}
+
+.summary-line[hidden] {
+  display: none !important;
+}
+
+.availability-inline.is-pending {
+  color: #174f7b;
+  border-color: rgba(47, 142, 208, 0.28);
+  background: #edf8ff;
+}
+
+.availability-inline.is-success {
+  color: #096142;
+  border-color: rgba(9, 97, 66, 0.18);
+  background: #e7f8ef;
+}
+
+.availability-inline.is-error {
+  color: #9a2e2e;
+  border-color: rgba(154, 46, 46, 0.18);
+  background: #fff0f0;
+}
+
+.booking-form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+}
+
+.requirements-checklist ul {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.vehicle-card,
+.vehicle-card--compact {
+  height: 100%;
+}
+
+.vehicle-image-wrap,
+.vehicle-card--compact .vehicle-image-wrap {
+  min-height: clamp(200px, 18vw, 250px);
+  background: linear-gradient(180deg, #f9fcff 0%, #eef7ff 100%);
+}
+
+.vehicle-image-wrap img,
+.vehicle-card--compact .vehicle-image-wrap img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.faq-item summary {
+  gap: 18px;
+  min-height: 58px;
+  align-items: center;
+  padding: 16px 20px;
+  font-family: var(--font-body);
+  font-size: 0.96rem;
+  line-height: 1.45;
+  letter-spacing: 0;
+  word-spacing: normal;
+}
+
+.faq-item__answer {
+  padding: 0 20px 20px;
+}
+
+.footer-grid {
+  grid-template-columns: minmax(240px, 1.25fr) repeat(3, minmax(150px, 0.75fr));
+  align-items: start;
+}
+
+.footer-column {
+  min-width: 0;
+}
+
+.footer-column > a:not(.btn) {
+  display: flex;
+  align-items: center;
+}
+
+/* Administration shell */
+.is-admin-context main,
+.is-admin-context .site-footer {
+  width: calc(100% - 270px);
+  margin-left: 270px;
+}
+
+.is-admin-context main {
+  display: flex;
+  min-height: 100dvh;
+  flex-direction: column;
+}
+
+.is-admin-context .admin-section {
+  width: 100%;
+  flex: 1 0 auto;
+}
+
+.is-admin-context .site-footer {
+  margin-top: auto;
+}
+
+.is-admin-context .admin-page-heading .container,
+.is-admin-context .admin-hero .container {
+  align-items: center;
+}
+
+.admin-page-heading p,
+.admin-dashboard-hero p {
+  max-width: var(--layout-readable-width);
+}
+
+.admin-stats,
+.admin-dashboard-stats {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.dashboard-workspace {
+  grid-template-columns: minmax(0, 1.45fr) minmax(320px, 0.75fr);
+  align-items: start;
+}
+
+.dashboard-insights,
+.dashboard-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+}
+
+.dashboard-panel {
+  width: 100%;
+  height: auto;
+  min-height: 0;
+}
+
+.admin-table-wrap {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+  scrollbar-gutter: stable;
+}
+
+.admin-table {
+  min-width: 820px;
+}
+
+.admin-table th,
+.admin-table td {
+  line-height: 1.4;
+  vertical-align: middle;
+}
+
+.admin-split--vehicles {
+  grid-template-columns: minmax(0, 1fr) !important;
+  gap: 28px;
+}
+
+.admin-split--vehicles .admin-editor,
+.admin-editor--vehicle {
+  position: static;
+  width: 100%;
+  max-width: none;
+  margin-top: 0;
+}
+
+.admin-editor--vehicle .row > [class*="col-"] {
+  min-width: 0;
+}
+
+body[data-page="admin-reports.php"] .dashboard-panel {
+  align-self: start;
+}
+
+.is-admin-context .report-bar {
+  grid-template-columns: minmax(120px, 170px) minmax(100px, 1fr) 42px;
+}
+
+.admin-search {
+  width: 100%;
+  max-width: 760px;
+}
+
+.admin-inline-form {
+  flex-wrap: wrap;
+}
+
+@media (max-width: 1199.98px) {
+  .dashboard-workspace,
+  .dashboard-insights,
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-stats,
+  .admin-dashboard-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .footer-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 991.98px) {
+  .is-admin-context main,
+  .is-admin-context .site-footer {
+    width: 100%;
+    margin-left: 0;
+  }
+
+  .is-admin-context .admin-page-heading,
+  .is-admin-context .admin-hero {
+    padding-top: 88px;
+  }
+
+  .booking-summary-card {
+    position: static !important;
+    max-height: none;
+    overflow: visible;
+  }
+
+  .mockup-menu {
+    max-height: calc(100dvh - 100px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+}
+
+@media (max-width: 767.98px) {
+  :root {
+    --page-gutter: 16px;
+  }
+
+  .content-section {
+    padding-block: 44px;
+  }
+
+  .admin-stats,
+  .admin-dashboard-stats,
+  .footer-grid,
+  .requirements-checklist ul {
+    grid-template-columns: 1fr;
+  }
+
+  .account-hero .container,
+  .admin-hero .container,
+  .admin-page-heading .container,
+  .heading-with-action,
+  .dashboard-panel__header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .booking-form-actions .btn,
+  .admin-search .btn {
+    width: 100%;
+  }
+
+  .admin-search {
+    flex-direction: column;
+  }
+
+  .admin-search .form-control {
+    width: 100%;
+  }
+
+  .footer-bottom {
+    gap: 8px;
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .vehicle-image-wrap,
+  .vehicle-card--compact .vehicle-image-wrap {
+    min-height: 210px;
+  }
+
+  .is-admin-context .report-bar {
+    grid-template-columns: minmax(90px, 120px) minmax(70px, 1fr) 34px;
+    gap: 10px;
+  }
+}
+
+@media (max-width: 479.98px) {
+  .form,
+  .auth-form,
+  .admin-editor,
+  .booking-summary-card,
+  .dashboard-panel {
+    padding: 20px;
+    border-radius: 14px;
+  }
+
+  .booking-form-actions {
+    flex-direction: column;
+  }
+
+  .booking-form-actions .btn {
+    width: 100%;
+  }
+
+  .footer-grid {
+    gap: 30px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+@media print {
+  body,
+  body::before {
+    background: #fff !important;
+  }
+
+  .site-header,
+  .site-footer,
+  .admin-nav,
+  .admin-nav-toggle,
+  .admin-nav-backdrop,
+  .btn,
+  .cta-band {
+    display: none !important;
+  }
+
+  .is-admin-context main {
+    width: 100%;
+    margin-left: 0;
+  }
+}

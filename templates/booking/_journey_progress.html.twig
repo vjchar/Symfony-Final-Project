@@ -1,0 +1,14 @@
+{# v15 render_booking_progress() #}
+{% if journey.showsProgress %}
+    <nav class="journey-progress" aria-label="Booking progress">
+        {% for number, step in journey.steps %}
+            <div class="journey-progress__step is-{{ step.state }}" aria-current="{{ step.state == 'current' ? 'step' : 'false' }}">
+                <span class="journey-progress__number" aria-hidden="true">{{ step.state == 'complete' ? '✓' : number }}</span>
+                <span class="journey-progress__label">{{ step.label }}</span>
+            </div>
+            {% if not loop.last %}
+                <i class="journey-progress__line" aria-hidden="true"></i>
+            {% endif %}
+        {% endfor %}
+    </nav>
+{% endif %}

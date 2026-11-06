@@ -1,0 +1,139 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ booking.reference }} | VJ Car Rental{% endblock %}
+
+{% block body %}
+{% set vehicle = booking.vehicle %}
+{% set reference = {reference: booking.reference} %}
+<section class="page-hero page-hero--compact pattern-layer">
+    <div class="container">
+        <span class="section-kicker">Booking {{ booking.reference }}</span>
+        <h1>{{ vehicle.name }}</h1>
+        <div class="page-hero-meta">
+            <span class="status-badge status-badge--{{ booking.status|status_class }}">{{ booking.status|humanize_label }}</span>
+            <span><i class="bi bi-calendar3"></i> Created {{ booking.createdAt|date('M j, Y') }}</span>
+        </div>
+    </div>
+</section>
+<section class="content-section">
+    <div class="container">
+        {{ include('booking/_journey_progress.html.twig') }}
+        {{ include('booking/_journey_next.html.twig', {kicker: 'Your booking journey'}) }}
+        <div class="row g-4 g-xl-5 align-items-start">
+            <div class="col-lg-7">
+                <article class="confirmation-card" id="pickup-details">
+                    <div class="confirmation-vehicle">
+                        <img src="{{ vehicle_image(vehicle.image) }}" alt="{{ vehicle.name }}">
+                        <div>
+                            <span class="section-kicker">{{ vehicle.category }}</span>
+                            <h2>{{ vehicle.name }}</h2>
+                            <a href="{{ path('app_vehicle_show', {slug: vehicle.slug}) }}">View vehicle details</a>
+                        </div>
+                    </div>
+                    <div class="confirmation-details">
+                        <span><small>Pick-up</small><strong>{{ booking.pickupAt|date('M j, Y g:i A') }}</strong></span>
+                        <span><small>Current scheduled return</small><strong>{{ booking.returnAt|date('M j, Y g:i A') }}</strong></span>
+                        <span><small>Rental period</small><strong>{{ booking.days }} day{{ booking.days == 1 ? '' : 's' }}</strong></span>
+                        <span><small>Method</small><strong>{{ booking.pickupMethod }}</strong></span>
+                        <span><small>Branch</small><strong>{{ booking.pickupLocation }}</strong></span>
+                        <span><small>Delivery address</small><strong>{{ booking.deliveryAddress ?: 'Not applicable' }}</strong></span>
+                    </div>
+                    {% if booking.specialRequests %}
+                        <div class="booking-note">
+                            <strong>Special requests</strong>
+                            <p>{{ booking.specialRequests|nl2br }}</p>
+                        </div>
+                    {% endif %}
+                </article>
+
+                <article class="booking-management-panel" id="requirements">
+                    <span class="section-kicker">Rental readiness</span>
+                    <h2>Documents and payment</h2>
+                    <div class="requirements-grid">
+                        <div class="requirement-item">
+                            <i class="bi bi-hourglass-split"></i>
+                            <span><strong>Driver’s license</strong><small>Needs review</small></span>
+                        </div>
+                        <div class="requirement-item">
+                            <i class="bi bi-hourglass-split"></i>
+                            <span><strong>Government ID</strong><small>Needs review</small></span>
+                        </div>
+                        <div class="requirement-item">
+                            <i class="bi bi-hourglass-split"></i>
+                            <span><strong>Security deposit</strong><small>{{ booking.deposit|money }} due</small></span>
+                        </div>
+                    </div>
+                    <div class="d-flex flex-wrap gap-2 mt-3">
+                        <a class="btn btn-outline" href="{{ page_url('documents', reference) }}"><i class="bi bi-person-vcard"></i> My Documents</a>
+                        <a class="btn btn-outline" href="{{ page_url('payments', reference) }}"><i class="bi bi-credit-card"></i> Payments</a>
+                        <a class="btn btn-outline" href="{{ page_url('invoice', reference) }}"><i class="bi bi-receipt"></i> Invoice</a>
+                    </div>
+                </article>
+
+                {% set cancellation_pending = cancellation and cancellation.pending %}
+                {% if booking.prePickup %}
+                    <article class="booking-management-panel">
+                        <span class="section-kicker">Reservation controls</span>
+                        <h2>Need to change or cancel before pickup?</h2>
+                        <p>Booking changes use tracked requests instead of directly rewriting your reservation. Availability, maintenance, pricing, and any refund are recalculated securely and reviewed before your confirmed booking changes.</p>
+                        {% if unresolved_modification %}
+                            <div class="alert alert-info">A booking modification request is currently <strong>{{ unresolved_modification.status|humanize_label }}</strong>.</div>
+                        {% endif %}
+                        {% if cancellation_pending %}
+                            <div class="alert alert-warning">Your cancellation request is awaiting administrator review.</div>
+                        {% endif %}
+                        <div class="d-flex flex-wrap gap-2">
+                            {% if not unresolved_modification and not cancellation_pending %}
+                                <a class="btn btn-primary" href="{{ page_url('booking-modification', reference) }}"><i class="bi bi-pencil-square"></i> Request Booking Modification</a>
+                            {% else %}
+                                <a class="btn btn-outline" href="{{ page_url('booking-modification', reference) }}">View Modification</a>
+                            {% endif %}
+                            <a class="btn btn-outline-danger" href="{{ page_url('booking-cancellation', reference) }}"><i class="bi bi-x-circle"></i> Cancellation &amp; Refund</a>
+                        </div>
+                    </article>
+                {% elseif booking.status == 'active' %}
+                    <article class="booking-management-panel rental-adjustment-summary">
+                        <span class="section-kicker">Flexible rental</span>
+                        <h2>Need to change your return?</h2>
+                        <p>You may request an earlier return or ask to extend this active rental. Extensions are checked against future reservations, maintenance, pricing, and payment requirements before activation.</p>
+                        {% if unresolved_adjustment %}
+                            <div class="alert alert-warning">
+                                Your {{ unresolved_adjustment.requestType|humanize_label }} request is currently <strong>{{ unresolved_adjustment.status|humanize_label }}</strong>.
+                            </div>
+                        {% endif %}
+                        <div class="d-flex flex-wrap gap-2">
+                            <a class="btn btn-primary" href="{{ page_url('rental-adjustment', reference) }}"><i class="bi bi-clock-history"></i> Manage Return Schedule</a>
+                        </div>
+                    </article>
+                {% endif %}
+                {% if modifications %}
+                    <article class="booking-management-panel">
+                        <span class="section-kicker">Pre-pickup changes</span>
+                        <h2>Modification history</h2>
+                        <div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Requested</th><th>Status</th><th>Price impact</th></tr></thead><tbody>{% for item in modifications %}<tr><td>{{ item.requestedAt|date('M j, Y g:i A') }}</td><td><span class="status-badge status-badge--{{ item.status|status_class }}">{{ item.status|humanize_label }}</span></td><td>{{ item.priceDifference >= 0 ? '+' : '−' }}{{ (item.priceDifference|abs)|money }}</td></tr>{% endfor %}</tbody></table></div>
+                    </article>
+                {% endif %}
+            </div>
+            <div class="col-lg-5">
+                <aside class="booking-summary-card sticky-lg-top">
+                    <span class="section-kicker">Payment summary</span>
+                    {{ include('booking/_price_lines.html.twig') }}
+                    <div class="summary-line"><span>Verified payments</span><strong>{{ 0|money }}</strong></div>
+                    <div class="summary-line"><span>Current amount due</span><strong>{{ booking.deposit|money }}</strong></div>
+                    <small class="summary-deposit-note">The security deposit is handled separately from the rental total.</small>
+                    <hr>
+                    <div class="customer-summary">
+                        <span><small>Customer</small><strong>{{ booking.user.name }}</strong></span>
+                        <span><small>Email</small><strong>{{ booking.user.email }}</strong></span>
+                        <span><small>Phone</small><strong>{{ booking.user.phone ?: 'Not provided' }}</strong></span>
+                    </div>
+                    <p class="print-instruction mt-3">
+                        <i class="bi bi-printer"></i>
+                        Use <strong>Ctrl + P</strong> to print or save this booking as a PDF.
+                    </p>
+                </aside>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

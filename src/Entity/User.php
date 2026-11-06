@@ -16,7 +16,9 @@ use Symfony\Component\Validator\Constraints as Assert;
 #[ORM\Table(name: 'users')]
 #[ORM\Index(name: 'role', columns: ['role'])]
 #[ORM\HasLifecycleCallbacks]
-#[UniqueEntity('email', message: 'An account already uses that email address.')]
+// v15 words the duplicate-email error differently on register.php and profile.php.
+#[UniqueEntity('email', message: 'An account already uses that email address.', groups: ['registration'])]
+#[UniqueEntity('email', message: 'That email is already registered.', groups: ['profile'])]
 class User implements UserInterface, PasswordAuthenticatedUserInterface
 {
     public const ROLE_CUSTOMER = 'customer';

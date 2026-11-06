@@ -1,0 +1,76 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Booking Confirmation | VJ Car Rental{% endblock %}
+{% block description %}Review your booking and continue directly to the next required step.{% endblock %}
+
+{% block body %}
+{% set vehicle = booking.vehicle %}
+<section class="page-hero page-hero--compact pattern-layer">
+    <div class="container">
+        <span class="section-kicker">Booking successful</span>
+        <h1>Your booking was created</h1>
+        <p>Your reservation is saved. Follow the guided steps below so you always know exactly what to do next.</p>
+    </div>
+</section>
+<section class="content-section confirmation-page">
+    <div class="container">
+        {{ include('booking/_journey_progress.html.twig') }}
+        {{ include('booking/_journey_next.html.twig', {kicker: 'What’s next?'}) }}
+        <div class="confirmation-banner">
+            <i class="bi bi-check2-circle"></i>
+            <div>
+                <small>Booking reference</small>
+                <h2>{{ booking.reference }}</h2>
+                <p>Step 1 complete · Booking status: {{ booking.status|humanize_label }}</p>
+            </div>
+        </div>
+        <div class="row g-4 align-items-start">
+            <div class="col-lg-7">
+                <article class="confirmation-card">
+                    <div class="confirmation-vehicle">
+                        <img src="{{ vehicle_image(vehicle.image) }}" alt="{{ vehicle.name }}">
+                        <div>
+                            <span class="section-kicker">{{ vehicle.category }}</span>
+                            <h2>{{ vehicle.name }}</h2>
+                            <p>Your vehicle is reserved against the requested schedule while you complete only the requirements that are still unfinished. Already-verified documents stay complete.</p>
+                        </div>
+                    </div>
+                    <div class="confirmation-details">
+                        <span><small>Pick-up</small><strong>{{ booking.pickupAt|date('M j, Y g:i A') }}</strong></span>
+                        <span><small>Return</small><strong>{{ booking.returnAt|date('M j, Y g:i A') }}</strong></span>
+                        <span><small>Rental period</small><strong>{{ booking.days }} day{{ booking.days == 1 ? '' : 's' }}</strong></span>
+                        <span><small>Method</small><strong>{{ booking.pickupMethod }}</strong></span>
+                        <span><small>Branch</small><strong>{{ booking.pickupLocation }}</strong></span>
+                        <span><small>Customer</small><strong>{{ booking.user.name }}</strong></span>
+                    </div>
+                </article>
+                <article class="next-steps-card">
+                    <span class="section-kicker">Guided booking journey</span>
+                    <h2>From reservation to vehicle readiness</h2>
+                    <ol>
+                        <li><span>1</span><div><strong>Booking</strong><p>Your reservation has been created successfully.</p></div></li>
+                        <li><span>2</span><div><strong>Payment</strong><p>Submit the required security-deposit payment for verification.</p></div></li>
+                        <li><span>3</span><div><strong>Documents</strong><p>Upload your driver’s license and government-issued ID only when they are missing, rejected, expired, or otherwise need action.</p></div></li>
+                        <li><span>4</span><div><strong>Verification</strong><p>The team verifies only requirements that are still pending. Previously verified documents are not reviewed again.</p></div></li>
+                        <li><span>5</span><div><strong>Vehicle preparation</strong><p>After verification, wait for the Admin notification that your vehicle is physically ready for pickup or delivery.</p></div></li>
+                    </ol>
+                </article>
+            </div>
+            <div class="col-lg-5">
+                <aside class="booking-summary-card">
+                    <span class="section-kicker">Saved price breakdown</span>
+                    {{ include('booking/_price_lines.html.twig') }}
+                    <small class="summary-deposit-note">The security deposit is separate from the rental total and is the first required payment step.</small>
+                    <div class="d-grid gap-2 mt-4">
+                        <a class="btn btn-primary btn-lg" href="{{ journey.targetUrl }}">
+                            <i class="bi bi-arrow-right-circle"></i> {{ journey.buttonLabel }}
+                        </a>
+                        <a class="btn btn-outline" href="{{ path('app_booking_show', {reference: booking.reference}) }}">View Booking Details</a>
+                        <a class="btn btn-outline" href="{{ path('app_my_bookings') }}">View All Bookings</a>
+                    </div>
+                </aside>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

@@ -1,0 +1,60 @@
+{% extends 'admin/base.html.twig' %}
+
+{% block title %}Manage Bookings | VJ Car Rental{% endblock %}
+
+{% macro review_form(route, id, token) %}
+    <form class="admin-inline-form" method="post" action="{{ path(route, {id: id}) }}">
+        <input type="hidden" name="_token" value="{{ csrf_token(token ~ id) }}">
+        <select class="form-select form-select-sm" name="decision" required><option value="">Decision</option><option value="approved">Approve</option><option value="rejected">Reject</option></select>
+        <input class="form-control form-control-sm" name="admin_note" maxlength="2000" placeholder="Admin note">
+        <button class="btn btn-primary btn-sm" type="submit">Review</button>
+    </form>
+{% endmacro %}
+
+{% block admin_body %}
+{% import _self as f %}
+<section class="admin-page-heading">
+    <div class="container">
+        <div>
+            <span class="section-kicker">Reservations</span>
+            <h1>Manage bookings</h1>
+            <p>Approve reservations, prepare them for pickup, and hand active rentals to the Rental Desk using controlled status transitions.</p>
+        </div>
+    </div>
+</section>
+<section class="content-section admin-section">
+    <div class="container">
+        <div class="admin-ops-queues">
+            <article class="admin-editor" id="modification-queue">
+                <div class="admin-editor__heading"><div><span class="section-kicker">Pre-pickup changes</span><h2>Pending booking modifications</h2><p>Requested changes do not alter the authoritative booking until approval and any required additional payment are completed.</p></div><span class="dashboard-queue__count">{{ modifications|length }}</span></div>
+                <div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Booking</th><th>Customer</th><th>Requested change</th><th>Price impact</th><th>Action</th></tr></thead><tbody>
+                {% for modification in modifications %}
+                    {% set booking = modification.booking %}
+                    {% set requested = modification.requestedData %}
+                    <tr>
+                        <td><strong>{{ booking.reference }}</strong><small>{{ booking.vehicle.name }}</small></td>
+                        <td>{{ modification.user.name }}<small>{{ modification.user.email }}</small></td>
+                        <td><strong>{{ requested.vehicle_name ?? modification.requestedVehicle.name ?? 'Vehicle' }}</strong><small>{{ requested.pickup_at is defined ? requested.pickup_at|date('M j, Y g:i A') : '—' }} → {{ requested.return_at is defined ? requested.return_at|date('M j, Y g:i A') : '—' }}</small><small>{{ requested.pickup_method ?? '' }}</small></td>
+                        <td>{{ modification.priceDifference >= 0 ? '+' : '−' }}{{ (modification.priceDifference|abs)|money }}</td>
+                        <td>{{ f.review_form('app_admin_modification_review', modification.id, 'review-modification-') }}</td>
+                    </tr>
+                {% else %}
+                    <tr><td colspan="5">No pending booking modifications.</td></tr>
+                {% endfor %}
+                </tbody></table></div>
+            </article>
+
+            <article class="admin-editor mt-4" id="cancellation-queue">
+                <div class="admin-editor__heading"><div><span class="section-kicker">Cancellation control</span><h2>Pending cancellations</h2><p>Approve only eligible pre-pickup cancellations. Refund estimates are recalculated when the request is reviewed.</p></div><span class="dashboard-queue__count">{{ cancellations|length }}</span></div>
+                <div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Booking</th><th>Customer</th><th>Reason</th><th>Refund estimate</th><th>Action</th></tr></thead><tbody>
+                {% for cancellation in cancellations %}
+                    <tr><td><strong>{{ cancellation.booking.reference }}</strong><small>{{ cancellation.booking.vehicle.name }}</small></td><td>{{ cancellation.user.name }}<small>{{ cancellation.user.email }}</small></td><td>{{ cancellation.reason }}</td><td><strong>{{ cancellation.refundableAmount|money }}</strong><small>{{ cancellation.nonRefundableAmount|money }} non-refundable</small></td><td>{{ f.review_form('app_admin_cancellation_review', cancellation.id, 'review-cancellation-') }}</td></tr>
+                {% else %}
+                    <tr><td colspan="5">No pending cancellation requests.</td></tr>
+                {% endfor %}
+                </tbody></table></div>
+            </article>
+        </div>
+    </div>
+</section>
+{% endblock %}

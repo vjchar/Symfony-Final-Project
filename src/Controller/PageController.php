@@ -96,7 +96,7 @@ final class PageController extends AbstractController
     }
 
     /**
-     * Placeholder for v15 features that are built in later project steps (bookings, payments, ...).
+     * Placeholder for v15 features that are built in later project steps (payments, documents, ...).
      */
     #[Route('/coming-soon/{feature}', name: 'app_coming_soon', requirements: ['feature' => '[a-z0-9-]+'], methods: ['GET'])]
     public function comingSoon(string $feature): Response

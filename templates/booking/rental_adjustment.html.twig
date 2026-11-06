@@ -1,0 +1,92 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Rental Adjustment {{ booking.reference }} | VJ Car Rental{% endblock %}
+
+{% block body %}
+{% set reference = {reference: booking.reference} %}
+{% set return_at = booking.returnAt %}
+<section class="page-hero page-hero--compact pattern-layer">
+    <div class="container">
+        <span class="section-kicker">Flexible rental</span>
+        <h1>Adjust {{ booking.reference }}</h1>
+        <p>Request an earlier return or ask to keep {{ booking.vehicle.name }} longer. Every change is validated against bookings, maintenance, pricing, and payment rules.</p>
+    </div>
+</section>
+<section class="content-section operations-page">
+    <div class="container">
+        {% for error in errors %}<div class="alert alert-danger">{{ error }}</div>{% endfor %}
+        {% if unresolved %}
+            <div class="alert alert-warning">You already have a {{ unresolved.requestType|humanize_label }} request with status <strong>{{ unresolved.status|humanize_label }}</strong>. Resolve it before creating another.</div>
+        {% endif %}
+        <div class="rental-adjustment-overview">
+            <article><span>Original scheduled return</span><strong>{{ (booking.originalReturnAt ?? return_at)|date('M j, Y g:i A') }}</strong></article>
+            <article><span>Current scheduled return</span><strong>{{ return_at|date('M j, Y g:i A') }}</strong></article>
+            <article><span>Rental status</span><strong>{{ booking.status|humanize_label }}</strong></article>
+        </div>
+        {% if not unresolved %}
+        <div class="row g-4 mt-1">
+            <div class="col-lg-6">
+                <article class="operation-card rental-adjustment-card">
+                    <span class="section-kicker">Return sooner</span>
+                    <h2>Request Early Return</h2>
+                    <p>Tell the rental desk when you plan to bring the vehicle back. This does not complete the rental automatically; mileage, fuel, inspection, damage, and final charges are still recorded at check-in.</p>
+                    <form method="post" class="row g-3" action="{{ path('app_rental_adjustment', reference) }}">
+                        {{ form_widget(early_form._token) }}
+                        <input type="hidden" name="action" value="submit_early_return">
+                        <div class="col-md-6"><label class="form-label" for="earlyDate">Requested date</label><input class="form-control" id="earlyDate" name="requested_date" type="date" min="{{ 'now'|date('Y-m-d') }}" max="{{ return_at|date('Y-m-d') }}" required></div>
+                        <div class="col-md-6"><label class="form-label" for="earlyTime">Requested time</label><input class="form-control" id="earlyTime" name="requested_time" type="time" value="{{ return_at|date('H:i') }}" required></div>
+                        <div class="col-12"><label class="form-label" for="earlyReason">Reason (optional)</label><textarea class="form-control" id="earlyReason" name="reason" rows="3" maxlength="1500"></textarea></div>
+                        <div class="col-12"><button class="btn btn-outline" type="submit"><i class="bi bi-arrow-return-left"></i> Submit Early Return Request</button></div>
+                    </form>
+                </article>
+            </div>
+            <div class="col-lg-6">
+                <article class="operation-card rental-adjustment-card">
+                    <span class="section-kicker">Keep it longer</span>
+                    <h2>Request Extension</h2>
+                    <p>We check the vehicle against upcoming reservations and maintenance, then recalculate the rental using the current pricing rules.</p>
+                    <form method="post" class="row g-3" action="{{ path('app_rental_adjustment', reference) }}">
+                        {{ form_widget(extension_form._token) }}
+                        <div class="col-md-6"><label class="form-label" for="extendDate">New return date</label><input class="form-control" id="extendDate" name="requested_date" type="date" min="{{ return_at|date('Y-m-d') }}" value="{{ return_at|date_modify('+1 day')|date('Y-m-d') }}" required></div>
+                        <div class="col-md-6"><label class="form-label" for="extendTime">New return time</label><input class="form-control" id="extendTime" name="requested_time" type="time" value="{{ return_at|date('H:i') }}" required></div>
+                        <div class="col-12"><label class="form-label" for="extendReason">Reason (optional)</label><textarea class="form-control" id="extendReason" name="reason" rows="3" maxlength="1500"></textarea></div>
+                        <div class="col-12 d-flex flex-wrap gap-2"><button class="btn btn-outline" type="submit" name="action" value="preview_extension"><i class="bi bi-calculator"></i> Preview Extension</button><button class="btn btn-primary" type="submit" name="action" value="submit_extension"><i class="bi bi-clock-history"></i> Submit Extension Request</button></div>
+                    </form>
+                    {% if preview %}
+                        <div class="extension-preview mt-4">
+                            <h3>Extension preview</h3>
+                            <dl>
+                                <div><dt>Requested return</dt><dd>{{ preview.requestedReturnAt|date('M j, Y g:i A') }}</dd></div>
+                                <div><dt>Updated rental duration</dt><dd>{{ preview.days }} day{{ preview.days == 1 ? '' : 's' }}</dd></div>
+                                <div><dt>Current rental total</dt><dd>{{ booking.total|money }}</dd></div>
+                                <div><dt>Additional extension cost</dt><dd>{{ preview.priceDifference|money }}</dd></div>
+                                <div><dt>Updated rental total</dt><dd>{{ preview.total|money }}</dd></div>
+                                <div><dt>Availability</dt><dd><span class="status-badge status-badge--success">Available now</span></dd></div>
+                            </dl>
+                            <small>Availability and pricing are checked again when an administrator reviews the request and again before activation.</small>
+                        </div>
+                    {% endif %}
+                </article>
+            </div>
+        </div>
+        {% endif %}
+        <article class="booking-management-panel mt-4">
+            <span class="section-kicker">Rental change history</span>
+            <h2>Adjustment requests</h2>
+            {% if adjustments is empty %}<p>No rental adjustments have been requested for this booking.</p>{% else %}
+                <div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Type</th><th>Original return</th><th>Requested return</th><th>Price change</th><th>Status</th><th>Requested</th><th></th></tr></thead><tbody>
+                {% for item in adjustments %}<tr>
+                    <td>{{ item.requestType|humanize_label }}</td>
+                    <td>{{ item.originalReturnAt|date('M j, Y g:i A') }}</td>
+                    <td>{{ item.requestedReturnAt|date('M j, Y g:i A') }}</td>
+                    <td>{{ item.extension ? item.priceDifference|money : '—' }}</td>
+                    <td><span class="status-badge status-badge--{{ item.status|status_class }}">{{ item.status|humanize_label }}</span></td>
+                    <td>{{ item.createdAt|date('M j, Y g:i A') }}</td>
+                    <td>{% if item.pending %}<form method="post" action="{{ path('app_rental_adjustment_withdraw', {reference: booking.reference, id: item.id}) }}" data-confirm="Cancel this pending rental adjustment request?"><input type="hidden" name="_token" value="{{ csrf_token('withdraw-adjustment-' ~ item.id) }}"><button class="btn btn-outline btn-sm">Cancel</button></form>{% elseif item.extension and item.status == 'approved' %}<a class="btn btn-primary btn-sm" href="{{ page_url('payments', reference) }}">Pay Extension</a>{% endif %}</td>
+                </tr>{% endfor %}</tbody></table></div>
+            {% endif %}
+        </article>
+        <div class="mt-4"><a class="btn btn-outline" href="{{ path('app_booking_show', reference) }}"><i class="bi bi-arrow-left"></i> Back to Rental Details</a></div>
+    </div>
+</section>
+{% endblock %}

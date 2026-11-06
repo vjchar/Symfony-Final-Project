@@ -1,0 +1,110 @@
+{% extends 'admin/base.html.twig' %}
+
+{% block title %}Fleet Maintenance | VJ Car Rental{% endblock %}
+
+{% block admin_body %}
+<section class="admin-page-heading">
+    <div class="container">
+        <div>
+            <span class="section-kicker">Fleet safety</span>
+            <h1>Maintenance records</h1>
+            <p>Track scheduled and active vehicle service. Vehicles in maintenance are automatically removed from online availability.</p>
+        </div>
+    </div>
+</section>
+
+<section class="content-section admin-section">
+    <div class="container">
+        {# every invalid field shares one v15 message, so show each message once #}
+        {% set error_messages = [] %}
+        {% for error in form.vars.errors.form.getErrors(true) %}
+            {% if error.message not in error_messages %}
+                {% set error_messages = error_messages|merge([error.message]) %}
+            {% endif %}
+        {% endfor %}
+        {% for message in error_messages %}
+            <div class="alert alert-danger">{{ message }}</div>
+        {% endfor %}
+
+        <article class="admin-editor mb-4">
+            <span class="section-kicker">New service event</span>
+            <h2>Schedule maintenance</h2>
+            {{ form_start(form, {attr: {class: 'row g-3', novalidate: 'novalidate'}}) }}
+                <div class="col-md-4">
+                    {{ form_label(form.vehicle, null, {label_attr: {class: 'form-label'}}) }}
+                    {{ form_widget(form.vehicle) }}
+                </div>
+                <div class="col-md-4">
+                    {{ form_label(form.title, null, {label_attr: {class: 'form-label'}}) }}
+                    {{ form_widget(form.title) }}
+                </div>
+                <div class="col-md-4">
+                    {{ form_label(form.startsAt, null, {label_attr: {class: 'form-label'}}) }}
+                    {{ form_widget(form.startsAt) }}
+                </div>
+                <div class="col-md-8">
+                    {{ form_label(form.description, null, {label_attr: {class: 'form-label'}}) }}
+                    {{ form_widget(form.description) }}
+                </div>
+                <div class="col-md-4">
+                    {{ form_label(form.cost, null, {label_attr: {class: 'form-label'}}) }}
+                    {{ form_widget(form.cost) }}
+                </div>
+                {{ form_rest(form) }}
+                <div class="col-12">
+                    <button class="btn btn-primary" type="submit">Create Record</button>
+                </div>
+            {{ form_end(form) }}
+        </article>
+
+        <div class="admin-table-wrap">
+            <table class="admin-table">
+                <thead>
+                    <tr>
+                        <th>Vehicle</th>
+                        <th>Service</th>
+                        <th>Schedule</th>
+                        <th>Cost</th>
+                        <th>Status</th>
+                        <th>Update</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for record in records %}
+                        <tr>
+                            <td>
+                                <strong>{{ record.vehicle.name }}</strong>
+                                <small>Created by {{ record.createdBy.name }}</small>
+                            </td>
+                            <td>
+                                {{ record.title }}
+                                <small>{{ record.description }}</small>
+                            </td>
+                            <td>{{ record.startsAt|date('M j, Y g:i A') }}</td>
+                            <td>{{ record.cost|money }}</td>
+                            <td>
+                                <span class="status-badge status-badge--{{ record.status|status_class }}">{{ record.status|humanize_label }}</span>
+                            </td>
+                            <td>
+                                <form class="admin-inline-form" method="post" action="{{ path('app_admin_maintenance_status', {id: record.id}) }}">
+                                    <input type="hidden" name="_token" value="{{ csrf_token('maintenance-status-' ~ record.id) }}">
+                                    <select class="form-select form-select-sm" name="status" aria-label="Update maintenance status for {{ record.vehicle.name }}">
+                                        {% for status in statuses %}
+                                            <option value="{{ status }}" {{ record.status == status ? 'selected' }}>{{ status|humanize_label }}</option>
+                                        {% endfor %}
+                                    </select>
+                                    <button class="btn btn-primary btn-sm" type="submit">Save</button>
+                                </form>
+                            </td>
+                        </tr>
+                    {% else %}
+                        <tr>
+                            <td colspan="6">No maintenance records yet.</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>
+{% endblock %}

@@ -115,7 +115,7 @@
                             </li>
                         {% endfor %}
                     </ul>
-                    <a class="btn btn-primary w-100" href="{{ page_url('booking') }}">Book This Vehicle</a>
+                    <a class="btn btn-primary w-100" href="{{ page_url('booking', {vehicle: vehicle.slug}) }}">Book This Vehicle</a>
                     <a class="btn btn-outline w-100 mt-2" href="{{ page_url('compare') }}">Compare This Vehicle</a>
                     <small class="display-note">
                         <i class="bi bi-shield-check"></i> Pricing and availability are verified before the booking is saved.</small>

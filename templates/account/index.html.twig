@@ -1,6 +1,7 @@
 {% extends 'base.html.twig' %}
 
 {% block title %}My Account | VJ Car Rental{% endblock %}
+{% block description %}Manage your VJ Car Rental profile, bookings, and next required actions.{% endblock %}
 
 {% block body %}
     <section class="account-hero pattern-layer">
@@ -11,10 +12,55 @@
     </section>
     <section class="content-section account-section">
         <div class="container">
+            {% if priority %}
+                <section class="dashboard-priority-action" aria-label="Most important booking action">
+                    <div class="dashboard-priority-action__meta">
+                        <span class="section-kicker">{{ priority.journey.actionRequired ? 'Action required' : 'Booking update' }}</span>
+                        <small>{{ priority.booking.reference }} · {{ priority.booking.vehicle.name }}</small>
+                    </div>
+                    {{ include('booking/_journey_next.html.twig', {journey: priority.journey, kicker: 'Your next step'}) }}
+                </section>
+            {% endif %}
+
+            <div class="account-stats">
+                <article><i class="bi bi-calendar2-check"></i><strong>{{ booking_count }}</strong><span>Total bookings</span></article>
+                <article><i class="bi bi-hourglass-split"></i><strong>{{ upcoming_count }}</strong><span>Upcoming</span></article>
+                <article><i class="bi bi-check2-circle"></i><strong>{{ completed_count }}</strong><span>Completed</span></article>
+                <article><i class="bi bi-bookmark"></i><strong>{{ drafts|length }}</strong><span>Saved bookings</span></article>
+            </div>
+
+            {% if drafts is not empty %}
+                {% set latest_draft = drafts|first %}
+                <section class="dashboard-saved-draft" aria-label="Saved booking">
+                    <div>
+                        <span class="section-kicker">Saved booking · lower priority</span>
+                        <h2>{{ latest_draft.vehicle.name }}</h2>
+                        <p>Your draft is saved, but the vehicle is not reserved. Resume it when you are ready to check current availability and pricing.</p>
+                    </div>
+                    <div class="dashboard-saved-draft__actions">
+                        <a class="btn btn-outline" href="{{ path('app_booking', {draft: latest_draft.id}) }}">Continue Booking</a>
+                        <a class="btn btn-link" href="{{ path('app_saved_bookings') }}">View All Saved Bookings</a>
+                    </div>
+                </section>
+            {% endif %}
+
             <div class="dashboard-grid">
                 <section class="dashboard-panel dashboard-panel--wide">
                     <div class="dashboard-panel__header"><div><span class="section-kicker">Recent activity</span><h2>Your latest bookings</h2></div><a href="{{ page_url('my-bookings') }}">View all</a></div>
-                    <div class="dashboard-empty"><i class="bi bi-car-front"></i><h3>No bookings yet</h3><p>Browse the fleet and reserve the right vehicle for your next trip.</p><a class="btn btn-primary" href="{{ path('app_vehicle_index') }}">Explore Vehicles</a></div>
+                    {% if latest_bookings is empty %}
+                        <div class="dashboard-empty"><i class="bi bi-car-front"></i><h3>No bookings yet</h3><p>Browse the fleet and reserve the right vehicle for your next trip.</p><a class="btn btn-primary" href="{{ path('app_vehicle_index') }}">Explore Vehicles</a></div>
+                    {% else %}
+                        <div class="booking-list booking-list--compact booking-list--guided">
+                            {% for item in latest_bookings %}
+                                {% set booking = item.booking %}
+                                <a class="booking-list-item" href="{{ item.journey.targetUrl }}">
+                                    <img src="{{ vehicle_image(booking.vehicle.image) }}" alt="{{ booking.vehicle.name }}">
+                                    <span><small>{{ booking.reference }}</small><strong>{{ booking.vehicle.name }}</strong><em>{{ booking.pickupAt|date('M j, Y') }} – {{ booking.returnAt|date('M j, Y') }}</em><em class="journey-inline-next">Next: {{ item.journey.title }}</em></span>
+                                    <b class="status-badge status-badge--{{ booking.status|status_class }}">{{ booking.status|humanize_label }}</b><i class="bi bi-chevron-right"></i>
+                                </a>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
                 </section>
 
                 <aside class="dashboard-panel dashboard-panel--wide dashboard-panel--tools">

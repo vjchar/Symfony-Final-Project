@@ -1,0 +1,17 @@
+{# v15 render_booking_next_step() #}
+<article class="journey-next journey-next--{{ journey.severity }}">
+    <div class="journey-next__icon"><i class="bi {{ journey.icon }}"></i></div>
+    <div class="journey-next__body">
+        <span class="section-kicker">{{ kicker|default('Next step') }}</span>
+        <h2>{{ journey.title }}</h2>
+        <p>{{ journey.message }}</p>
+        {% if journey.noAction %}
+            <strong class="journey-next__quiet"><i class="bi bi-clock-history"></i> No Action Required Right Now</strong>
+        {% endif %}
+    </div>
+    {% if journey.buttonLabel != '' %}
+        <a class="btn {{ journey.actionRequired ? 'btn-primary' : 'btn-outline' }}" href="{{ journey.targetUrl }}">
+            {{ journey.buttonLabel }}
+        </a>
+    {% endif %}
+</article>

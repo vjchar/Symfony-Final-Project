@@ -1,0 +1,49 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Manage Booking | VJ Car Rental{% endblock %}
+
+{% block body %}
+<section class="page-hero page-hero--compact pattern-layer">
+    <div class="container">
+        <span class="section-kicker">Secure reservation access</span>
+        <h1>Manage a booking</h1>
+        <p>Open one of your saved reservations to review pricing, reschedule, cancel when eligible, or rate a completed rental.</p>
+    </div>
+</section>
+<section class="content-section manage-page">
+    <div class="container">
+        <div class="row g-4 g-xl-5 justify-content-center">
+            <div class="col-lg-5">
+                <form class="form" method="post" action="{{ path('app_manage_booking') }}">
+                    <input type="hidden" name="_token" value="{{ csrf_token('manage-booking') }}">
+                    <div class="form-heading">
+                        <span class="section-kicker">Booking reference</span>
+                        <h2>Find your reservation</h2>
+                    </div>
+                    {% if error %}
+                        <div class="alert alert-danger">{{ error }}</div>
+                    {% endif %}
+                    <label class="form-label" for="manageReference">Reference number</label>
+                    <input class="form-control" id="manageReference" name="reference" value="{{ reference }}" placeholder="VJ-YYMMDD-ABC123" required autofocus>
+                    <button class="btn btn-primary w-100 mt-4" type="submit">Open Booking</button>
+                    <a class="btn btn-outline w-100 mt-2" href="{{ path('app_my_bookings') }}">View My Booking History</a>
+                </form>
+            </div>
+            <div class="col-lg-5">
+                <aside class="support-sidebar h-100">
+                    <i class="bi bi-shield-check"></i>
+                    <h2>Protected account access</h2>
+                    <p>Only the customer who created a booking can open its reservation details here.</p>
+                    <ul>
+                        <li>Secure booking access</li>
+                        <li>Secure account-protected changes</li>
+                        <li>Date-conflict validation</li>
+                        <li>Recorded account actions</li>
+                    </ul>
+                    <a class="btn btn-light" href="{{ path('app_contact') }}">Contact Support</a>
+                </aside>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

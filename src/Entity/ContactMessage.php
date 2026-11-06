@@ -15,6 +15,8 @@ use Symfony\Component\Validator\Constraints as Assert;
 #[ORM\HasLifecycleCallbacks]
 class ContactMessage
 {
+    public const STATUSES = ['new', 'read', 'closed'];
+
     public const SUBJECTS = ['New booking', 'Vehicle information', 'Corporate rental', 'Existing rental support', 'Other inquiry'];
 
     #[ORM\Id]
@@ -135,6 +137,19 @@ class ContactMessage
     public function getStatus(): string
     {
         return $this->status;
+    }
+
+    /**
+     * v15 update_contact_message_status().
+     */
+    public function setStatus(string $status): static
+    {
+        if (!\in_array($status, self::STATUSES, true)) {
+            throw new \DomainException('Choose a valid message status.');
+        }
+        $this->status = $status;
+
+        return $this;
     }
 
     public function getCreatedAt(): \DateTimeImmutable

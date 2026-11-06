@@ -66,12 +66,12 @@ final class PageControllerTest extends WebTestCase
         $client = static::createClient();
         $crawler = $client->request('GET', '/');
 
-        $bookLink = $crawler->filter('.mockup-book-button')->attr('href');
-        self::assertSame('/coming-soon/booking', $bookLink);
+        $compareLink = $crawler->selectLink('Compare Vehicles')->attr('href');
+        self::assertSame('/coming-soon/compare', $compareLink);
 
-        $client->request('GET', $bookLink);
+        $client->request('GET', $compareLink);
         self::assertResponseIsSuccessful();
-        self::assertSelectorTextContains('h1', 'Booking is on the way.');
+        self::assertSelectorTextContains('h1', 'Compare is on the way.');
     }
 
     public function testAdminDashboardUsesOperationsLayout(): void

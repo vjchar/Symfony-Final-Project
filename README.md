@@ -17,6 +17,9 @@ Open http://127.0.0.1:8000. Until an administrator exists every page shows
 "Administrator setup is required" — follow it to `/setup` to create one, as in
 Version 15. Customers register at `/register`.
 
+Outside production the forgot-password page shows the reset link itself, as
+Version 15 does; set `MAILER_DSN` in `.env.local` to also have it emailed.
+
 ## Tests
 
 ```bash
@@ -33,7 +36,8 @@ php bin/phpunit
 | `Creating_Controller` | v15 layout (header, footer, admin navigation), home, company pages, admin dashboard shell, error pages |
 | `Entity_CRUD_Function` | `Vehicle` and `Addon` on the v15 tables with its reference data; v15 admin vehicle/add-on editors with image upload; fleet list and vehicle details |
 | `Form_Manipulation_&_Repository` | v15 fleet filters, sorting and pagination; contact form saved to `contact_messages`; dashboard statistics |
-| `User_Entity_Login_Register` | `User` on the v15 `users` table, v15 sign-in rules (15-minute lockout, inactive accounts), registration, administrator setup, customer account, user access management, audit log |
+| `User_Entity_Login_Register` | `User` on the v15 `users` table, v15 sign-in rules (15-minute lockout, inactive accounts), registration, administrator setup, customer account and profile editing, forgot/reset password, user access management, contact message inbox, promotion codes, maintenance records, audit log |
+| `Booking_System` | v15 booking flow on the `bookings`, `booking_addons`, `booking_drafts` and `booking_draft_addons` tables: build a rental with live server-side estimates (dates, branch pickup or delivery, add-ons, promotion codes), save for later and resume, booking confirmation and details with the next step, manage booking by reference, My Bookings, Saved Bookings, account dashboard |
 
-Features that Version 15 has but that belong to later steps (bookings,
-payments, documents, reviews, ...) link to a "coming soon" page.
+Features that Version 15 has but that belong to later steps (payments,
+documents, booking changes, reviews, ...) link to a "coming soon" page.

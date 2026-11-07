@@ -1,0 +1,332 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Book a Car | VJ Car Rental{% endblock %}
+{% block description %}Create, save, resume, or confirm a VJ Car Rental booking with current availability and pricing.{% endblock %}
+
+{% block body %}
+{% set r = booking_request %}
+{% set vehicle = selected_vehicle %}
+<section class="page-hero page-hero--compact pattern-layer">
+    <div class="container">
+        <span class="section-kicker">Secure reservation</span>
+        <h1>Build your rental</h1>
+        <p>
+            Choose your vehicle, dates, pickup method, and extras. Availability and current pricing
+            are verified on the server before you proceed or save the plan for later.
+        </p>
+    </div>
+</section>
+
+<section class="content-section booking-section">
+    <div class="container">
+        <div class="booking-progress" aria-label="Booking steps">
+            <div class="active"><span>1</span><strong>Build rental</strong></div>
+            <i></i>
+            <div><span>2</span><strong>Documents &amp; deposit</strong></div>
+            <i></i>
+            <div><span>3</span><strong>Pickup &amp; trip</strong></div>
+            <i></i>
+            <div><span>4</span><strong>Return &amp; review</strong></div>
+        </div>
+
+        <div class="row g-4 g-xl-5 align-items-start">
+            <div class="col-lg-7">
+                <form
+                    class="form booking-form"
+                    id="bookingForm"
+                    method="post"
+                    data-estimate-url="{{ path('app_booking_estimate') }}"
+                    novalidate>
+                    {{ form_widget(form._token) }}
+
+                    {% for error in errors %}
+                        <div class="alert alert-danger" role="alert">{{ error }}</div>
+                    {% endfor %}
+
+                    {% if preview %}
+                        <div class="alert alert-info">
+                            {% if active_draft %}
+                                <strong>Saved booking {{ active_draft.reference }} loaded.</strong>
+                            {% else %}
+                                <strong>Previous draft details loaded as a new booking plan.</strong>
+                            {% endif %}
+                            Saving a draft does not reserve the vehicle. Availability and pricing are checked again before the booking is created.
+                        </div>
+                        {% if preview.promoWarning != '' %}
+                            <div class="alert alert-warning">{{ preview.promoWarning }}</div>
+                        {% endif %}
+                        {% if preview.quote and preview.difference != 0 %}
+                            <div class="alert alert-warning">
+                                <strong>Price updated.</strong>
+                                Saved estimate: {{ preview.savedTotal|money }} ·
+                                Current total: {{ preview.currentTotal|money }} ·
+                                Difference: {{ preview.difference > 0 ? '+' : '−' }}{{ preview.difference|abs|money }}.
+                            </div>
+                        {% endif %}
+                    {% endif %}
+
+                    <div class="form-heading">
+                        <span class="section-kicker">Trip and vehicle</span>
+                        <h2>Choose your exact schedule</h2>
+                        <p>
+                            Your account information is used for this reservation.
+                            You can update it from <a href="{{ path('app_profile') }}">My Profile</a>.
+                        </p>
+                    </div>
+
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <label class="form-label" for="vehicleChoice">Vehicle</label>
+                            <select class="form-select" id="vehicleChoice" name="vehicle" required>
+                                {% for option in vehicles %}
+                                    <option
+                                        value="{{ option.slug }}"
+                                        data-name="{{ option.name }}"
+                                        data-image="{{ vehicle_image(option.image) }}"
+                                        data-category="{{ option.category }}"
+                                        data-rating="New"
+                                        data-seats="{{ option.seats }} seats"
+                                        data-transmission="{{ option.transmission }}"
+                                        data-fuel="{{ option.fuel }}"
+                                        data-price="{{ option.price|money }}"
+                                        data-deposit="{{ option.deposit|money }}"
+                                        data-details-url="{{ path('app_vehicle_show', {slug: option.slug}) }}"
+                                        {{ vehicle and option.id == vehicle.id ? 'selected' }}>
+                                        {{ option.name }} — {{ option.price|money }}/day
+                                    </option>
+                                {% endfor %}
+                            </select>
+                            <small class="form-text">
+                                The photo, vehicle information, availability, and complete rental estimate update automatically.
+                            </small>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label" for="pickupDate">Pick-up date</label>
+                            <input class="form-control" id="pickupDate" name="pickup" type="date" min="{{ 'now'|date('Y-m-d') }}" value="{{ r.pickupDate }}" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label" for="pickupTime">Pick-up time</label>
+                            <input class="form-control" id="pickupTime" name="pickup_time" type="time" value="{{ r.pickupTime }}" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label" for="returnDate">Return date</label>
+                            <input class="form-control" id="returnDate" name="return" type="date" min="{{ r.pickupDate ?: 'now'|date('Y-m-d') }}" value="{{ r.returnDate }}" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label" for="returnTime">Return time</label>
+                            <input class="form-control" id="returnTime" name="return_time" type="time" value="{{ r.returnTime }}" required>
+                        </div>
+                    </div>
+
+                    <div id="bookingVehicleMessage" class="availability-inline {{ message_class }}" role="status">
+                        <i class="bi bi-calendar-check"></i>
+                        <span>{{ message }}</span>
+                    </div>
+
+                    <hr>
+                    <div class="form-heading form-heading--section">
+                        <span class="section-kicker">Pickup and return</span>
+                        <h2>How will you receive the car?</h2>
+                    </div>
+
+                    <div class="pickup-methods">
+                        <label>
+                            <input type="radio" name="pickup_method" value="Branch pickup" {{ r.pickupMethod == 'Branch pickup' ? 'checked' }}>
+                            <span>
+                                <i class="bi bi-building"></i>
+                                <strong>Branch pickup</strong>
+                                <small>No delivery fee</small>
+                            </span>
+                        </label>
+                        <label>
+                            <input type="radio" name="pickup_method" value="Vehicle delivery" {{ r.pickupMethod == 'Vehicle delivery' ? 'checked' }}>
+                            <span>
+                                <i class="bi bi-geo-alt"></i>
+                                <strong>Vehicle delivery</strong>
+                                <small>₱800 service fee</small>
+                            </span>
+                        </label>
+                    </div>
+
+                    <div class="row g-3 mt-1">
+                        <div class="col-md-6">
+                            <label class="form-label" for="pickupLocation">Service branch</label>
+                            <select class="form-select" id="pickupLocation" name="location" required>
+                                <option value="">Select a location</option>
+                                {% for location in locations %}
+                                    <option value="{{ location }}" {{ r.location == location ? 'selected' }}>{{ location }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label" for="deliveryAddress">
+                                Delivery address
+                                <span class="optional-label">(delivery only)</span>
+                            </label>
+                            <input class="form-control" id="deliveryAddress" name="delivery_address" value="{{ r.deliveryAddress }}" maxlength="255" placeholder="Street, barangay, city">
+                        </div>
+                    </div>
+
+                    <hr>
+                    <div class="form-heading form-heading--section">
+                        <span class="section-kicker">Optional extras</span>
+                        <h2>Customize your trip</h2>
+                    </div>
+
+                    <div class="addon-grid">
+                        {% for addon in addons %}
+                            {% set child_seat = addon.addonKey == 'child-seat' %}
+                            <label class="addon-option">
+                                <input type="checkbox" name="addons[]" value="{{ addon.addonKey }}" {{ r.hasAddon(addon.addonKey) ? 'checked' }}>
+                                <span>
+                                    <i class="bi {{ addon.icon }}"></i>
+                                    <strong>{{ addon.name }}</strong>
+                                    <small>{{ addon.price|money }}{{ child_seat ? ' per seat' }}</small>
+                                    {% if child_seat %}
+                                        <select
+                                            class="form-select form-select-sm addon-quantity-select"
+                                            id="childSeatQuantity"
+                                            name="addon_quantities[child-seat]"
+                                            aria-label="Number of child safety seats"
+                                            {{ r.hasAddon('child-seat') ? '' : 'disabled' }}>
+                                            {% for seats in 1..4 %}
+                                                <option value="{{ seats }}" {{ r.childSeats == seats ~ '' ? 'selected' }}>{{ seats }} {{ seats == 1 ? 'seat' : 'seats' }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    {% endif %}
+                                </span>
+                            </label>
+                        {% endfor %}
+                    </div>
+
+                    <div class="promo-box">
+                        <label class="form-label" for="promoCode">Promotion code</label>
+                        <input class="form-control" id="promoCode" name="promo" value="{{ r.promo }}" maxlength="40" placeholder="Enter a valid code">
+                        <small>The code is checked when you update the estimate or create the booking.</small>
+                    </div>
+
+                    <label class="form-label mt-4" for="specialRequests">Special requests</label>
+                    <textarea
+                        class="form-control"
+                        id="specialRequests"
+                        name="special_requests"
+                        rows="4"
+                        maxlength="2000"
+                        placeholder="Accessibility request, delivery note, or trip information">{{ r.specialRequests }}</textarea>
+
+                    <div class="requirements-checklist">
+                        <h3><i class="bi bi-person-vcard"></i> Prepare before pickup</h3>
+                        <ul>
+                            <li>Valid driver’s license</li>
+                            <li>Government-issued ID</li>
+                            <li>Refundable security deposit</li>
+                            <li>Signed rental agreement</li>
+                        </ul>
+                        <a href="{{ path('app_faq') }}#requirements">View complete requirements</a>
+                    </div>
+
+                    <div class="form-check mt-4">
+                        <input class="form-check-input" id="bookingTerms" name="terms" type="checkbox" value="1" required {{ r.terms ? 'checked' }}>
+                        <label class="form-check-label" for="bookingTerms">
+                            I reviewed the <a href="{{ path('app_terms') }}">rental terms</a>, pricing,
+                            and selected inclusions.
+                        </label>
+                    </div>
+
+                    <div class="booking-decision-card">
+                        <div>
+                            <span class="section-kicker">Ready to book?</span>
+                            <h3>Proceed now or save your choices for later.</h3>
+                            <p>A saved booking is only a draft. It does not reserve the vehicle or lock the current price.</p>
+                        </div>
+                        <div class="booking-form-actions">
+                            <button class="btn btn-outline btn-lg" id="bookingEstimateButton" type="submit" name="form_action" value="preview" formnovalidate>
+                                Recalculate estimate <i class="bi bi-calculator"></i>
+                            </button>
+                            <button class="btn btn-outline btn-lg" type="submit" name="form_action" value="save_draft" formnovalidate>
+                                {{ active_draft ? 'Update Saved Booking' : 'Save for Later' }} <i class="bi bi-bookmark"></i>
+                            </button>
+                            <button class="btn btn-primary btn-lg" type="submit" name="form_action" value="create_booking">
+                                Proceed with Booking <i class="bi bi-arrow-right"></i>
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+            <div class="col-lg-5">
+                {% if vehicle %}
+                    {% set price = vehicle.price %}
+                    <aside class="booking-summary-card sticky-lg-top" data-booking-vehicle-preview aria-live="polite">
+                        <span class="section-kicker">Booking estimate</span>
+                        <img id="bookingVehiclePreviewImage" src="{{ vehicle_image(vehicle.image) }}" alt="{{ vehicle.name }}">
+                        <h2>
+                            <a id="bookingVehiclePreviewLink" href="{{ path('app_vehicle_show', {slug: vehicle.slug}) }}">{{ vehicle.name }}</a>
+                        </h2>
+                        <div class="summary-category-row">
+                            <span id="bookingVehiclePreviewCategory" class="summary-category">{{ vehicle.category }}</span>
+                            <span class="summary-rating">
+                                <i class="bi bi-star-fill"></i>
+                                <b id="bookingVehiclePreviewRating">New</b>
+                            </span>
+                        </div>
+                        <div class="summary-specs">
+                            <span><i class="bi bi-people"></i><b id="bookingVehiclePreviewSeats">{{ vehicle.seats }} seats</b></span>
+                            <span><i class="bi bi-gear"></i><b id="bookingVehiclePreviewTransmission">{{ vehicle.transmission }}</b></span>
+                            <span><i class="bi bi-fuel-pump"></i><b id="bookingVehiclePreviewFuel">{{ vehicle.fuel }}</b></span>
+                        </div>
+
+                        <hr>
+                        <div class="summary-line">
+                            <span>Daily rental</span>
+                            <strong id="bookingVehiclePreviewPrice">{{ price|money }}</strong>
+                        </div>
+                        <div class="summary-line">
+                            <span>Rental days</span>
+                            <strong id="bookingVehiclePreviewDays">{{ quote ? quote.days : 1 }}</strong>
+                        </div>
+                        <div class="summary-line">
+                            <span>Rental subtotal</span>
+                            <strong id="bookingVehiclePreviewSubtotal">{{ (quote ? quote.subtotal : price)|money }}</strong>
+                        </div>
+                        <div class="summary-line">
+                            <span>Add-ons</span>
+                            <strong id="bookingVehiclePreviewAddons">{{ (quote ? quote.addonsTotal : 0)|money }}</strong>
+                        </div>
+                        <div class="summary-line">
+                            <span>Delivery</span>
+                            <strong id="bookingVehiclePreviewDelivery">{{ (quote ? quote.deliveryFee : 0)|money }}</strong>
+                        </div>
+                        <div class="summary-line summary-line--discount" id="bookingVehiclePreviewPromotionRow" {{ quote and quote.discount > 0 ? '' : 'hidden' }}>
+                            <span>Promotion</span>
+                            <strong id="bookingVehiclePreviewDiscount">−{{ (quote ? quote.discount : 0)|money }}</strong>
+                        </div>
+                        <div class="summary-line">
+                            <span>Refundable deposit</span>
+                            <strong id="bookingVehiclePreviewDeposit">{{ vehicle.deposit|money }}</strong>
+                        </div>
+                        <div class="summary-total">
+                            <span>Estimated rental total</span>
+                            <strong id="bookingVehiclePreviewTotal">{{ (quote ? quote.total : price)|money }}</strong>
+                        </div>
+                        <small class="summary-deposit-note">The security deposit is separate from the rental total.</small>
+
+                        <div class="customer-summary">
+                            <span><small>Booking for</small><strong>{{ app.user.name }}</strong></span>
+                            <span><small>Email</small><strong>{{ app.user.email }}</strong></span>
+                        </div>
+                        <a id="bookingVehiclePreviewDetailsLink" class="summary-details-link" href="{{ path('app_vehicle_show', {slug: vehicle.slug}) }}">
+                            View vehicle details <i class="bi bi-arrow-up-right"></i>
+                        </a>
+                    </aside>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block page_scripts %}
+    <script src="{{ asset('js/booking-vehicle-preview.js') }}" defer></script>
+{% endblock %}

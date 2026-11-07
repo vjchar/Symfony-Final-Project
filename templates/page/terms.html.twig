@@ -1,0 +1,111 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Terms & Conditions | VJ Car Rental{% endblock %}
+{% block description %}Review the rental terms and conditions for VJ Car Rental.{% endblock %}
+
+{% block body %}
+
+<section class="page-hero page-hero--legal pattern-layer">
+    <div class="container">
+        <span class="section-kicker">Customer information</span>
+        <h1>Terms &amp; Conditions</h1>
+        <p>Last updated: August 26, 2026</p>
+    </div>
+</section>
+<section class="content-section legal-section">
+    <div class="container">
+        <div class="row g-5">
+            <aside class="col-lg-3">
+                <nav class="legal-nav" aria-label="Terms contents">
+                    <strong>On this page</strong>
+                    <a href="#agreement">1. Agreement</a>
+                    <a href="#eligibility">2. Driver eligibility</a>
+                    <a href="#reservations">3. Reservations</a>
+                    <a href="#rates">4. Rates and payment</a>
+                    <a href="#use">5. Vehicle use</a>
+                    <a href="#return">6. Return conditions</a>
+                    <a href="#responsibility">7. Responsibility</a>
+                    <a href="#contact-terms">8. Contact</a>
+                </nav>
+            </aside>
+            <article class="col-lg-9 legal-copy">
+                <div class="legal-notice">
+                    <i class="bi bi-info-circle"></i>
+                    <p>These terms apply to reservations made through VJ Car Rental and work together with the signed vehicle rental agreement provided at handover.</p>
+                </div>
+                <section id="agreement">
+                    <span>01</span>
+                    <div>
+                        <h2>Agreement to these terms</h2>
+                        <p>By requesting or accepting a rental, the renter agrees to the final rental agreement presented by VJ Car Rental. The signed agreement, confirmed vehicle details, and applicable policies govern the rental.</p>
+                    </div>
+                </section>
+                <section id="eligibility">
+                    <span>02</span>
+                    <div>
+                        <h2>Driver eligibility</h2>
+                        <p>Drivers must meet the stated minimum age, present a valid government-issued driver's license, provide accepted identification, and satisfy any verification requirements. Additional drivers must be declared and approved.</p>
+                    </div>
+                </section>
+                <section id="reservations">
+                    <span>03</span>
+                    <div>
+                        <h2>Reservations and availability</h2>
+                        <p>A page submission or inquiry does not guarantee a reservation. A booking becomes confirmed only after VJ Car Rental issues confirmation and any required deposit has been received. Specific models are subject to availability.</p>
+                    </div>
+                </section>
+                <section id="rates">
+                    <span>04</span>
+                    <div>
+                        <h2>Rates, deposits, and payment</h2>
+                        <p>Rental rates, inclusions, deposits, mileage allowances, optional services, and applicable charges must be shown in the final booking summary. Charges may apply for extensions, excess mileage, fuel differences, cleaning, damage, traffic penalties, or late return.</p>
+                    </div>
+                </section>
+                <section id="use">
+                    <span>05</span>
+                    <div>
+                        <h2>Permitted vehicle use</h2>
+                        <p>The vehicle must be used lawfully and responsibly. It may not be used for racing, towing without permission, unauthorized commercial transport, carrying prohibited items, driving outside approved areas, or operation by an unapproved driver.</p>
+                    </div>
+                </section>
+                <section id="return">
+                    <span>06</span>
+                    <div>
+                        <h2>Pick-up and return conditions</h2>
+                        <p>The renter should inspect the vehicle at handover and report existing damage. The vehicle must be returned to the agreed location, on time, with the agreed fuel level, and in reasonably clean condition, together with all keys and supplied accessories.</p>
+                    </div>
+                </section>
+                <section id="responsibility">
+                    <span>07</span>
+                    <div>
+                        <h2>Renter responsibility</h2>
+                        <p>The renter is responsible for the vehicle during the rental period, subject to applicable law and the signed agreement. Accidents, damage, loss, theft, warning lights, and mechanical concerns must be reported promptly. The renter should follow instructions from VJ Car Rental and relevant authorities.</p>
+                    </div>
+                </section>
+                <section id="contact-terms">
+                    <span>08</span>
+                    <div>
+                        <h2>Questions about these terms</h2>
+                        <p>For clarification, contact VJ Car Rental at bernardinovjcharles@gmail.com or +63 994 894 5174 before confirming a rental.</p>
+                    </div>
+                </section>
+            </article>
+        </div>
+    </div>
+</section>
+<section class="content-section pt-0">
+    <div class="container">
+        <article class="operation-card">
+            <span class="section-kicker">Cancellation policy</span>
+            <h2>Cancellation and recorded refunds</h2>
+            <p>Under the current cancellation policy, verified payments are fully refundable when an eligible cancellation is approved more than {{ refund_cutoff_hours }} hours before the scheduled pickup. Requests submitted inside that window can still be reviewed by an administrator, but no automatic refund is due under the standard policy. Every refund remains linked to its original verified payment and is shown in the booking invoice/history.</p>
+            <div class="refund-policy-grid">
+                <p><strong>Cancellation Refund:</strong> applies when an eligible booking is cancelled before the rental.</p>
+                <p><strong>Payment Refund:</strong> corrects or reverses an eligible verified payment without automatically cancelling the booking.</p>
+                <p><strong>Security Deposit Refund:</strong> returns the unused deposit balance after return inspection and final settlement.</p>
+                <p><strong>Modification Refund:</strong> returns an actual overpayment when an approved pre-pickup modification lowers the amount owed.</p>
+            </div>
+        </article>
+    </div>
+</section>
+{% endblock %}

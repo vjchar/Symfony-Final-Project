@@ -1,0 +1,40 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Favorite Vehicles | VJ Car Rental{% endblock %}
+{% block description %}View vehicles saved securely to your VJ Car Rental account.{% endblock %}
+
+{% block body %}
+<section class="page-hero page-hero--compact pattern-layer">
+    <div class="container">
+        <span class="section-kicker">Saved to your account</span>
+        <h1>Your favorite vehicles</h1>
+        <p>Your saved vehicles stay with your signed-in account, making it easy to return to your shortlist from any device.</p>
+    </div>
+</section>
+<section class="content-section favorites-page">
+    <div class="container">
+        <div class="fleet-toolbar">
+            <div>
+                <span class="section-kicker">Shortlist</span>
+                <h2><span>{{ vehicles|length }}</span> saved car{{ vehicles|length == 1 ? '' : 's' }}</h2>
+            </div>
+            <a class="btn btn-outline" href="{{ path('app_vehicle_index') }}">Browse All Vehicles</a>
+        </div>
+        <div class="row g-4">
+            {% for vehicle in vehicles %}
+                <div class="col-xl-3 col-lg-4 col-md-6">
+                    {{ include('components/_vehicle_card.html.twig') }}
+                </div>
+            {% endfor %}
+        </div>
+        {% if vehicles is empty %}
+            <div class="empty-state">
+                <i class="bi bi-heart"></i>
+                <h3>No favorites saved yet</h3>
+                <p>Select the heart icon on a vehicle to build your account shortlist.</p>
+                <a class="btn btn-primary" href="{{ path('app_vehicle_index') }}">Explore Vehicles</a>
+            </div>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}

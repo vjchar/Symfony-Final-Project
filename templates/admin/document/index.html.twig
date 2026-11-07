@@ -1,0 +1,74 @@
+{% extends 'admin/base.html.twig' %}
+
+{% block title %}Document Verification | VJ Car Rental{% endblock %}
+
+{% block admin_body %}
+<section class="admin-page-heading">
+    <div class="container">
+        <div>
+            <span class="section-kicker">Identity controls</span>
+            <h1>Document verification</h1>
+            <p>Review private customer files before confirming a rental. Every decision records the responsible administrator.</p>
+        </div>
+    </div>
+</section>
+<section class="content-section admin-section">
+    <div class="container">
+        <div class="admin-filter-tabs">
+            {% for status in filters %}
+                <a class="{{ filter == status ? 'active' }}" href="{{ path('app_admin_documents', {status: status}) }}">{{ status|humanize_label }}</a>
+            {% endfor %}
+        </div>
+
+        <div class="admin-table-wrap">
+            <table class="admin-table">
+                <thead>
+                    <tr>
+                        <th>Customer</th>
+                        <th>Document</th>
+                        <th>Expiry</th>
+                        <th>Submitted</th>
+                        <th>Status</th>
+                        <th>Review</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for document in documents %}
+                        <tr>
+                            <td>
+                                <strong>{{ document.user.name }}</strong>
+                                <small>{{ document.user.email }}</small>
+                            </td>
+                            <td>
+                                {{ document.documentType|humanize_label }}
+                                <small>{{ document.maskedNumber }} · <a href="{{ path('app_file_document', {id: document.id}) }}" target="_blank" rel="noopener">Open secure file</a></small>
+                            </td>
+                            <td>{{ document.expiryDate ? document.expiryDate|date('M j, Y') : '—' }}</td>
+                            <td>{{ document.updatedAt|date('M j, Y g:i A') }}</td>
+                            <td>
+                                <span class="status-badge status-badge--{{ document.effectiveStatus|status_class }}">{{ document.effectiveStatus|humanize_label }}</span>
+                                {% if document.verifiedBy %}<small>by {{ document.verifiedBy.name }}</small>{% endif %}
+                                {% if document.adminNotes %}<small>{{ document.adminNotes }}</small>{% endif %}
+                            </td>
+                            <td>
+                                <form class="admin-inline-form" method="post" action="{{ path('app_admin_document_review', {id: document.id, status: filter}) }}">
+                                    <input type="hidden" name="_token" value="{{ csrf_token('review-document-' ~ document.id) }}">
+                                    <select class="form-select form-select-sm" name="status" required aria-label="Decision for {{ document.user.name }}’s {{ document.label }}">
+                                        <option value="">Decision</option>
+                                        <option value="approved">Approve</option>
+                                        <option value="rejected">Reject</option>
+                                    </select>
+                                    <input class="form-control form-control-sm" name="admin_notes" maxlength="2000" placeholder="Reviewer note" aria-label="Reviewer note">
+                                    <button class="btn btn-primary btn-sm" type="submit">Save</button>
+                                </form>
+                            </td>
+                        </tr>
+                    {% else %}
+                        <tr><td colspan="6">No documents match this filter.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>
+{% endblock %}

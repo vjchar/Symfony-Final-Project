@@ -1,0 +1,147 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Services | VJ Car Rental{% endblock %}
+{% block description %}Explore self-drive rentals, corporate mobility, airport transfers, and support services from VJ Car Rental.{% endblock %}
+
+{% block body %}
+
+<section class="page-hero pattern-layer">
+    <div class="container">
+        <span class="section-kicker">Built around your journey</span>
+        <h1>Rental services that move with you</h1>
+        <p>Flexible vehicle options, dependable assistance, and straightforward service for daily drives, family trips, and business mobility.</p>
+    </div>
+</section>
+<section class="content-section services-section">
+    <div class="container">
+        <div class="section-heading text-center section-heading--center">
+            <span class="section-kicker">What we offer</span>
+            <h2>One trusted team for every road ahead</h2>
+            <p>Choose the service that fits your plans. Every option carries the same VJ promise: reliable vehicles, transparent pricing, and responsive support.</p>
+        </div>
+        <div class="row g-4 service-card-grid">
+            <div class="col-lg-4 col-md-6">
+                <article class="service-card">
+                    <i class="bi bi-key"></i>
+                    <h3>Self-Drive Rentals</h3>
+                    <p>Daily and weekly rentals for travelers who want control, privacy, and freedom on the road.</p>
+                    <a href="{{ page_url('vehicles') }}">Choose a vehicle <i class="bi bi-arrow-right"></i>
+                    </a>
+                </article>
+            </div>
+            <div class="col-lg-4 col-md-6">
+                <article class="service-card">
+                    <i class="bi bi-buildings"></i>
+                    <h3>Corporate Mobility</h3>
+                    <p>Professional, flexible vehicle arrangements for meetings, project teams, and company travel.</p>
+                    <a href="{{ page_url('contact') }}">Request a plan <i class="bi bi-arrow-right"></i>
+                    </a>
+                </article>
+            </div>
+            <div class="col-lg-4 col-md-6">
+                <article class="service-card">
+                    <i class="bi bi-airplane"></i>
+                    <h3>Airport Transfers</h3>
+                    <p>Comfortable pick-up and drop-off options designed around your flight and luggage needs.</p>
+                    <a href="{{ page_url('contact') }}">Plan a transfer <i class="bi bi-arrow-right"></i>
+                    </a>
+                </article>
+            </div>
+            <div class="col-lg-4 col-md-6">
+                <article class="service-card">
+                    <i class="bi bi-calendar2-week"></i>
+                    <h3>Long-Term Rentals</h3>
+                    <p>Convenient monthly mobility without the commitment and maintenance of vehicle ownership.</p>
+                    <a href="{{ page_url('contact') }}">Ask about rates <i class="bi bi-arrow-right"></i>
+                    </a>
+                </article>
+            </div>
+            <div class="col-lg-4 col-md-6">
+                <article class="service-card">
+                    <i class="bi bi-pin-map"></i>
+                    <h3>Vehicle Delivery</h3>
+                    <p>Optional delivery and collection at approved locations for an easier rental experience.</p>
+                    <a href="{{ page_url('contact') }}">Check availability <i class="bi bi-arrow-right"></i>
+                    </a>
+                </article>
+            </div>
+            <div class="col-lg-4 col-md-6">
+                <article class="service-card">
+                    <i class="bi bi-headset"></i>
+                    <h3>Roadside Support</h3>
+                    <p>Helpful assistance throughout your rental, with a support line available day and night.</p>
+                    <a href="{{ page_url('contact') }}">Contact support <i class="bi bi-arrow-right"></i>
+                    </a>
+                </article>
+            </div>
+        </div>
+    </div>
+</section>
+<section class="content-section pattern-layer">
+    <div class="container">
+        <div class="section-heading heading-with-action">
+            <div>
+                <span class="section-kicker">Optional rental extras</span>
+                <h2>Customize the car around your trip</h2>
+                <p>Add these items while building your reservation. Pricing updates automatically when you add or remove extras.</p>
+            </div>
+            <a class="btn btn-outline" href="{{ page_url('faq') }}">View Service FAQs</a>
+        </div>
+        <div class="row g-3 service-card-grid">
+            {% for addon in addons %}
+                <div class="col-lg col-md-6">
+                    <article class="service-card h-100">
+                        <i class="bi {{ addon.icon }}">
+                        </i>
+                        <h3>{{ addon.name }}</h3>
+                        <p>
+                            {{ addon.price|money }}{{ addon.addonKey == 'child-seat'
+                                ? ' per seat, charged once per booking.'
+                                : ', charged once per booking.' }}
+                        </p>
+                        <a href="{{ page_url('booking') }}">Add to a booking <i class="bi bi-arrow-right"></i>
+                        </a>
+                    </article>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+<section class="content-section process-band pattern-layer">
+    <div class="container">
+        <div class="row align-items-center g-5">
+            <div class="col-lg-5">
+                <span class="section-kicker">Service standard</span>
+                <h2>Clean cars. Clear terms. Confident travel.</h2>
+                <p>Our process keeps the important things simple, so your time is spent enjoying the journey.</p>
+                <a class="btn btn-primary" href="{{ page_url('booking') }}">Start a Booking</a>
+            </div>
+            <div class="col-lg-7">
+                <div class="process-list">
+                    <article>
+                        <span>01</span>
+                        <div>
+                            <h3>Vehicle prepared</h3>
+                            <p>Inspection, cleaning, and essential checks are completed before handover.</p>
+                        </div>
+                    </article>
+                    <article>
+                        <span>02</span>
+                        <div>
+                            <h3>Rental explained</h3>
+                            <p>Rates, inclusions, and return conditions are presented in straightforward language.</p>
+                        </div>
+                    </article>
+                    <article>
+                        <span>03</span>
+                        <div>
+                            <h3>Support stays close</h3>
+                            <p>Our team remains available throughout your rental whenever you need assistance.</p>
+                        </div>
+                    </article>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

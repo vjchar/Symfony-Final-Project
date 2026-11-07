@@ -1,0 +1,82 @@
+{% extends 'admin/base.html.twig' %}
+
+{% block title %}Manage Users | VJ Car Rental{% endblock %}
+
+{% block admin_body %}
+<section class="admin-page-heading">
+    <div class="container">
+        <div>
+            <span class="section-kicker">Account administration</span>
+            <h1>Customers and staff</h1>
+            <p>Review registered accounts, booking history totals, roles, and access status.</p>
+        </div>
+    </div>
+</section>
+<section class="content-section admin-section">
+    <div class="container">
+        <form class="admin-search" method="get" action="{{ path('app_admin_users') }}">
+            <label class="visually-hidden" for="userSearch">Search users</label>
+            <input class="form-control" id="userSearch" name="q" value="{{ query }}" placeholder="Search by name or email">
+            <button class="btn btn-primary" type="submit">
+                <i class="bi bi-search"></i> Search</button>
+            {% if query != '' %}
+                <a class="btn btn-outline" href="{{ path('app_admin_users') }}">Clear</a>
+            {% endif %}
+        </form>
+        <div class="admin-table-wrap">
+            <table class="admin-table">
+                <thead>
+                    <tr>
+                        <th>User</th>
+                        <th>Phone</th>
+                        <th>Joined</th>
+                        <th>Access</th>
+                        <th>Update</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for user in users %}
+                        <tr>
+                            <td>
+                                <strong>{{ user.name }}</strong>
+                                <small>{{ user.email }}{{ user is same as(app.user) ? ' • You' }}</small>
+                            </td>
+                            <td>{{ user.phone ?: 'Not provided' }}</td>
+                            <td>{{ user.createdAt|date('M j, Y') }}</td>
+                            <td>
+                                <span class="status-badge status-badge--{{ user.status|status_class }}">{{ user.status|humanize_label }}</span>
+                                <small>{{ user.role|humanize_label }}</small>
+                            </td>
+                            <td>
+                                <form method="post" class="admin-inline-form" action="{{ path('app_admin_users_update') }}">
+                                    <input type="hidden" name="_token" value="{{ csrf_token('user-access-' ~ user.id) }}">
+                                    <input type="hidden" name="user_id" value="{{ user.id }}">
+                                    <select class="form-select form-select-sm" name="role" aria-label="Role for {{ user.name }}">
+                                        <option value="customer" {{ user.role == 'customer' ? 'selected' }}>Customer</option>
+                                        <option value="admin" {{ user.role == 'admin' ? 'selected' }}>Admin</option>
+                                    </select>
+                                    <select class="form-select form-select-sm" name="status" aria-label="Status for {{ user.name }}">
+                                        <option value="active" {{ user.status == 'active' ? 'selected' }}>Active</option>
+                                        <option value="inactive" {{ user.status == 'inactive' ? 'selected' }}>Inactive</option>
+                                    </select>
+                                    <button class="btn btn-outline btn-sm" type="submit">Save</button>
+                                </form>
+                            </td>
+                        </tr>
+                    {% else %}
+                        <tr>
+                            <td colspan="5">
+                                <div class="empty-state empty-state--compact">
+                                    <i class="bi bi-people"></i>
+                                    <h3>No accounts found</h3>
+                                    <p>Try a different search term.</p>
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>
+{% endblock %}

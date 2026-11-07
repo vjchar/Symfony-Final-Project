@@ -1,0 +1,85 @@
+{% extends 'admin/base.html.twig' %}
+
+{% block title %}Payment Verification | VJ Car Rental{% endblock %}
+
+{% block admin_body %}
+<section class="admin-page-heading">
+    <div class="container">
+        <div>
+            <span class="section-kicker">Financial controls</span>
+            <h1>Payment verification</h1>
+            <p>Verify customer payments against the transaction reference and proof. A verified deposit confirms the booking once both documents are approved.</p>
+        </div>
+        <a class="btn btn-primary" href="{{ path('app_admin_reports') }}">Open Reports</a>
+    </div>
+</section>
+<section class="content-section admin-section">
+    <div class="container">
+        <div class="admin-filter-tabs">
+            {% for status in filters %}
+                <a class="{{ filter == status ? 'active' }}" href="{{ path('app_admin_payments', {status: status}) }}">{{ status|humanize_label }}</a>
+            {% endfor %}
+        </div>
+
+        <div class="admin-table-wrap">
+            <table class="admin-table">
+                <thead>
+                    <tr>
+                        <th>Booking</th>
+                        <th>Customer</th>
+                        <th>Payment</th>
+                        <th>Reference / proof</th>
+                        <th>Status</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for payment in payments %}
+                        {% set booking = payment.booking %}
+                        <tr>
+                            <td>
+                                <strong>{{ booking.reference }}</strong>
+                                <small>{{ booking.vehicle.name }}</small>
+                            </td>
+                            <td>
+                                {{ payment.user.name }}
+                                <small>{{ payment.user.email }}</small>
+                            </td>
+                            <td>
+                                <strong>{{ payment.amount|money }}</strong>
+                                <small>{{ payment.paymentType|humanize_label }} · {{ payment.methodLabel }}</small>
+                            </td>
+                            <td>
+                                {{ payment.transactionReference ?: 'No reference' }}
+                                {% if payment.proofFilename %}
+                                    <small><a href="{{ path('app_file_payment', {id: payment.id}) }}" target="_blank" rel="noopener">Open payment proof</a></small>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="status-badge status-badge--{{ payment.status|status_class }}">{{ payment.status|humanize_label }}</span>
+                                {% if payment.paidAt %}<small>{{ payment.paidAt|date('M j, Y g:i A') }}</small>{% endif %}
+                                {% if payment.recordedBy %}<small>by {{ payment.recordedBy.name }}</small>{% endif %}
+                                {% if payment.notes %}<small>{{ payment.notes }}</small>{% endif %}
+                            </td>
+                            <td>
+                                <form class="admin-inline-form" method="post" action="{{ path('app_admin_payment_review', {id: payment.id, status: filter}) }}">
+                                    <input type="hidden" name="_token" value="{{ csrf_token('review-payment-' ~ payment.id) }}">
+                                    <select class="form-select form-select-sm" name="status" required aria-label="Payment status for {{ booking.reference }}">
+                                        <option value="">Status</option>
+                                        <option value="paid">Paid</option>
+                                        <option value="failed">Failed</option>
+                                    </select>
+                                    <input class="form-control form-control-sm" name="notes" maxlength="2000" placeholder="Internal note" aria-label="Internal note">
+                                    <button class="btn btn-primary btn-sm" type="submit">Save</button>
+                                </form>
+                            </td>
+                        </tr>
+                    {% else %}
+                        <tr><td colspan="6">No payments match this filter.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>
+{% endblock %}

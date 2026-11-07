@@ -1,0 +1,109 @@
+{#
+    Reusable vehicle catalog card, ported from v15 vehicle_card() in includes/components.php.
+    Variables: vehicle, compact (bool, default false), show_compare (bool, default false).
+#}
+{% set compact = compact ?? false %}
+{% set detail_url = path('app_vehicle_show', {slug: vehicle.slug}) %}
+{% set rating = compact ? null : vehicle_rating(vehicle) %}
+<article class="vehicle-card{{ compact ? ' vehicle-card--compact' }}">
+    {% if app.user and not app.user.admin %}
+        {% set favorite = is_favorite(vehicle) %}
+        <form class="favorite-form" method="post" action="{{ path('app_favorite_toggle', {slug: vehicle.slug}) }}">
+            <input type="hidden" name="_token" value="{{ csrf_token('favorite') }}">
+            <input type="hidden" name="return_to" value="{{ app.request.requestUri }}">
+            <button
+                class="favorite-button{{ favorite ? ' is-active' }}"
+                type="submit"
+                aria-label="{{ favorite ? 'Remove ' ~ vehicle.name ~ ' from favorites' : 'Save ' ~ vehicle.name ~ ' to favorites' }}"
+            >
+                <i class="bi {{ favorite ? 'bi-heart-fill' : 'bi-heart' }}" aria-hidden="true"></i>
+            </button>
+        </form>
+    {% elseif not app.user %}
+        <a
+            class="favorite-button"
+            href="{{ path('app_login', {return_to: app.request.requestUri}) }}"
+            aria-label="Sign in to save {{ vehicle.name }} to favorites"
+        >
+            <i class="bi bi-heart" aria-hidden="true"></i>
+        </a>
+    {% endif %}
+
+    <a
+        class="vehicle-image-wrap"
+        href="{{ detail_url }}"
+    >
+        <img
+            src="{{ vehicle_image(vehicle.image) }}"
+            alt="{{ vehicle.name }}"
+            loading="lazy"
+            decoding="async"
+        >
+    </a>
+
+    <div class="vehicle-card-body">
+        <div class="d-flex align-items-center justify-content-between gap-2">
+            <span class="vehicle-category">{{ vehicle.category }}</span>
+            <span class="fleet-state fleet-state--{{ vehicle.availabilityStatus|status_class }}">
+                {{ vehicle.availabilityStatus|humanize_label }}
+            </span>
+        </div>
+
+        <h3>
+            <a href="{{ detail_url }}">
+                {{ vehicle.name }}
+            </a>
+        </h3>
+
+        {% if not compact %}
+            {% if rating %}
+                <div class="vehicle-rating" aria-label="Rating {{ rating.rating|number_format(1) }} out of 5">
+                    <i class="bi bi-star-fill" aria-hidden="true"></i>
+                    <strong>{{ rating.rating|number_format(1) }}</strong>
+                    <span>({{ rating.count }})</span>
+                </div>
+            {% else %}
+                <div class="vehicle-rating vehicle-rating--new">
+                    <i class="bi bi-stars" aria-hidden="true"></i>
+                    <strong>New to the fleet</strong>
+                </div>
+            {% endif %}
+
+            <div class="vehicle-specs" aria-label="Vehicle specifications">
+                <span>
+                    <i class="bi bi-people" aria-hidden="true"></i>
+                    {{ vehicle.seats }} seats
+                </span>
+                <span>
+                    <i class="bi bi-gear" aria-hidden="true"></i>
+                    {{ vehicle.transmission }}
+                </span>
+            </div>
+
+            {% if show_compare ?? false %}
+                <a
+                    class="compare-toggle"
+                    href="{{ path('app_compare', {compare: [vehicle.slug]}) }}"
+                >
+                    <i class="bi bi-columns-gap" aria-hidden="true"></i>
+                    <span>Compare this vehicle</span>
+                </a>
+            {% endif %}
+        {% endif %}
+
+        <div class="vehicle-price-row">
+            <strong>
+                {{ vehicle.price|money }}<small>/ day</small>
+            </strong>
+
+            {% if not compact %}
+                <a
+                    href="{{ page_url('booking', {vehicle: vehicle.slug}) }}"
+                    aria-label="Book {{ vehicle.name }}"
+                >
+                    <i class="bi bi-arrow-right" aria-hidden="true"></i>
+                </a>
+            {% endif %}
+        </div>
+    </div>
+</article>

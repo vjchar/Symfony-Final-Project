@@ -1,0 +1,35 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Create Administrator | VJ Car Rental{% endblock %}
+{% block description %}Create the administrator account for VJ Car Rental.{% endblock %}
+
+{% block body %}
+<section class="auth-section pattern-layer">
+    <div class="container">
+        <div class="auth-shell auth-shell--wide">
+            <div class="auth-intro">
+                <span class="section-kicker">Administrator setup</span>
+                <h1>Create Administrator Account</h1>
+                <p>Create the administrator account used to manage VJ Car Rental.</p>
+            </div>
+            {{ form_start(form, {attr: {class: 'form auth-form', novalidate: 'novalidate'}}) }}
+                <h2>Account details</h2>
+                {{ include('registration/_errors.html.twig') }}
+                {{ form_label(form.name, null, {label_attr: {class: 'form-label'}}) }}
+                {{ form_widget(form.name) }}
+                {{ form_label(form.email, null, {label_attr: {class: 'form-label mt-3'}}) }}
+                {{ form_widget(form.email) }}
+                {{ form_label(form.phone, null, {label_attr: {class: 'form-label mt-3'}}) }}
+                {{ form_widget(form.phone) }}
+                {{ form_label(form.plainPassword.password, null, {label_attr: {class: 'form-label mt-3'}}) }}
+                {{ form_widget(form.plainPassword.password) }}
+                <small class="form-help">At least 8 characters with uppercase, lowercase, and a number.</small>
+                {{ form_label(form.plainPassword.password_confirmation, null, {label_attr: {class: 'form-label mt-3'}}) }}
+                {{ form_widget(form.plainPassword.password_confirmation) }}
+                {{ form_rest(form) }}
+                <button class="btn btn-primary w-100 mt-4" type="submit">Create Administrator</button>
+            {{ form_end(form) }}
+        </div>
+    </div>
+</section>
+{% endblock %}

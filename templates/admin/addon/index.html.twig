@@ -1,0 +1,85 @@
+{% extends 'admin/base.html.twig' %}
+
+{% block title %}Rental Add-ons | VJ Car Rental{% endblock %}
+
+{% block admin_body %}
+<section class="admin-page-heading">
+    <div class="container">
+        <div>
+            <span class="section-kicker">Rental extras</span>
+            <h1>Manage add-ons</h1>
+            <p>Control optional items, their billing method, pricing, and customer availability.</p>
+        </div>
+        <a class="btn btn-primary" href="{{ path('app_admin_addons') }}">
+            <i class="bi bi-plus-lg"></i> New Add-on</a>
+    </div>
+</section>
+<section class="content-section admin-section">
+    <div class="container">
+        {% for error in form.vars.errors.form.getErrors(true) %}
+            <div class="alert alert-danger">{{ error.message }}</div>
+        {% endfor %}
+        <div class="admin-split">
+            <div class="admin-table-wrap">
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>Add-on</th>
+                            <th>Price</th>
+                            <th>Billing</th>
+                            <th>Status</th>
+                            <th>
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for addon in addons %}
+                            <tr>
+                                <td>
+                                    <strong>
+                                        <i class="bi {{ addon.icon }}">
+                                        </i> {{ addon.name }}</strong>
+                                    <small>{{ addon.addonKey }}</small>
+                                </td>
+                                <td>{{ addon.price|money }}</td>
+                                <td>One-time</td>
+                                <td>
+                                    <span class="status-badge status-badge--{{ addon.active ? 'success' : 'danger' }}">{{ addon.active ? 'Active' : 'Inactive' }}</span>
+                                </td>
+                                <td>
+                                    <a class="btn btn-outline btn-sm" href="{{ path('app_admin_addons', {edit: addon.id}) }}">Edit</a>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {{ form_start(form, {attr: {class: 'form admin-editor', novalidate: 'novalidate'}}) }}
+                <span class="section-kicker">{{ editing ? 'Edit add-on' : 'New add-on' }}</span>
+                <h2>{{ editing ? editing.name : 'Create an extra' }}</h2>
+                {{ form_label(form.addonKey, null, {label_attr: {class: 'form-label'}}) }}
+                {{ form_widget(form.addonKey) }}
+                {{ form_label(form.name, null, {label_attr: {class: 'form-label mt-3'}}) }}
+                {{ form_widget(form.name) }}
+                <div class="row g-3 mt-0">
+                    <div class="col-6">
+                        {{ form_label(form.price, null, {label_attr: {class: 'form-label'}}) }}
+                        {{ form_widget(form.price) }}
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label" for="addonBilling">Billing</label>
+                        <input class="form-control" id="addonBilling" value="One-time per booking" readonly>
+                    </div>
+                </div>
+                {{ form_label(form.icon, null, {label_attr: {class: 'form-label mt-3'}}) }}
+                {{ form_widget(form.icon) }}
+                <div class="mt-3">
+                    {{ form_widget(form.isActive, {label_attr: {class: 'checkbox-switch'}}) }}
+                </div>
+                {{ form_rest(form) }}
+                <button class="btn btn-primary w-100 mt-4" type="submit">Save Add-on</button>
+            {{ form_end(form) }}
+        </div>
+    </div>
+</section>
+{% endblock %}

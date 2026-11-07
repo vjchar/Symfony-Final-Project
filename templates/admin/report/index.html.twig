@@ -1,0 +1,119 @@
+{% extends 'admin/base.html.twig' %}
+
+{% block title %}Reports | VJ Car Rental{% endblock %}
+
+{% block admin_body %}
+{% set range = {from: from|date('Y-m-d'), to: to|date('Y-m-d')} %}
+<section class="admin-page-heading">
+    <div class="container">
+        <div>
+            <span class="section-kicker">Business reporting</span>
+            <h1>Rental reports</h1>
+            <p>Filter operational results, print a clean summary, or export detailed rows to CSV.</p>
+        </div>
+        <div class="admin-page-actions">
+            <a class="btn btn-outline-light" href="{{ path('app_admin_reports', range|merge({export: 'csv'})) }}">
+                <i class="bi bi-download" aria-hidden="true"></i>
+                Export CSV
+            </a>
+            <p class="print-instruction print-instruction--light">
+                <i class="bi bi-printer" aria-hidden="true"></i>
+                Use <strong>Ctrl + P</strong> to print or save this report as a PDF.
+            </p>
+        </div>
+    </div>
+</section>
+
+<section class="content-section admin-section">
+    <div class="container">
+        <form class="booking-selector" method="get" action="{{ path('app_admin_reports') }}">
+            <label for="reportFrom">Report period</label>
+            <input class="form-control" id="reportFrom" name="from" type="date" value="{{ range.from }}" required>
+            <span aria-hidden="true">to</span>
+            <label class="visually-hidden" for="reportTo">Report end date</label>
+            <input class="form-control" id="reportTo" name="to" type="date" value="{{ range.to }}" required>
+            <button class="btn btn-primary" type="submit">Apply</button>
+        </form>
+
+        <div class="admin-stats admin-stats--four">
+            <article><i class="bi bi-calendar-check" aria-hidden="true"></i><span><strong>{{ rows|length }}</strong><small>Bookings</small></span></article>
+            <article><i class="bi bi-receipt" aria-hidden="true"></i><span><strong>{{ booking_value|money }}</strong><small>Booking value</small></span></article>
+            <article><i class="bi bi-cash-stack" aria-hidden="true"></i><span><strong>{{ verified_revenue|money }}</strong><small>Verified payments</small></span></article>
+            <article><i class="bi bi-check2-circle" aria-hidden="true"></i><span><strong>{{ status_counts.completed ?? 0 }}</strong><small>Completed rentals</small></span></article>
+        </div>
+
+        <div class="rental-adjustment-report-summary">
+            <article><span>Pending rental adjustments</span><strong>{{ pending_adjustments }}</strong></article>
+            <article><span>Activated extension value</span><strong>{{ activated_extension_value|money }}</strong></article>
+            <article><span>Pending booking modifications</span><strong>{{ pending_modifications }}</strong></article>
+            <article><span>Cancellation requests</span><strong>{{ cancellation_count }}</strong></article>
+        </div>
+        <div class="rental-adjustment-report-summary mt-3">
+            <article><span>Rental revenue</span><strong>{{ rental_revenue|money }}</strong></article>
+            <article><span>Security deposits collected</span><strong>{{ deposits_collected|money }}</strong></article>
+        </div>
+
+        <div class="dashboard-grid">
+            <article class="dashboard-panel">
+                <span class="section-kicker">Status mix</span>
+                <h2>Booking pipeline</h2>
+                <div class="report-bars">
+                    {% for status in booking_statuses %}
+                        {% set count = status_counts[status] ?? 0 %}
+                        {% if count > 0 %}
+                            <div class="report-bar">
+                                <span>{{ status|humanize_label }}</span>
+                                <i style="width: {{ max(4, (count / max(1, rows|length) * 100)|round) }}%"></i>
+                                <strong>{{ count }}</strong>
+                            </div>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+            </article>
+
+            <article class="dashboard-panel">
+                <span class="section-kicker">Fleet performance</span>
+                <h2>Most booked vehicles</h2>
+                <div class="report-bars">
+                    {% for vehicle in top_vehicles %}
+                        <div class="report-bar">
+                            <span>{{ vehicle.name }}</span>
+                            <i style="width: {{ max(4, (vehicle.rentals / max_rentals * 100)|round) }}%"></i>
+                            <strong>{{ vehicle.rentals }}</strong>
+                        </div>
+                    {% endfor %}
+                </div>
+            </article>
+        </div>
+
+        <div class="admin-table-wrap mt-4" aria-label="Rental report details">
+            <table class="admin-table">
+                <thead>
+                    <tr><th>Reference</th><th>Customer</th><th>Vehicle</th><th>Schedule</th><th>Status</th><th>Total</th><th>Paid</th></tr>
+                </thead>
+                <tbody>
+                    {% for row in rows %}
+                        {% set booking = row.booking %}
+                        <tr>
+                            <td>{{ booking.reference }}</td>
+                            <td>{{ booking.user.name }}</td>
+                            <td>{{ booking.vehicle.name }}</td>
+                            <td>
+                                {{ booking.pickupAt|date('M j, Y') }}
+                                <small> to {{ booking.returnAt|date('M j, Y') }}
+                                    {% if booking.originalReturnAt and booking.originalReturnAt != booking.returnAt %} · originally {{ booking.originalReturnAt|date('M j, Y') }}{% endif %}
+                                </small>
+                            </td>
+                            <td><span class="status-badge status-badge--{{ booking.status|status_class }}">{{ booking.status|humanize_label }}</span></td>
+                            <td>{{ booking.total|money }}</td>
+                            <td>{{ row.paid|money }}</td>
+                        </tr>
+                    {% else %}
+                        <tr><td colspan="7">No booking records in this period.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>
+{% endblock %}

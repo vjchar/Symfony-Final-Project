@@ -1,0 +1,67 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Create Account | VJ Car Rental{% endblock %}
+{% block description %}Create a secure VJ Car Rental customer account.{% endblock %}
+
+{% block body %}
+<section class="auth-section pattern-layer">
+    <div class="container">
+        <div class="auth-shell auth-shell--wide">
+            <div class="auth-intro">
+                <span class="section-kicker">Join VJ Car Rental</span>
+                <h1>Your trips in one place</h1>
+                <p>An account gives you protected access to booking history, rescheduling, cancellation, favorites, and completed-trip reviews.</p>
+                <ul>
+                    <li>Transparent booking totals</li>
+                    <li>Date-based vehicle availability</li>
+                    <li>Private account and reservation records</li>
+                </ul>
+            </div>
+            {{ form_start(form, {attr: {class: 'form auth-form', novalidate: 'novalidate'}}) }}
+                <input
+                    type="hidden"
+                    name="return_to"
+                    value="{{ return_to }}">
+                <h2>Create account</h2>
+                {{ include('registration/_errors.html.twig') }}
+                {{ form_label(form.name, null, {label_attr: {class: 'form-label'}}) }}
+                {{ form_widget(form.name) }}
+                <div class="row g-3 mt-0">
+                    <div class="col-md-6">
+                        {{ form_label(form.email, null, {label_attr: {class: 'form-label'}}) }}
+                        {{ form_widget(form.email) }}
+                    </div>
+                    <div class="col-md-6">
+                        {{ form_label(form.phone, null, {label_attr: {class: 'form-label'}}) }}
+                        {{ form_widget(form.phone) }}
+                    </div>
+                </div>
+                <div class="row g-3 mt-0">
+                    <div class="col-md-6">
+                        {{ form_label(form.plainPassword.password, null, {label_attr: {class: 'form-label'}}) }}
+                        {{ form_widget(form.plainPassword.password) }}
+                    </div>
+                    <div class="col-md-6">
+                        {{ form_label(form.plainPassword.password_confirmation, null, {label_attr: {class: 'form-label'}}) }}
+                        {{ form_widget(form.plainPassword.password_confirmation) }}
+                    </div>
+                </div>
+                <small class="form-help">Use 8+ characters with uppercase, lowercase, and a number.</small>
+                <div class="form-check mt-4">
+                    {# rendered by hand: the label holds links, which the form theme would escape #}
+                    <input class="form-check-input" id="{{ form.terms.vars.id }}" name="{{ form.terms.vars.full_name }}" type="checkbox" value="1" {{ form.terms.vars.checked ? 'checked' }}>
+                    {% do form.terms.setRendered %}
+                    <label class="form-check-label" for="{{ form.terms.vars.id }}">
+                        I accept the <a href="{{ page_url('terms') }}">terms</a> and
+                        <a href="{{ page_url('privacy') }}">privacy policy</a>.
+                    </label>
+                </div>
+                {{ form_rest(form) }}
+                <button class="btn btn-primary w-100 mt-4" type="submit">Create Account</button>
+                <p class="auth-switch">Already registered? <a href="{{ path('app_login', {return_to: return_to}) }}">Sign in</a>
+                </p>
+            {{ form_end(form) }}
+        </div>
+    </div>
+</section>
+{% endblock %}

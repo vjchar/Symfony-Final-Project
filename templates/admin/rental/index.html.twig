@@ -1,0 +1,65 @@
+{% extends 'admin/base.html.twig' %}
+
+{% block title %}Rental Desk | VJ Car Rental{% endblock %}
+
+{% block admin_body %}
+<section class="admin-page-heading">
+    <div class="container">
+        <div>
+            <span class="section-kicker">Checkout and check-in</span>
+            <h1>Rental Desk</h1>
+            <p>
+                Release prepared vehicles, capture odometer and fuel readings,
+                inspect returns, and close fully paid rentals.
+            </p>
+        </div>
+    </div>
+</section>
+<section class="content-section admin-section">
+    <div class="container">
+        <article class="admin-editor mb-4" id="adjustment-queue">
+            <div class="admin-editor__heading">
+                <div>
+                    <span class="section-kicker">Flexible rental requests</span>
+                    <h2>Rental adjustments</h2>
+                    <p>Review early-return requests and extension requests. Availability is checked again when an extension is approved.</p>
+                </div>
+                <span class="status-badge status-badge--info">{{ adjustments|length }} open</span>
+            </div>
+            <div class="admin-table-wrap">
+                <table class="admin-table">
+                    <thead><tr><th>Booking</th><th>Customer / vehicle</th><th>Request</th><th>Schedule</th><th>Price impact</th><th>Status</th><th>Review</th></tr></thead>
+                    <tbody>
+                    {% for adjustment in adjustments %}
+                        <tr>
+                            <td><strong>{{ adjustment.booking.reference }}</strong></td>
+                            <td>{{ adjustment.user.name }}<small>{{ adjustment.booking.vehicle.name }}</small></td>
+                            <td>{{ adjustment.requestType|humanize_label }}<small>{{ adjustment.customerReason ?: 'No reason provided' }}</small></td>
+                            <td>{{ adjustment.originalReturnAt|date('M j, g:i A') }}<small>to {{ adjustment.requestedReturnAt|date('M j, g:i A') }}</small></td>
+                            <td>{{ adjustment.extension ? adjustment.priceDifference|money : '—' }}</td>
+                            <td><span class="status-badge status-badge--{{ adjustment.status|status_class }}">{{ adjustment.status|humanize_label }}</span></td>
+                            <td>
+                                {% if adjustment.pending %}
+                                <form method="post" class="admin-inline-form" action="{{ path('app_admin_adjustment_review', {id: adjustment.id}) }}">
+                                    <input type="hidden" name="_token" value="{{ csrf_token('review-adjustment-' ~ adjustment.id) }}">
+                                    <select class="form-select form-select-sm" name="decision" required><option value="">Decision</option><option value="approve">Approve</option><option value="reject">Reject</option></select>
+                                    <input class="form-control form-control-sm" name="admin_note" maxlength="1500" placeholder="Admin note">
+                                    <button class="btn btn-primary btn-sm" type="submit">Save</button>
+                                </form>
+                                {% elseif adjustment.extension %}
+                                    <small>Awaiting extension payment / activation</small>
+                                {% else %}
+                                    <small>Early return acknowledged</small>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% else %}
+                        <tr><td colspan="7">No open rental adjustment requests.</td></tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </article>
+    </div>
+</section>
+{% endblock %}

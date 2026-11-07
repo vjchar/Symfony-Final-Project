@@ -1,0 +1,106 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Rate a Completed Trip | VJ Car Rental{% endblock %}
+
+{% block body %}
+<section class="page-hero page-hero--compact pattern-layer">
+    <div class="container">
+        <span class="section-kicker">Verified customer feedback</span>
+        <h1>Rate a completed trip</h1>
+        <p>Only bookings completed by your account can be reviewed, and each booking accepts one moderated review.</p>
+    </div>
+</section>
+<section class="content-section rating-page">
+    <div class="container">
+        {% if eligible is empty %}
+            {% for error in errors %}
+                <div class="alert alert-danger">{{ error }}</div>
+            {% endfor %}
+            <div class="empty-state">
+                <i class="bi bi-star"></i>
+                <h2>No trips are ready for review</h2>
+                <p>A rating becomes available after an administrator marks your booking as completed.</p>
+                <a class="btn btn-primary" href="{{ path('app_my_bookings') }}">View My Bookings</a>
+            </div>
+        {% else %}
+            <div class="row g-4 g-xl-5">
+                <div class="col-lg-7">
+                    <form class="form rating-form" method="post" enctype="multipart/form-data" action="{{ path('app_rate_trip') }}">
+                        {{ form_widget(form._token) }}
+                        <div class="form-heading">
+                            <span class="section-kicker">Completed rental review</span>
+                            <h2>Rate the vehicle and service</h2>
+                        </div>
+                        {% for error in errors %}
+                            <div class="alert alert-danger">{{ error }}</div>
+                        {% endfor %}
+                        <label class="form-label" for="ratingReference">Completed booking</label>
+                        <div class="booking-selector booking-selector--within-form">
+                            <select class="form-select" id="ratingReference" name="reference" required>
+                                {% for option in eligible %}
+                                    <option value="{{ option.reference }}" {{ option.reference == booking.reference ? 'selected' }}>{{ option.reference }} - {{ option.vehicle.name }}</option>
+                                {% endfor %}
+                            </select>
+                            <button class="btn btn-outline" type="submit" formmethod="get" formnovalidate>Open trip</button>
+                        </div>
+                        <fieldset class="overall-rating">
+                            <legend>Overall rating</legend>
+                            <div class="star-input">
+                                {% for star in 5..1 %}
+                                    <input id="star{{ star }}" name="overall" type="radio" value="{{ star }}" {{ (submitted.overall ?? '') == star ~ '' ? 'checked' }} required>
+                                    <label for="star{{ star }}" title="{{ star }} stars">&#9733;</label>
+                                {% endfor %}
+                            </div>
+                        </fieldset>
+                        <div class="rating-categories">
+                            {% for field, label in constant('App\\Entity\\Review::CATEGORIES') %}
+                                <label>
+                                    <span>{{ label }}</span>
+                                    <select class="form-select" name="{{ field }}" required>
+                                        <option value="">Choose score</option>
+                                        {% for score, score_label in constant('App\\Entity\\Review::SCORE_LABELS')|reverse(true) %}
+                                            <option value="{{ score }}" {{ (submitted[field] ?? '') == score ~ '' ? 'selected' }}>{{ score }} - {{ score_label }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </label>
+                            {% endfor %}
+                        </div>
+                        <label class="form-label" for="reviewTitle">Review title</label>
+                        <input class="form-control" id="reviewTitle" name="title" value="{{ submitted.title ?? '' }}" minlength="5" maxlength="160" required>
+                        <label class="form-label mt-3" for="reviewBody">Tell us about your trip</label>
+                        <textarea class="form-control" id="reviewBody" name="body" rows="6" minlength="20" maxlength="3000" required>{{ submitted.body ?? '' }}</textarea>
+                        <label class="photo-upload mt-3" for="reviewPhotos">
+                            <i class="bi bi-camera"></i>
+                            <span>
+                                <strong>Add up to three trip photos</strong>
+                                <small>JPG, PNG, or WebP; maximum 3 MB per file.</small>
+                            </span>
+                            <input id="reviewPhotos" name="photos[]" type="file" accept="image/jpeg,image/png,image/webp" multiple>
+                        </label>
+                        <div class="form-check mt-4">
+                            <input class="form-check-input" id="reviewConsent" name="consent" type="checkbox" value="1" required>
+                            <label class="form-check-label" for="reviewConsent">I confirm this feedback describes my own rental experience.</label>
+                        </div>
+                        <button class="btn btn-primary btn-lg mt-4" type="submit">Submit Verified Review</button>
+                    </form>
+                </div>
+                <div class="col-lg-5">
+                    <aside class="booking-summary-card">
+                        <span class="section-kicker">Vehicle reviewed</span>
+                        <img src="{{ vehicle_image(booking.vehicle.image) }}" alt="{{ booking.vehicle.name }}">
+                        <h2>{{ booking.vehicle.name }}</h2>
+                        <p>{{ booking.vehicle.description }}</p>
+                        <div class="review-integrity">
+                            <i class="bi bi-patch-check-fill"></i>
+                            <div>
+                                <strong>Verified rental</strong>
+                                <p>Only completed bookings can be reviewed, and each booking can be reviewed once.</p>
+                            </div>
+                        </div>
+                    </aside>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}

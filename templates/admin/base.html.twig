@@ -1,0 +1,8 @@
+{% extends 'base.html.twig' %}
+
+{% block admin_context %}1{% endblock %}
+
+{% block body %}
+    {{ include('admin/_nav.html.twig') }}
+    {% block admin_body %}{% endblock %}
+{% endblock %}

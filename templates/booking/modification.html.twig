@@ -1,0 +1,135 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Modify Booking {{ booking.reference }} | VJ Car Rental{% endblock %}
+
+{% macro signed_money(amount) %}{{ amount >= 0 ? '+' : '−' }}{{ (amount|abs)|money }}{% endmacro %}
+
+{% block body %}
+{% import _self as m %}
+{% set reference = {reference: booking.reference} %}
+<section class="page-hero page-hero--compact pattern-layer">
+    <div class="container">
+        <span class="section-kicker">Pre-pickup adjustment</span>
+        <h1>Request booking modification</h1>
+        <p>Your current booking remains authoritative until an approved change is fully activated.</p>
+    </div>
+</section>
+<section class="content-section operations-page">
+<div class="container">
+    {% for error in errors %}<div class="alert alert-danger">{{ error }}</div>{% endfor %}
+
+    {% if existing %}
+        <article class="operation-card mb-4">
+            <span class="section-kicker">Existing request</span>
+            <h2>{{ existing.status|humanize_label }}</h2>
+            <p>You already have a booking modification request in progress. Your current reservation remains unchanged until activation.</p>
+            <div class="confirmation-details">
+                <span><small>Requested</small><strong>{{ existing.requestedAt|date('M j, Y g:i A') }}</strong></span>
+                <span><small>Price difference</small><strong>{{ m.signed_money(existing.priceDifference) }}</strong></span>
+            </div>
+            {% if existing.pending %}
+                <form method="post" class="mt-3" action="{{ path('app_booking_modification_withdraw', {reference: booking.reference, id: existing.id}) }}" data-confirm="Cancel this pending modification request?">
+                    <input type="hidden" name="_token" value="{{ csrf_token('withdraw-modification-' ~ existing.id) }}">
+                    <button class="btn btn-outline-danger" type="submit">Cancel Pending Request</button>
+                </form>
+            {% elseif existing.status == 'approved' and existing.priceDifference > 0 %}
+                <a class="btn btn-primary mt-3" href="{{ page_url('payments', reference) }}">Pay Modification Balance</a>
+            {% endif %}
+        </article>
+    {% elseif not booking.prePickup %}
+        <div class="alert alert-warning">This booking is no longer eligible for pre-pickup modification. Active rentals use the separate extension and early-return workflow.</div>
+    {% else %}
+        {% set child_seats = booking_request.childSeats %}
+        <div class="row g-4 align-items-start">
+            <div class="col-lg-7">
+                <form class="operation-card" method="post" action="{{ path('app_booking_modification', reference) }}">
+                    {{ form_widget(form._token) }}
+                    <span class="section-kicker">Requested booking</span>
+                    <h2>Choose the changes you want</h2>
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <label class="form-label" for="modifyVehicle">Vehicle</label>
+                            <select class="form-select" id="modifyVehicle" name="vehicle" required>
+                                {% for vehicle in vehicles %}
+                                    <option value="{{ vehicle.slug }}" {{ booking_request.vehicle == vehicle.slug ? 'selected' }}>{{ vehicle.name }} — {{ vehicle.price|money }}/day</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6"><label class="form-label" for="modifyPickup">Pickup date</label><input class="form-control" id="modifyPickup" name="pickup" type="date" value="{{ booking_request.pickupDate }}" required></div>
+                        <div class="col-md-6"><label class="form-label" for="modifyPickupTime">Pickup time</label><input class="form-control" id="modifyPickupTime" name="pickup_time" type="time" value="{{ booking_request.pickupTime }}" required></div>
+                        <div class="col-md-6"><label class="form-label" for="modifyReturn">Return date</label><input class="form-control" id="modifyReturn" name="return" type="date" value="{{ booking_request.returnDate }}" required></div>
+                        <div class="col-md-6"><label class="form-label" for="modifyReturnTime">Return time</label><input class="form-control" id="modifyReturnTime" name="return_time" type="time" value="{{ booking_request.returnTime }}" required></div>
+                        <div class="col-md-6">
+                            <label class="form-label" for="modifyMethod">Fulfillment</label>
+                            <select class="form-select" id="modifyMethod" name="pickup_method" required>
+                                {% for method in pickup_methods %}<option value="{{ method }}" {{ booking_request.pickupMethod == method ? 'selected' }}>{{ method }}</option>{% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label" for="modifyLocation">Branch</label>
+                            <select class="form-select" id="modifyLocation" name="location" required>
+                                {% for location in locations %}<option value="{{ location }}" {{ booking_request.location == location ? 'selected' }}>{{ location }}</option>{% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-12"><label class="form-label" for="modifyDelivery">Delivery address</label><input class="form-control" id="modifyDelivery" name="delivery_address" value="{{ booking_request.deliveryAddress }}" maxlength="255"></div>
+                        <div class="col-12">
+                            <label class="form-label">Add-ons</label>
+                            <div class="modification-addon-grid">
+                            {% for addon in addons %}
+                                {% set is_child_seat = addon.addonKey == 'child-seat' %}
+                                <label class="draft-addon-option">
+                                    <input type="checkbox" name="addons[]" value="{{ addon.addonKey }}" {{ booking_request.hasAddon(addon.addonKey) ? 'checked' }}>
+                                    <span>
+                                        <strong>{{ addon.name }}</strong>
+                                        <small>{{ addon.price|money }}{{ is_child_seat ? ' per seat · one-time' : ' · one-time' }}</small>
+                                        {% if is_child_seat %}
+                                            <select class="form-select form-select-sm mt-2" name="addon_quantities[child-seat]" aria-label="Number of child safety seats">
+                                                {% for seats in 1..4 %}
+                                                    <option value="{{ seats }}" {{ child_seats == seats ~ '' ? 'selected' }}>{{ seats }} {{ seats == 1 ? 'seat' : 'seats' }}</option>
+                                                {% endfor %}
+                                            </select>
+                                        {% endif %}
+                                    </span>
+                                </label>
+                            {% endfor %}
+                            </div>
+                        </div>
+                        <div class="col-md-6"><label class="form-label" for="modifyPromo">Promo code</label><input class="form-control" id="modifyPromo" name="promo" value="{{ booking_request.promo }}" maxlength="40"></div>
+                        <div class="col-12"><label class="form-label" for="modifyRequests">Special requests</label><textarea class="form-control" id="modifyRequests" name="special_requests" rows="2" maxlength="2000">{{ booking_request.specialRequests }}</textarea></div>
+                        <div class="col-12"><label class="form-label" for="modifyReason">Reason for change</label><textarea class="form-control" id="modifyReason" name="reason" rows="2" maxlength="2000" placeholder="Optional context for the rental team">{{ reason }}</textarea></div>
+                    </div>
+                    <button class="btn btn-outline mt-3" type="submit" name="action" value="preview">Preview Changes</button>
+                    {% if preview and preview.available %}<button class="btn btn-primary mt-3" type="submit" name="action" value="submit_request">Submit Modification Request</button>{% endif %}
+                </form>
+            </div>
+            <div class="col-lg-5">
+                <aside class="booking-summary-card sticky-lg-top">
+                    <span class="section-kicker">Current vs requested</span>
+                    <h2>Modification preview</h2>
+                    <div class="summary-line"><span>Current total</span><strong>{{ booking.total|money }}</strong></div>
+                    {% if preview %}
+                        <div class="summary-line"><span>Requested vehicle</span><strong>{{ preview.quote.vehicle.name }}</strong></div>
+                        <div class="summary-line"><span>Requested pickup</span><strong>{{ preview.quote.pickupAt|date('M j, Y g:i A') }}</strong></div>
+                        <div class="summary-line"><span>Requested return</span><strong>{{ preview.quote.returnAt|date('M j, Y g:i A') }}</strong></div>
+                        <div class="summary-line"><span>Updated total</span><strong>{{ preview.quote.total|money }}</strong></div>
+                        <div class="summary-total"><span>Difference</span><strong>{{ m.signed_money(preview.difference) }}</strong></div>
+                        <div class="alert {{ preview.available ? 'alert-success' : 'alert-danger' }} mt-3">{{ preview.available ? 'Requested vehicle and schedule are currently available. Admin will recheck them at approval.' : 'The requested period conflicts with another reservation or maintenance.' }}</div>
+                    {% else %}
+                        <p class="display-note">Preview the requested changes before submitting them for Admin review.</p>
+                    {% endif %}
+                </aside>
+            </div>
+        </div>
+    {% endif %}
+
+    {% if history %}
+        <article class="operation-card mt-4">
+            <span class="section-kicker">History</span><h2>Booking modification requests</h2>
+            <div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Requested</th><th>Status</th><th>Price impact</th><th>Admin note</th></tr></thead><tbody>
+            {% for item in history %}<tr><td>{{ item.requestedAt|date('M j, Y g:i A') }}</td><td><span class="status-badge status-badge--{{ item.status|status_class }}">{{ item.status|humanize_label }}</span></td><td>{{ m.signed_money(item.priceDifference) }}</td><td>{{ item.adminNote ?: '—' }}</td></tr>{% endfor %}
+            </tbody></table></div>
+        </article>
+    {% endif %}
+</div>
+</section>
+{% endblock %}

@@ -1,0 +1,103 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}About Us | VJ Car Rental{% endblock %}
+{% block description %}Learn about the VJ Car Rental mission, values, and commitment to reliable, clean, and affordable mobility.{% endblock %}
+
+{% block body %}
+
+<section class="page-hero pattern-layer">
+    <div class="container">
+        <span class="section-kicker">Your journey starts here</span>
+        <h1>Reliable mobility, delivered with care</h1>
+        <p>VJ Car Rental brings together modern vehicles, transparent service, and a team that treats every trip as important.</p>
+    </div>
+</section>
+<section class="content-section about-story">
+    <div class="container">
+        <div class="row align-items-center g-5">
+            <div class="col-lg-6">
+                <div class="about-visual pattern-layer">
+                    <img src="{{ asset('images/cars/porsche-911.png') }}" alt="VJ Car Rental featured white Porsche" loading="lazy" decoding="async">
+                    <div class="about-badge">
+                        <strong>10,000+</strong>
+                        <span>happy customer journeys</span>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-6">
+                <span class="section-kicker">Who we are</span>
+                <h2>More than a car. A better way to move.</h2>
+                <p>VJ Car Rental was created to make vehicle rental fast, secure, and dependable. We serve travelers, professionals, families, and businesses with a fleet that is clean, safe, and carefully maintained.</p>
+                <p>Our goal is to earn lasting trust by combining convenience, transparency, and innovation in every journey.</p>
+                <div class="about-signature">
+                    <span>VJ</span>
+                    <div>
+                        <strong>The VJ promise</strong>
+                        <small>Reliable. Clean. Affordable.</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+<section class="content-section mission-section pattern-layer">
+    <div class="container">
+        <div class="row g-4">
+            <div class="col-lg-6">
+                <article class="mission-card">
+                    <i class="bi bi-bullseye"></i>
+                    <span class="section-kicker">Our mission</span>
+                    <h2>Make every rental simple and dependable</h2>
+                    <p>Provide customers with a fast, secure, and reliable vehicle rental experience through modern technology and exceptional customer service.</p>
+                </article>
+            </div>
+            <div class="col-lg-6">
+                <article class="mission-card mission-card--navy">
+                    <i class="bi bi-eye"></i>
+                    <span class="section-kicker">Our vision</span>
+                    <h2>Be the mobility partner people trust first</h2>
+                    <p>Build a recognizable rental brand known for cared-for vehicles, honest service, and confident journeys across key cities.</p>
+                </article>
+            </div>
+        </div>
+    </div>
+</section>
+<section class="content-section values-section">
+    <div class="container">
+        <div class="section-heading text-center section-heading--center">
+            <span class="section-kicker">What guides us</span>
+            <h2>Values that travel with every customer</h2>
+        </div>
+        <div class="row g-4">
+            <div class="col-lg-3 col-md-6">
+                <article class="value-card">
+                    <i class="bi bi-shield-check"></i>
+                    <h3>Safety</h3>
+                    <p>Well-maintained vehicles and disciplined checks before each trip.</p>
+                </article>
+            </div>
+            <div class="col-lg-3 col-md-6">
+                <article class="value-card">
+                    <i class="bi bi-chat-square-heart"></i>
+                    <h3>Care</h3>
+                    <p>Friendly, respectful service that makes customers feel supported.</p>
+                </article>
+            </div>
+            <div class="col-lg-3 col-md-6">
+                <article class="value-card">
+                    <i class="bi bi-receipt"></i>
+                    <h3>Transparency</h3>
+                    <p>Clear information and pricing with no intentional surprises.</p>
+                </article>
+            </div>
+            <div class="col-lg-3 col-md-6">
+                <article class="value-card">
+                    <i class="bi bi-lightning-charge"></i>
+                    <h3>Convenience</h3>
+                    <p>A smooth experience designed to save time from search to return.</p>
+                </article>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

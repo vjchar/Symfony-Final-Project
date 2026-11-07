@@ -1,0 +1,104 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Contact Us | VJ Car Rental{% endblock %}
+{% block description %}Contact VJ Car Rental for booking questions, fleet information, and customer support.{% endblock %}
+
+{% block body %}
+
+<section class="page-hero page-hero--compact pattern-layer">
+    <div class="container">
+        <span class="section-kicker">We are ready to help</span>
+        <h1>Let us plan the road ahead</h1>
+        <p>Ask about a vehicle, trip schedule, service option, or rental requirement. Your message is securely stored for the support team.</p>
+    </div>
+</section>
+<section class="content-section contact-section">
+    <div class="container">
+        <div class="row g-4 g-xl-5 align-items-start">
+            <div class="col-lg-5">
+                <span class="section-kicker">Contact VJ</span>
+                <h2>Friendly support, whenever you need it</h2>
+                <p>Reach our team using any of the channels below. We will help you choose a vehicle and clarify the details of your trip.</p>
+                <div class="contact-list">
+                    <article>
+                        <i class="bi bi-geo-alt"></i>
+                        <div>
+                            <h3>Visit our office</h3>
+                            <p>Manjuyod, Negros Oriental, Philippines</p>
+                        </div>
+                    </article>
+                    <article>
+                        <i class="bi bi-telephone"></i>
+                        <div>
+                            <h3>Call our team</h3>
+                            <p>+63 994 894 5174</p>
+                        </div>
+                    </article>
+                    <article>
+                        <i class="bi bi-envelope"></i>
+                        <div>
+                            <h3>Email reservations</h3>
+                            <p>bernardinovjcharles@gmail.com</p>
+                        </div>
+                    </article>
+                    <article>
+                        <i class="bi bi-clock"></i>
+                        <div>
+                            <h3>Opening hours</h3>
+                            <p>Monday-Sunday, 7:00 AM-9:00 PM</p>
+                        </div>
+                    </article>
+                </div>
+                <div class="support-callout">
+                    <i class="bi bi-headset"></i>
+                    <div>
+                        <strong>Need roadside assistance?</strong>
+                        <span>Our rental support line is available 24/7.</span>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-7">
+                {{ form_start(form, {attr: {class: 'form contact-form', novalidate: 'novalidate'}}) }}
+                    {{ form_widget(form.website) }}
+                    <div class="form-heading">
+                        <span class="section-kicker">Send a message</span>
+                        <h2>How can we help?</h2>
+                    </div>
+                    {% for error in form.vars.errors.form.getErrors(true) %}
+                        <div class="alert alert-danger">{{ error.message }}</div>
+                    {% endfor %}
+                    <div class="row g-3">
+                        {% for field in ['name', 'email', 'phone', 'subject'] %}
+                            <div class="col-md-6">
+                                {{ form_label(form[field], null, {label_attr: {class: 'form-label'}}) }}
+                                {{ form_widget(form[field]) }}
+                            </div>
+                        {% endfor %}
+                        <div class="col-12">
+                            {{ form_label(form.message, null, {label_attr: {class: 'form-label'}}) }}
+                            {{ form_widget(form.message) }}
+                        </div>
+                    </div>
+                    {{ form_rest(form) }}
+                    <button class="btn btn-primary btn-lg mt-4" type="submit">Send Message <i class="bi bi-send"></i>
+                    </button>
+                    <small class="display-note">
+                        <i class="bi bi-shield-check"></i> Messages are stored in the protected administrator inbox.</small>
+                {{ form_end(form) }}
+            </div>
+        </div>
+    </div>
+</section>
+<section class="contact-map pattern-layer">
+    <div class="container">
+        <div class="contact-map__heading">
+            <div><span class="section-kicker">Main service area</span>
+                <h2>VJ Car Rental — Manjuyod</h2>
+                <p>The exact pickup point is included in a confirmed booking.</p>
+            </div>
+            <a class="btn btn-vj-outline" href="https://www.openstreetmap.org/export/embed.html?bbox=121.068%2C14.623%2C121.137%2C14.679&amp;layer=mapnik&amp;marker=14.6507%2C121.1029" target="_blank" rel="noopener"><i class="bi bi-map"></i> Open Map</a>
+        </div>
+        <iframe title="Map of Manjuyod, Negros Oriental" src="https://www.openstreetmap.org/export/embed.html?bbox=121.068%2C14.623%2C121.137%2C14.679&amp;layer=mapnik&amp;marker=14.6507%2C121.1029" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+    </div>
+</section>
+{% endblock %}

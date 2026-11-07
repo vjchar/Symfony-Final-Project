@@ -1,0 +1,14 @@
+{# the saved price breakdown shared by the confirmation and details pages #}
+<div class="summary-line"><span>Rental subtotal</span><strong>{{ booking.subtotal|money }}</strong></div>
+{% for addon in booking.addons %}
+    <div class="summary-line">
+        <span>{{ addon.addonName }}{{ addon.quantity > 1 ? ' × ' ~ addon.quantity }}</span>
+        <strong>{{ addon.lineTotal|money }}</strong>
+    </div>
+{% endfor %}
+<div class="summary-line"><span>Delivery</span><strong>{{ booking.deliveryFee|money }}</strong></div>
+{% if booking.discount > 0 %}
+    <div class="summary-line summary-line--discount"><span>{{ booking.promoCode }} discount</span><strong>−{{ booking.discount|money }}</strong></div>
+{% endif %}
+<div class="summary-total"><span>Rental total</span><strong>{{ booking.total|money }}</strong></div>
+<div class="summary-line"><span>Refundable deposit</span><strong>{{ booking.deposit|money }}</strong></div>

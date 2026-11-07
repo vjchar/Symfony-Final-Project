@@ -1,0 +1,209 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Payments & Refunds | VJ Car Rental{% endblock %}
+
+{% block body %}
+<section class="page-hero page-hero--compact pattern-layer">
+    <div class="container">
+        <span class="section-kicker">Step 2 · Secure payment</span>
+        <h1>Booking payments &amp; refunds</h1>
+        <p>
+            Send payment using the configured GCash number or bank account,
+            then submit your transaction reference and proof for administrator
+            verification. Card payments are not processed online.
+        </p>
+    </div>
+</section>
+
+<section class="content-section operations-page">
+    <div class="container">
+        {% for error in errors %}
+            <div class="alert alert-danger" role="alert">{{ error }}</div>
+        {% endfor %}
+
+        {% if journey %}
+            {{ include('booking/_journey_progress.html.twig') }}
+            {% if journey.stage != 'payment' %}
+                {{ include('booking/_journey_next.html.twig', {kicker: 'Current booking step'}) }}
+            {% else %}
+                <article class="journey-next journey-next--primary">
+                    <div class="journey-next__icon"><i class="bi bi-credit-card"></i></div>
+                    <div class="journey-next__body"><span class="section-kicker">Step 2 of 5</span><h2>Complete Payment</h2><p>Submit the required security deposit for booking {{ booking.reference }}. After submission, the system will continue to your first unfinished requirement and will skip documents that are already verified.</p></div>
+                </article>
+            {% endif %}
+        {% endif %}
+
+        {% if eligible is empty %}
+            <div class="empty-state">
+                <i class="bi bi-receipt"></i>
+                <h2>No payable bookings</h2>
+                <p>Create a booking before submitting a deposit or rental payment.</p>
+                <a class="btn btn-primary" href="{{ page_url('booking') }}">Book a Vehicle</a>
+            </div>
+        {% else %}
+            <form class="booking-selector" method="get" action="{{ path('app_payments') }}">
+                <label for="paymentBooking">Booking</label>
+                <select class="form-select" id="paymentBooking" name="reference" required>
+                    {% for option in eligible %}
+                        <option value="{{ option.reference }}" {{ booking and option.reference == booking.reference ? 'selected' }}>
+                            {{ option.reference }} — {{ option.vehicle.name }}
+                        </option>
+                    {% endfor %}
+                </select>
+                <button class="btn btn-outline" type="submit">Open booking</button>
+            </form>
+
+            {% if booking and summary %}
+                <div class="payment-overview">
+                    <article><span>Security deposit due</span><strong>{{ summary.depositDue|money }}</strong></article>
+                    <article><span>Rental balance due</span><strong>{{ summary.rentalDue|money }}</strong></article>
+                    <article><span>Extra charges due</span><strong>{{ summary.extraDue|money }}</strong></article>
+                    <article><span>Extension charge due</span><strong>{{ summary.extensionDue|money }}</strong></article>
+                    <article><span>Modification charge due</span><strong>{{ summary.modificationDue|money }}</strong></article>
+                    <article><span>Verified payments</span><strong>{{ summary.paidTotal|money }}</strong></article>
+                </div>
+
+                <div class="row g-4 align-items-start">
+                    <div class="col-lg-5">
+                        <article class="operation-card">
+                            <span class="section-kicker">Submit payment</span>
+                            <h2>{{ booking.reference }}</h2>
+
+                            {% if summary.amountDue == 0 %}
+                                <div class="alert alert-success">All current payment obligations are fully verified.</div>
+                            {% else %}
+                                <form class="row g-3" method="post" enctype="multipart/form-data" action="{{ path('app_payments') }}" id="paymentForm">
+                                    {{ form_widget(form._token) }}
+                                    <input type="hidden" name="reference" value="{{ booking.reference }}">
+
+                                    <div class="col-md-6">
+                                        <label class="form-label" for="paymentType">Payment for</label>
+                                        <select class="form-select" id="paymentType" name="payment_type" required>
+                                            {% if summary.depositDue > 0 %}<option value="deposit">Security deposit</option>{% endif %}
+                                            {% if summary.rentalDue > 0 %}<option value="balance">Rental balance</option>{% endif %}
+                                            {% if summary.extraDue > 0 %}<option value="extra_charge">Outstanding return balance</option>{% endif %}
+                                            {% if approved_extension and summary.extensionDue > 0 %}<option value="extension">Approved extension</option>{% endif %}
+                                            {% if approved_modification and summary.modificationDue > 0 %}<option value="modification">Approved booking modification</option>{% endif %}
+                                        </select>
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <label class="form-label" for="paymentMethod">Method</label>
+                                        <select class="form-select" id="paymentMethod" name="method" data-payment-method required>
+                                            <option value="gcash">GCash</option>
+                                            <option value="bank_transfer">Bank transfer</option>
+                                            <option value="cash">Cash at branch</option>
+                                        </select>
+                                    </div>
+
+                                    <div class="col-12" data-payment-details="gcash">
+                                        <div class="border rounded p-3">
+                                            <span class="section-kicker">GCash payment details</span>
+                                            <p class="mb-2">Send the exact amount to the GCash account below, save your confirmation, then submit the reference number and payment proof.</p>
+                                            <dl class="mb-0">
+                                                <dt>Account Name</dt>
+                                                <dd>{{ accounts.gcash.account_name }}</dd>
+                                                <dt>GCash Number</dt>
+                                                <dd>
+                                                    <strong data-copy-value="{{ accounts.gcash.account_number }}">{{ accounts.gcash.account_number }}</strong>
+                                                    <button class="btn btn-outline btn-sm ms-2" type="button" data-copy-payment-number>Copy</button>
+                                                </dd>
+                                                <dt>Amount to Send</dt>
+                                                <dd><strong data-payment-amount>Enter the amount below</strong></dd>
+                                            </dl>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-12" data-payment-details="bank_transfer" hidden>
+                                        <div class="border rounded p-3">
+                                            <span class="section-kicker">Bank transfer details</span>
+                                            <p class="mb-2">Transfer the exact amount to the bank account below, save your confirmation, then submit the reference number and payment proof.</p>
+                                            <dl class="mb-0">
+                                                <dt>Bank</dt>
+                                                <dd>{{ accounts.bank_transfer.bank_name }}</dd>
+                                                <dt>Account Name</dt>
+                                                <dd>{{ accounts.bank_transfer.account_name }}</dd>
+                                                <dt>Account Number</dt>
+                                                <dd>
+                                                    <strong data-copy-value="{{ accounts.bank_transfer.account_number }}">{{ accounts.bank_transfer.account_number }}</strong>
+                                                    <button class="btn btn-outline btn-sm ms-2" type="button" data-copy-payment-number>Copy</button>
+                                                </dd>
+                                                <dt>Amount to Send</dt>
+                                                <dd><strong data-payment-amount>Enter the amount below</strong></dd>
+                                            </dl>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-12">
+                                        <label class="form-label" for="paymentAmount">Amount (PHP)</label>
+                                        <input class="form-control" id="paymentAmount" name="amount" type="number" data-payment-amount-input min="1" step="1" required>
+                                    </div>
+
+                                    <div class="col-12">
+                                        <label class="form-label" for="transactionReference">Transaction / reference number</label>
+                                        <input class="form-control" id="transactionReference" name="transaction_reference" maxlength="120" autocomplete="off" data-electronic-payment-required>
+                                    </div>
+
+                                    <div class="col-12">
+                                        <label class="form-label" for="paymentProof">Payment proof (JPG, PNG, or PDF)</label>
+                                        <input class="form-control" id="paymentProof" name="payment_proof" type="file" accept=".jpg,.jpeg,.png,.pdf" data-electronic-payment-required>
+                                    </div>
+
+                                    <div class="col-12">
+                                        <button class="btn btn-primary" type="submit">Submit Payment</button>
+                                    </div>
+                                </form>
+                            {% endif %}
+                        </article>
+                    </div>
+
+                    <div class="col-lg-7">
+                        <article class="operation-card">
+                            <div class="operation-card__heading">
+                                <div>
+                                    <span class="section-kicker">Payment history</span>
+                                    <h2>Recorded transactions</h2>
+                                </div>
+                                <a class="btn btn-outline btn-sm" href="{{ path('app_invoice', {reference: booking.reference}) }}">
+                                    <i class="bi bi-receipt"></i>
+                                    Invoice
+                                </a>
+                            </div>
+
+                            {% if summary.payments is empty %}
+                                <p class="display-note">No payment has been submitted for this booking.</p>
+                            {% else %}
+                                <div class="admin-table-wrap">
+                                    <table class="admin-table">
+                                        <thead>
+                                            <tr><th>Date</th><th>Type</th><th>Method</th><th>Amount</th><th>Status</th><th>Proof</th></tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for payment in summary.payments %}
+                                                <tr>
+                                                    <td>{{ payment.createdAt|date('M j, Y') }}</td>
+                                                    <td>{{ payment.paymentType|humanize_label }}</td>
+                                                    <td>{{ payment.methodLabel }}</td>
+                                                    <td>{{ payment.amount|money }}</td>
+                                                    <td><span class="status-badge status-badge--{{ payment.status|status_class }}">{{ payment.status|humanize_label }}</span></td>
+                                                    <td>
+                                                        {% if payment.proofFilename %}
+                                                            <a href="{{ path('app_file_payment', {id: payment.id}) }}">View</a>
+                                                        {% else %}
+                                                            —
+                                                        {% endif %}
+                                                    </td>
+                                                </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            {% endif %}
+                        </article>
+                    </div>
+                </div>
+            {% endif %}
+        {% endif %}
+    </div>
+</section>
+{% endblock %}

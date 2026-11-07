@@ -1,0 +1,58 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}My Bookings | VJ Car Rental{% endblock %}
+
+{% block body %}
+<section class="page-hero page-hero--compact pattern-layer">
+    <div class="container">
+        <span class="section-kicker">Reservation history</span>
+        <h1>My bookings</h1>
+        <p>Every booking shows the most useful next action, so you can continue without searching through the site.</p>
+        <a class="btn btn-outline mt-3" href="{{ path('app_saved_bookings') }}"><i class="bi bi-bookmark"></i> Saved Bookings</a>
+    </div>
+</section>
+<section class="content-section">
+    <div class="container">
+        <div class="booking-filter-tabs" role="navigation" aria-label="Booking status filters">
+            {% for status in filters %}
+                <a class="{{ filter == status ? 'active' }}" href="{{ path('app_my_bookings', {status: status}) }}">{{ status|humanize_label }}</a>
+            {% endfor %}
+        </div>
+        {% if bookings is empty %}
+            <div class="empty-state">
+                <i class="bi bi-calendar2-x"></i>
+                <h2>No {{ filter == 'all' ? '' : filter|humanize_label ~ ' ' }}bookings found</h2>
+                <p>Your reservations will appear here after you complete a booking.</p>
+                <a class="btn btn-primary" href="{{ path('app_vehicle_index') }}">Browse Vehicles</a>
+            </div>
+        {% else %}
+            <div class="booking-list booking-list--guided">
+                {% for item in bookings %}
+                    {% set booking = item.booking %}
+                    {% set journey = item.journey %}
+                    <article class="booking-list-item booking-list-item--guided">
+                        <a class="booking-list-item__main" href="{{ path('app_booking_show', {reference: booking.reference}) }}">
+                            <img src="{{ vehicle_image(booking.vehicle.image) }}" alt="{{ booking.vehicle.name }}">
+                            <span>
+                                <small>{{ booking.reference }}</small>
+                                <strong>{{ booking.vehicle.name }}</strong>
+                                <em><i class="bi bi-calendar3"></i> {{ booking.pickupAt|date('M j, Y g:i A') }} – {{ booking.returnAt|date('M j, Y g:i A') }}</em>
+                                <em><i class="bi bi-geo-alt"></i> {{ booking.pickupLocation }}</em>
+                            </span>
+                            <b>{{ booking.total|money }}<small>rental total</small></b>
+                            <strong class="status-badge status-badge--{{ booking.status|status_class }}">{{ booking.status|humanize_label }}</strong>
+                        </a>
+                        <div class="booking-list-item__next">
+                            <span><small>Next step</small><strong>{{ journey.title }}</strong></span>
+                            {% if journey.noAction %}
+                                <em><i class="bi bi-clock-history"></i> No action required</em>
+                            {% endif %}
+                            <a class="btn {{ journey.actionRequired ? 'btn-primary' : 'btn-outline' }} btn-sm" href="{{ journey.targetUrl }}">{{ journey.buttonLabel }}</a>
+                        </div>
+                    </article>
+                {% endfor %}
+            </div>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}

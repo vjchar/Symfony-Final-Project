@@ -1,0 +1,14 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Invoice Not Found | VJ Car Rental{% endblock %}
+
+{% block body %}
+<section class="content-section error-page">
+    <div class="container">
+        <i class="bi bi-receipt-cutoff"></i>
+        <h1>Invoice not found</h1>
+        <p>The booking statement does not exist or is not available to this account.</p>
+        <a class="btn btn-primary" href="{{ path('app_my_bookings') }}">My Bookings</a>
+    </div>
+</section>
+{% endblock %}

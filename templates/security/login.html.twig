@@ -1,0 +1,63 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Sign In | VJ Car Rental{% endblock %}
+{% block description %}One secure sign-in for VJ Car Rental customers and administrators.{% endblock %}
+
+{% block body %}
+<section class="auth-section pattern-layer">
+    <div class="container">
+        <div class="auth-shell">
+            <div class="auth-intro">
+                <span class="section-kicker">Secure account access</span>
+                <h1>Welcome back</h1>
+                <p>Customers and administrators use the same secure sign-in. Your account role automatically opens the correct dashboard.</p>
+                <div class="auth-trust">
+                    <span>
+                        <i class="bi bi-shield-check"></i> Secure session</span>
+                    <span>
+                        <i class="bi bi-calendar-check"></i> Real booking history</span>
+                    <span>
+                        <i class="bi bi-star"></i> Verified reviews</span>
+                </div>
+            </div>
+            <form class="form auth-form" method="post" action="{{ path('app_login') }}">
+                <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
+                <input
+                    type="hidden"
+                    name="return_to"
+                    value="{{ return_to }}">
+                <h2>Sign in</h2>
+                {% if error_message %}
+                    <div class="alert alert-danger">{{ error_message }}</div>
+                {% endif %}
+                <label class="form-label" for="loginEmail">Email address</label>
+                <input
+                    class="form-control"
+                    id="loginEmail"
+                    name="email"
+                    type="email"
+                    value="{{ last_username }}"
+                    maxlength="190"
+                    autocomplete="email"
+                    required
+                    autofocus>
+                <label class="form-label mt-3" for="loginPassword">Password</label>
+                <input
+                    class="form-control"
+                    id="loginPassword"
+                    name="password"
+                    type="password"
+                    minlength="8"
+                    autocomplete="current-password"
+                    required>
+                <div class="auth-form-links">
+                    <a href="{{ page_url('forgot-password') }}">Forgot password?</a>
+                </div>
+                <button class="btn btn-primary w-100" type="submit">Sign In</button>
+                <p class="auth-switch">New to VJ Car Rental? <a href="{{ path('app_register', {return_to: return_to}) }}">Create an account</a>
+                </p>
+            </form>
+        </div>
+    </div>
+</section>
+{% endblock %}

@@ -1,0 +1,57 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Notifications | VJ Car Rental{% endblock %}
+
+{% block body %}
+<section class="page-hero page-hero--compact pattern-layer">
+    <div class="container">
+        <span class="section-kicker">Account updates</span>
+        <h1>Notifications</h1>
+        <p>Follow booking, payment, review, document, pickup, return, and operational updates in one place.</p>
+    </div>
+</section>
+<section class="content-section operations-page">
+    <div class="container">
+        <div class="section-toolbar">
+            <div>
+                <span class="section-kicker">Latest activity</span>
+                <h2>Your updates</h2>
+            </div>
+            {% if notifications is not empty %}
+                <form method="post" action="{{ path('app_notifications_read') }}">
+                    <input type="hidden" name="_token" value="{{ csrf_token('notifications-read') }}">
+                    <button class="btn btn-vj-outline" type="submit">
+                        <i class="bi bi-check2-all"></i>
+                        Mark All Read
+                    </button>
+                </form>
+            {% endif %}
+        </div>
+
+        {% if notifications is empty %}
+            <div class="empty-state">
+                <i class="bi bi-bell"></i>
+                <h2>No notifications yet</h2>
+                <p>Booking and account updates will appear here.</p>
+            </div>
+        {% else %}
+            <div class="notification-list">
+                {% for item in notifications %}
+                    {% set notification = item.notification %}
+                    <article class="notification-item{{ notification.read ? '' : ' is-unread' }}">
+                        <i class="bi {{ notification.icon }}"></i>
+                        <div>
+                            <div>
+                                <strong>{{ notification.title }}</strong>
+                                <time datetime="{{ notification.createdAt|date('c') }}">{{ notification.createdAt|date('M j, Y g:i A') }}</time>
+                            </div>
+                            <p>{{ notification.message }}</p>
+                            <a href="{{ item.action.url }}">{{ item.action.label }}</a>
+                        </div>
+                    </article>
+                {% endfor %}
+            </div>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}

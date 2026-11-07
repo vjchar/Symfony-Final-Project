@@ -1,0 +1,122 @@
+{% extends 'admin/base.html.twig' %}
+
+{% block title %}Rental Calendar | VJ Car Rental{% endblock %}
+
+{% block admin_body %}
+{% set filters = {date: anchor|date('Y-m-d'), type: type}|merge(selected_vehicle ? {vehicle: selected_vehicle.id} : {}) %}
+<section class="admin-page-heading">
+    <div class="container">
+        <div>
+            <span class="section-kicker">Fleet operations</span>
+            <h1>Rental calendar</h1>
+            <p>See pickups, deliveries, returns, active rentals, maintenance, and approved rental adjustments from authoritative system records.</p>
+        </div>
+    </div>
+</section>
+<section class="content-section admin-section">
+    <div class="container">
+        <form class="calendar-toolbar" method="get" action="{{ path('app_admin_calendar') }}">
+            <div class="calendar-view-switch">
+                {% for key, label in {month: 'Month', week: 'Week', day: 'Day'} %}
+                    <a class="{{ view == key ? 'active' }}" href="{{ path('app_admin_calendar', filters|merge({view: key})) }}">{{ label }}</a>
+                {% endfor %}
+            </div>
+            <select class="form-select" name="type" aria-label="Event type">
+                <option value="all">All events</option>
+                {% for key, label in types %}
+                    <option value="{{ key }}" {{ type == key ? 'selected' }}>{{ label }}</option>
+                {% endfor %}
+            </select>
+            <select class="form-select" name="vehicle" aria-label="Vehicle">
+                <option value="">All vehicles</option>
+                {% for vehicle in vehicles %}
+                    <option value="{{ vehicle.id }}" {{ selected_vehicle and selected_vehicle.id == vehicle.id ? 'selected' }}>{{ vehicle.name }}</option>
+                {% endfor %}
+            </select>
+            <input type="hidden" name="view" value="{{ view }}">
+            <input class="form-control" type="date" name="date" value="{{ anchor|date('Y-m-d') }}" aria-label="Date">
+            <button class="btn btn-primary" type="submit">Apply</button>
+        </form>
+
+        <div class="calendar-navigation">
+            <a class="btn btn-outline btn-sm" href="{{ path('app_admin_calendar', filters|merge({view: view, date: previous|date('Y-m-d')})) }}">← Previous</a>
+            <h2>
+                {% if view == 'month' %}{{ anchor|date('F Y') }}
+                {% elseif view == 'week' %}{{ start|date('M j') }}–{{ end|date_modify('-1 day')|date('M j, Y') }}
+                {% else %}{{ anchor|date('F j, Y') }}{% endif %}
+            </h2>
+            <a class="btn btn-outline btn-sm" href="{{ path('app_admin_calendar', filters|merge({view: view, date: next|date('Y-m-d')})) }}">Next →</a>
+        </div>
+
+        {% set today = 'now'|date('Y-m-d') %}
+        {% if view == 'month' %}
+            <div class="rental-calendar-grid">
+                <div class="calendar-weekdays">
+                    {% for day in ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] %}<span>{{ day }}</span>{% endfor %}
+                </div>
+                <div class="calendar-days">
+                    {% for day in days %}
+                        {% set key = day|date('Y-m-d') %}
+                        <article class="calendar-day {{ day|date('m') != anchor|date('m') ? 'is-outside' }} {{ key == today ? 'is-today' }}">
+                            <header><strong>{{ day|date('j') }}</strong></header>
+                            <div class="calendar-day-events">
+                                {% for event in events_by_day[key] ?? [] %}
+                                    <a class="calendar-event calendar-event--{{ event.type }}" href="#event-{{ event.key }}">
+                                        <span>{{ event.type|humanize_label }}</span>
+                                        <strong>{{ event.vehicleName }}</strong>
+                                        <small>{{ event.startAt|date('g:i A') }}</small>
+                                    </a>
+                                {% endfor %}
+                            </div>
+                        </article>
+                    {% endfor %}
+                </div>
+            </div>
+        {% else %}
+            <div class="calendar-agenda">
+                {% for day in days %}
+                    {% set key = day|date('Y-m-d') %}
+                    <section class="calendar-agenda-day">
+                        <h3>{{ day|date('l, F j') }}</h3>
+                        {% for event in events_by_day[key] ?? [] %}
+                            <a class="calendar-event calendar-event--{{ event.type }}" href="#event-{{ event.key }}">
+                                <span>{{ event.startAt|date('g:i A') }} · {{ event.type|humanize_label }}</span>
+                                <strong>{{ event.title }}</strong>
+                            </a>
+                        {% else %}
+                            <p class="display-note">No matching events.</p>
+                        {% endfor %}
+                    </section>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        <article class="operation-card mt-4">
+            <span class="section-kicker">Event details</span>
+            <h2>Operational schedule</h2>
+            {% if events is empty %}
+                <p class="display-note">No events match the selected period and filters.</p>
+            {% else %}
+                <div class="calendar-event-details">
+                    {% for event in events %}
+                        <section id="event-{{ event.key }}" class="calendar-detail-card">
+                            <div>
+                                <span class="status-badge status-badge--{{ event.status|status_class }}">{{ event.type|humanize_label }}</span>
+                                <h3>{{ event.title }}</h3>
+                                <p>{{ event.meta }}</p>
+                            </div>
+                            <dl>
+                                <div><dt>Schedule</dt><dd>{{ event.startAt|date('M j, Y g:i A') }}</dd></div>
+                                {% if event.bookingReference %}<div><dt>Booking</dt><dd>{{ event.bookingReference }}</dd></div>{% endif %}
+                                {% if event.customerName %}<div><dt>Customer</dt><dd>{{ event.customerName }}</dd></div>{% endif %}
+                                <div><dt>Status</dt><dd>{{ event.status|humanize_label }}</dd></div>
+                            </dl>
+                            <a class="btn btn-outline btn-sm" href="{{ event.url }}">Open Record</a>
+                        </section>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        </article>
+    </div>
+</section>
+{% endblock %}

@@ -1,0 +1,766 @@
+/*
+ * FILE: assets/css/vehicle-images.css
+ * PURPOSE: Consistent vehicle artwork sizing and alignment across cards and vehicle previews.
+ * USAGE: Normalizes transparent PNG artwork without stretching or changing vehicle aspect ratios.
+ * Maintenance: Keep per-vehicle adjustments in the normalization section below.
+ */
+
+/* Shared vehicle image stages */
+.vehicle-image-wrap,
+.vehicle-card--compact .vehicle-image-wrap {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-bottom: 1px solid rgba(15, 45, 92, 0.08);
+  background: linear-gradient(180deg, #f9fcff 0%, #eef7ff 100%);
+}
+
+.vehicle-image-wrap {
+  height: 220px;
+  min-height: 220px;
+  padding: 10px 14px;
+}
+
+.vehicle-card--compact .vehicle-image-wrap {
+  height: 180px;
+  min-height: 180px;
+  padding: 8px 12px;
+}
+
+.vehicle-image-wrap img,
+.vehicle-card--compact .vehicle-image-wrap img,
+.compare-table thead img,
+.recent-vehicle-card img {
+  --vehicle-scale: 1;
+  --vehicle-shift-x: 0%;
+  --vehicle-shift-y: 0%;
+  display: block;
+  width: 100%;
+  height: 100%;
+  max-width: 100%;
+  max-height: 100%;
+  margin: auto;
+  object-fit: contain;
+  object-position: center;
+  transform: translate(var(--vehicle-shift-x), var(--vehicle-shift-y)) scale(var(--vehicle-scale));
+  transform-origin: center center;
+}
+
+.vehicle-image-wrap img,
+.vehicle-card--compact .vehicle-image-wrap img {
+  width: 350%;
+  height: 350%;
+  max-width: none;
+  max-height: none;
+  transition: transform 180ms ease;
+}
+
+
+img[src$="vehicle-placeholder.svg"],
+img.is-placeholder {
+  --vehicle-scale: 1 !important;
+  --vehicle-shift-x: 0% !important;
+  --vehicle-shift-y: 0% !important;
+  transform: none !important;
+}
+
+/* Vehicle artwork normalization
+ * Values are based on the visible artwork bounds of each PNG.
+ * The main subject is centered and fitted to the same visual safe area.
+ */
+.vehicle-image-wrap img[src$="audi-a8.png"],
+.vehicle-card--compact .vehicle-image-wrap img[src$="audi-a8.png"],
+.compare-table thead img[src$="audi-a8.png"],
+.recent-vehicle-card img[src$="audi-a8.png"] {
+  --vehicle-scale: 1.425;
+  --vehicle-shift-x: -6.66%;
+  --vehicle-shift-y: 3.22%;
+}
+
+.vehicle-image-wrap img[src$="audi-e-tron-gt.png"],
+.vehicle-card--compact .vehicle-image-wrap img[src$="audi-e-tron-gt.png"],
+.compare-table thead img[src$="audi-e-tron-gt.png"],
+.recent-vehicle-card img[src$="audi-e-tron-gt.png"] {
+  --vehicle-scale: 1.550;
+  --vehicle-shift-x: -1.03%;
+  --vehicle-shift-y: 4.02%;
+}
+
+.vehicle-image-wrap img[src$="bentley-continental-gt.png"],
+.vehicle-card--compact .vehicle-image-wrap img[src$="bentley-continental-gt.png"],
+.compare-table thead img[src$="bentley-continental-gt.png"],
+.recent-vehicle-card img[src$="bentley-continental-gt.png"] {
+  --vehicle-scale: 1.450;
+  --vehicle-shift-x: -6.51%;
+  --vehicle-shift-y: 5.97%;
+}
+
+.vehicle-image-wrap img[src$="bmw-7-series.png"],
+.vehicle-card--compact .vehicle-image-wrap img[src$="bmw-7-series.png"],
+.compare-table thead img[src$="bmw-7-series.png"],
+.recent-vehicle-card img[src$="bmw-7-series.png"] {
+  --vehicle-scale: 1.192;
+  --vehicle-shift-x: -4.87%;
+  --vehicle-shift-y: 9.52%;
+}
+
+.vehicle-image-wrap img[src$="bmw-i4.png"],
+.vehicle-card--compact .vehicle-image-wrap img[src$="bmw-i4.png"],
+.compare-table thead img[src$="bmw-i4.png"],
+.recent-vehicle-card img[src$="bmw-i4.png"] {
+  --vehicle-scale: 1.548;
+  --vehicle-shift-x: -9.53%;
+  --vehicle-shift-y: 4.49%;
+}
+
+.vehicle-image-wrap img[src$="bmw-m4-competition.png"],
+.vehicle-card--compact .vehicle-image-wrap img[src$="bmw-m4-competition.png"],
+.compare-table thead img[src$="bmw-m4-competition.png"],
+.recent-vehicle-card img[src$="bmw-m4-competition.png"] {
+  --vehicle-scale: 0.976;
+  --vehicle-shift-x: 0.01%;
+  --vehicle-shift-y: -1.18%;
+}
+
+.vehicle-image-wrap img[src$="byd-atto-3.png"],
+.vehicle-card--compact .vehicle-image-wrap img[src$="byd-atto-3.png"],
+.compare-table thead img[src$="byd-atto-3.png"],
+.recent-vehicle-card img[src$="byd-atto-3.png"] {
+  --vehicle-scale: 0.974;
+  --vehicle-shift-x: 0.03%;
+  --vehicle-shift-y: -1.22%;
+}
+
+.vehicle-image-wrap img[src$="byd-seal.png"],
+.vehicle-card--compact .vehicle-image-wrap img[src$="byd-seal.png"],
+.compare-table thead img[src$="byd-seal.png"],
+.recent-vehicle-card img[src$="byd-seal.png"] {
+  --vehicle-scale: 1.550;
+  --vehicle-shift-x: -0.52%;
+  --vehicle-shift-y: 3.09%;
+}
+
+.vehicle-image-wrap img[src$="chevrolet-colorado.png"],
+.vehicle-card--compact .vehicle-image-wrap img[src$="chevrolet-colorado.png"],
+.compare-table thead img[src$="chevrolet-colorado.png"],
+.recent-vehicle-card img[src$="chevrolet-colorado.png"] {
+  --vehicle-scale: 1.219;
+  --vehicle-shift-x: -6.56%;
+  --vehicle-shift-y: 5.56%;
+}
+
+.vehicle-image-wrap img[src$="chevrolet-trailblazer.png"],
+.vehicle-card--compact .vehicle-image-wrap img[src$="chevrolet-trailblazer.png"],
+.compare-table thead img[src$="chevrolet-trailblazer.png"],
+.recent-vehicle-card img[src$="chevrolet-trailblazer.png"] {
+  --vehicle-scale: 1.423;
+  --vehicle-shift-x: -7.09%;
+  --vehicle-shift-y: 0.76%;
+}
+
+.vehicle-image-wrap img[src$="ferrari-roma.png"],
+.vehicle-card--compact .vehicle-image-wrap img[src$="ferrari-roma.png"],
+.compare-table thead img[src$="ferrari-roma.png"],
+.recent-vehicle-card img[src$="ferrari-roma.png"] {
+  --vehicle-scale: 0.955;
+  --vehicle-shift-x: 0.00%;
+  --vehicle-shift-y: -0.55%;
+}
+
+.vehicle-image-wrap img[src$="ford-everest.png"],
+.vehicle-card--compact .vehicle-image-wrap img[src$="ford-everest.png"],
+.compare-table thead img[src$="ford-everest.png"],
+.recent-vehicle-card img[src$="ford-everest.png"] {
+  --vehicle-scale: 0.902;
+  --vehicle-shift-x: 0.02%;
+  --vehicle-shift-y: 1.15%;
+}
+
+.vehicle-image-wrap img[src$="ford-ranger-raptor.png"],
+.vehicle-card--compact .vehicle-image-wrap img[src$="ford-ranger-raptor.png"],
+.compare-table thead img[src$="ford-ranger-raptor.png"],
+.recent-vehicle-card img[src$="ford-ranger-raptor.png"] {
+  --vehicle-scale: 0.976;
+  --vehicle-shift-x: 0.00%;
+  --vehicle-shift-y: -1.27%;
+}
+
+.vehicle-image-wrap img[src$="ford-ranger-wildtrak.png"],
+.vehicle-card--compact .vehicle-image-wrap img[src$="ford-ranger-wildtrak.png"],
+.compare-table thead img[src$="ford-ranger-wildtrak.png"],
+.recent-vehicle-card img[src$="ford-ranger-wildtrak.png"] {
+  --vehicle-scale: 1.318;
+  --vehicle-shift-x: -7.16%;
+  --vehicle-shift-y: 0.64%;
+}
+
+.vehicle-image-wrap img[src$="ford-territory.png"],
+.vehicle-card--compact .vehicle-image-wrap img[src$="ford-territory.png"],
+.compare-table thead img[src$="ford-territory.png"],
+.recent-vehicle-card img[src$="ford-territory.png"] {
+  --vehicle-scale: 1.490;
+  --vehicle-shift-x: -8.77%;
+  --vehicle-shift-y: -0.41%;
+}
+
+.vehicle-image-wrap img[src$="ford-transit.png"],
+.vehicle-card--compact .vehicle-image-wrap img[src$="ford-transit.png"],
+.compare-table thead img[src$="ford-transit.png"],
+.recent-vehicle-card img[src$="ford-transit.png"] {
+  --vehicle-scale: 0.913;
+  --vehicle-shift-x: 0.01%;
+  --vehicle-shift-y: 0.85%;
+}
+
+.vehicle-image-wrap img[src$="foton-thunder.png"],
+.vehicle-card--compact .vehicle-image-wrap img[src$="foton-thunder.png"],
+.compare-table thead img[src$="foton-thunder.png"],
+.recent-vehicle-card img[src$="foton-thunder.png"] {
+  --vehicle-scale: 1.019;
+  --vehicle-shift-x: 0.01%;
+  --vehicle-shift-y: -2.59%;
+}
+
+.vehicle-image-wrap img[src$="foton-toano.png"],
+.vehicle-card--compact .vehicle-image-wrap img[src$="foton-toano.png"],
+.compare-table thead img[src$="foton-toano.png"],
+.recent-vehicle-card img[src$="foton-toano.png"] {
+  --vehicle-scale: 0.915;
+  --vehicle-shift-x: 0.00%;
+  --vehicle-shift-y: 0.85%;
+}
+
+.vehicle-image-wrap img[src$="honda-cr-v-hybrid.png"],
+.vehicle-card--compact .vehicle-image-wrap img[src$="honda-cr-v-hybrid.png"],
+.compare-table thead img[src$="honda-cr-v-hybrid.png"],
+.recent-vehicle-card img[src$="honda-cr-v-hybrid.png"] {
+  --vehicle-scale: 0.989;
+  --vehicle-shift-x: 0.04%;
+  --vehicle-shift-y: -1.69%;
+}
+
+.vehicle-image-wrap img[src$="honda-cr-v.png"],
+.vehicle-card--compact .vehicle-image-wrap img[src$="honda-cr-v.png"],
+.compare-table thead img[src$="honda-cr-v.png"],
+.recent-vehicle-card img[src$="honda-cr-v.png"] {
+  --vehicle-scale: 1.445;
+  --vehicle-shift-x: -0.56%;
+  --vehicle-shift-y: -2.04%;
+}
+
+.vehicle-image-wrap img[src$="hyundai-h100.png"],
+.vehicle-card--compact .vehicle-image-wrap img[src$="hyundai-h100.png"],
+.compare-table thead img[src$="hyundai-h100.png"],
+.recent-vehicle-card img[src$="hyundai-h100.png"] {
+  --vehicle-scale: 1.413;
+  --vehicle-shift-x: -7.84%;
+  --vehicle-shift-y: -0.82%;
+}
+
+.vehicle-image-wrap img[src$="hyundai-ioniq-5.png"],
+.vehicle-card--compact .vehicle-image-wrap img[src$="hyundai-ioniq-5.png"],
+.compare-table thead img[src$="hyundai-ioniq-5.png"],
+.recent-vehicle-card img[src$="hyundai-ioniq-5.png"] {
+  --vehicle-scale: 1.020;
+  --vehicle-shift-x: -0.01%;
+  --vehicle-shift-y: -2.67%;
+}
+
+.vehicle-image-wrap img[src$="hyundai-palisade.png"],
+.vehicle-card--compact .vehicle-image-wrap img[src$="hyundai-palisade.png"],
+.compare-table thead img[src$="hyundai-palisade.png"],
+.recent-vehicle-card img[src$="hyundai-palisade.png"] {
+  --vehicle-scale: 1.550;
+  --vehicle-shift-x: -9.04%;
+  --vehicle-shift-y: 2.73%;
+}
+
+.vehicle-image-wrap img[src$="hyundai-staria.png"],
+.vehicle-card--compact .vehicle-image-wrap img[src$="hyundai-staria.png"],
+.compare-table thead img[src$="hyundai-staria.png"],
+.recent-vehicle-card img[src$="hyundai-staria.png"] {
+  --vehicle-scale: 0.993;
+  --vehicle-shift-x: 0.01%;
+  --vehicle-shift-y: -1.77%;
+}
+
+.vehicle-image-wrap img[src$="isuzu-dmax-x-terrain.png"],
+.vehicle-card--compact .vehicle-image-wrap img[src$="isuzu-dmax-x-terrain.png"],
+.compare-table thead img[src$="isuzu-dmax-x-terrain.png"],
+.recent-vehicle-card img[src$="isuzu-dmax-x-terrain.png"] {
+  --vehicle-scale: 1.497;
+  --vehicle-shift-x: 0.21%;
+  --vehicle-shift-y: -2.42%;
+}
+
+.vehicle-image-wrap img[src$="isuzu-dmax.png"],
+.vehicle-card--compact .vehicle-image-wrap img[src$="isuzu-dmax.png"],
+.compare-table thead img[src$="isuzu-dmax.png"],
+.recent-vehicle-card img[src$="isuzu-dmax.png"] {
+  --vehicle-scale: 0.953;
+  --vehicle-shift-x: 0.02%;
+  --vehicle-shift-y: -0.53%;
+}
+
+.vehicle-image-wrap img[src$="jac-t9.png"],
+.vehicle-card--compact .vehicle-image-wrap img[src$="jac-t9.png"],
+.compare-table thead img[src$="jac-t9.png"],
+.recent-vehicle-card img[src$="jac-t9.png"] {
+  --vehicle-scale: 1.539;
+  --vehicle-shift-x: 0.22%;
+  --vehicle-shift-y: -0.85%;
+}
+
+.vehicle-image-wrap img[src$="jaguar-f-type.png"],
+.vehicle-card--compact .vehicle-image-wrap img[src$="jaguar-f-type.png"],
+.compare-table thead img[src$="jaguar-f-type.png"],
+.recent-vehicle-card img[src$="jaguar-f-type.png"] {
+  --vehicle-scale: 1.364;
+  --vehicle-shift-x: -9.52%;
+  --vehicle-shift-y: -13.64%;
+}
+
+.vehicle-image-wrap img[src$="kia-carnival.png"],
+.vehicle-card--compact .vehicle-image-wrap img[src$="kia-carnival.png"],
+.compare-table thead img[src$="kia-carnival.png"],
+.recent-vehicle-card img[src$="kia-carnival.png"] {
+  --vehicle-scale: 1.261;
+  --vehicle-shift-x: -5.71%;
+  --vehicle-shift-y: -10.33%;
+}
+
+.vehicle-image-wrap img[src$="kia-ev6.png"],
+.vehicle-card--compact .vehicle-image-wrap img[src$="kia-ev6.png"],
+.compare-table thead img[src$="kia-ev6.png"],
+.recent-vehicle-card img[src$="kia-ev6.png"] {
+  --vehicle-scale: 1.516;
+  --vehicle-shift-x: -7.86%;
+  --vehicle-shift-y: 1.71%;
+}
+
+.vehicle-image-wrap img[src$="kia-sorento.png"],
+.vehicle-card--compact .vehicle-image-wrap img[src$="kia-sorento.png"],
+.compare-table thead img[src$="kia-sorento.png"],
+.recent-vehicle-card img[src$="kia-sorento.png"] {
+  --vehicle-scale: 1.475;
+  --vehicle-shift-x: -7.41%;
+  --vehicle-shift-y: 0.90%;
+}
+
+.vehicle-image-wrap img[src$="lamborghini-urus.png"],
+.vehicle-card--compact .vehicle-image-wrap img[src$="lamborghini-urus.png"],
+.compare-table thead img[src$="lamborghini-urus.png"],
+.recent-vehicle-card img[src$="lamborghini-urus.png"] {
+  --vehicle-scale: 1.033;
+  --vehicle-shift-x: 0.01%;
+  --vehicle-shift-y: -3.06%;
+}
+
+.vehicle-image-wrap img[src$="lexus-ls-500.png"],
+.vehicle-card--compact .vehicle-image-wrap img[src$="lexus-ls-500.png"],
+.compare-table thead img[src$="lexus-ls-500.png"],
+.recent-vehicle-card img[src$="lexus-ls-500.png"] {
+  --vehicle-scale: 1.293;
+  --vehicle-shift-x: -3.74%;
+  --vehicle-shift-y: 2.59%;
+}
+
+.vehicle-image-wrap img[src$="maserati-quattroporte.png"],
+.vehicle-card--compact .vehicle-image-wrap img[src$="maserati-quattroporte.png"],
+.compare-table thead img[src$="maserati-quattroporte.png"],
+.recent-vehicle-card img[src$="maserati-quattroporte.png"] {
+  --vehicle-scale: 1.519;
+  --vehicle-shift-x: -8.21%;
+  --vehicle-shift-y: 3.77%;
+}
+
+.vehicle-image-wrap img[src$="maxus-g10.png"],
+.vehicle-card--compact .vehicle-image-wrap img[src$="maxus-g10.png"],
+.compare-table thead img[src$="maxus-g10.png"],
+.recent-vehicle-card img[src$="maxus-g10.png"] {
+  --vehicle-scale: 1.032;
+  --vehicle-shift-x: 0.01%;
+  --vehicle-shift-y: -2.96%;
+}
+
+.vehicle-image-wrap img[src$="maxus-v80.png"],
+.vehicle-card--compact .vehicle-image-wrap img[src$="maxus-v80.png"],
+.compare-table thead img[src$="maxus-v80.png"],
+.recent-vehicle-card img[src$="maxus-v80.png"] {
+  --vehicle-scale: 0.941;
+  --vehicle-shift-x: 0.02%;
+  --vehicle-shift-y: -0.15%;
+}
+
+.vehicle-image-wrap img[src$="mazda-bt-50.png"],
+.vehicle-card--compact .vehicle-image-wrap img[src$="mazda-bt-50.png"],
+.compare-table thead img[src$="mazda-bt-50.png"],
+.recent-vehicle-card img[src$="mazda-bt-50.png"] {
+  --vehicle-scale: 1.335;
+  --vehicle-shift-x: -6.34%;
+  --vehicle-shift-y: 0.96%;
+}
+
+.vehicle-image-wrap img[src$="mazda-cx-9.png"],
+.vehicle-card--compact .vehicle-image-wrap img[src$="mazda-cx-9.png"],
+.compare-table thead img[src$="mazda-cx-9.png"],
+.recent-vehicle-card img[src$="mazda-cx-9.png"] {
+  --vehicle-scale: 1.353;
+  --vehicle-shift-x: -9.42%;
+  --vehicle-shift-y: 7.64%;
+}
+
+.vehicle-image-wrap img[src$="mclaren-720s.png"],
+.vehicle-card--compact .vehicle-image-wrap img[src$="mclaren-720s.png"],
+.compare-table thead img[src$="mclaren-720s.png"],
+.recent-vehicle-card img[src$="mclaren-720s.png"] {
+  --vehicle-scale: 0.981;
+  --vehicle-shift-x: 0.04%;
+  --vehicle-shift-y: -1.26%;
+}
+
+.vehicle-image-wrap img[src$="mercedes-amg-gt.png"],
+.vehicle-card--compact .vehicle-image-wrap img[src$="mercedes-amg-gt.png"],
+.compare-table thead img[src$="mercedes-amg-gt.png"],
+.recent-vehicle-card img[src$="mercedes-amg-gt.png"] {
+  --vehicle-scale: 1.550;
+  --vehicle-shift-x: 0.24%;
+  --vehicle-shift-y: 2.66%;
+}
+
+.vehicle-image-wrap img[src$="mercedes-eqe.png"],
+.vehicle-card--compact .vehicle-image-wrap img[src$="mercedes-eqe.png"],
+.compare-table thead img[src$="mercedes-eqe.png"],
+.recent-vehicle-card img[src$="mercedes-eqe.png"] {
+  --vehicle-scale: 1.520;
+  --vehicle-shift-x: 0.63%;
+  --vehicle-shift-y: -0.19%;
+}
+
+.vehicle-image-wrap img[src$="mercedes-s-class.png"],
+.vehicle-card--compact .vehicle-image-wrap img[src$="mercedes-s-class.png"],
+.compare-table thead img[src$="mercedes-s-class.png"],
+.recent-vehicle-card img[src$="mercedes-s-class.png"] {
+  --vehicle-scale: 1.415;
+  --vehicle-shift-x: -6.32%;
+  --vehicle-shift-y: 5.63%;
+}
+
+.vehicle-image-wrap img[src$="mercedes-sprinter.png"],
+.vehicle-card--compact .vehicle-image-wrap img[src$="mercedes-sprinter.png"],
+.compare-table thead img[src$="mercedes-sprinter.png"],
+.recent-vehicle-card img[src$="mercedes-sprinter.png"] {
+  --vehicle-scale: 1.325;
+  --vehicle-shift-x: 1.55%;
+  --vehicle-shift-y: -0.98%;
+}
+
+.vehicle-image-wrap img[src$="mercedes-v-class.png"],
+.vehicle-card--compact .vehicle-image-wrap img[src$="mercedes-v-class.png"],
+.compare-table thead img[src$="mercedes-v-class.png"],
+.recent-vehicle-card img[src$="mercedes-v-class.png"] {
+  --vehicle-scale: 1.429;
+  --vehicle-shift-x: 0.52%;
+  --vehicle-shift-y: -1.09%;
+}
+
+.vehicle-image-wrap img[src$="mg4-ev.png"],
+.vehicle-card--compact .vehicle-image-wrap img[src$="mg4-ev.png"],
+.compare-table thead img[src$="mg4-ev.png"],
+.recent-vehicle-card img[src$="mg4-ev.png"] {
+  --vehicle-scale: 1.459;
+  --vehicle-shift-x: -7.18%;
+  --vehicle-shift-y: 1.70%;
+}
+
+.vehicle-image-wrap img[src$="mitsubishi-montero.png"],
+.vehicle-card--compact .vehicle-image-wrap img[src$="mitsubishi-montero.png"],
+.compare-table thead img[src$="mitsubishi-montero.png"],
+.recent-vehicle-card img[src$="mitsubishi-montero.png"] {
+  --vehicle-scale: 0.976;
+  --vehicle-shift-x: 0.04%;
+  --vehicle-shift-y: -1.27%;
+}
+
+.vehicle-image-wrap img[src$="mitsubishi-strada-athlete.png"],
+.vehicle-card--compact .vehicle-image-wrap img[src$="mitsubishi-strada-athlete.png"],
+.compare-table thead img[src$="mitsubishi-strada-athlete.png"],
+.recent-vehicle-card img[src$="mitsubishi-strada-athlete.png"] {
+  --vehicle-scale: 1.411;
+  --vehicle-shift-x: -6.36%;
+  --vehicle-shift-y: 1.38%;
+}
+
+.vehicle-image-wrap img[src$="mitsubishi-triton.png"],
+.vehicle-card--compact .vehicle-image-wrap img[src$="mitsubishi-triton.png"],
+.compare-table thead img[src$="mitsubishi-triton.png"],
+.recent-vehicle-card img[src$="mitsubishi-triton.png"] {
+  --vehicle-scale: 1.031;
+  --vehicle-shift-x: 0.01%;
+  --vehicle-shift-y: -2.98%;
+}
+
+.vehicle-image-wrap img[src$="nissan-frontier-pro-4x.png"],
+.vehicle-card--compact .vehicle-image-wrap img[src$="nissan-frontier-pro-4x.png"],
+.compare-table thead img[src$="nissan-frontier-pro-4x.png"],
+.recent-vehicle-card img[src$="nissan-frontier-pro-4x.png"] {
+  --vehicle-scale: 1.530;
+  --vehicle-shift-x: -0.66%;
+  --vehicle-shift-y: -1.66%;
+}
+
+.vehicle-image-wrap img[src$="nissan-leaf.png"],
+.vehicle-card--compact .vehicle-image-wrap img[src$="nissan-leaf.png"],
+.compare-table thead img[src$="nissan-leaf.png"],
+.recent-vehicle-card img[src$="nissan-leaf.png"] {
+  --vehicle-scale: 1.354;
+  --vehicle-shift-x: -9.28%;
+  --vehicle-shift-y: 7.24%;
+}
+
+.vehicle-image-wrap img[src$="nissan-navara.png"],
+.vehicle-card--compact .vehicle-image-wrap img[src$="nissan-navara.png"],
+.compare-table thead img[src$="nissan-navara.png"],
+.recent-vehicle-card img[src$="nissan-navara.png"] {
+  --vehicle-scale: 1.007;
+  --vehicle-shift-x: 0.01%;
+  --vehicle-shift-y: -2.31%;
+}
+
+.vehicle-image-wrap img[src$="nissan-patrol.png"],
+.vehicle-card--compact .vehicle-image-wrap img[src$="nissan-patrol.png"],
+.compare-table thead img[src$="nissan-patrol.png"],
+.recent-vehicle-card img[src$="nissan-patrol.png"] {
+  --vehicle-scale: 1.292;
+  --vehicle-shift-x: -7.74%;
+  --vehicle-shift-y: 6.97%;
+}
+
+.vehicle-image-wrap img[src$="nissan-terra.png"],
+.vehicle-card--compact .vehicle-image-wrap img[src$="nissan-terra.png"],
+.compare-table thead img[src$="nissan-terra.png"],
+.recent-vehicle-card img[src$="nissan-terra.png"] {
+  --vehicle-scale: 0.950;
+  --vehicle-shift-x: 0.01%;
+  --vehicle-shift-y: -0.48%;
+}
+
+.vehicle-image-wrap img[src$="nissan-urvan-premium.png"],
+.vehicle-card--compact .vehicle-image-wrap img[src$="nissan-urvan-premium.png"],
+.compare-table thead img[src$="nissan-urvan-premium.png"],
+.recent-vehicle-card img[src$="nissan-urvan-premium.png"] {
+  --vehicle-scale: 0.999;
+  --vehicle-shift-x: 0.01%;
+  --vehicle-shift-y: -1.97%;
+}
+
+.vehicle-image-wrap img[src$="peugeot-traveller.png"],
+.vehicle-card--compact .vehicle-image-wrap img[src$="peugeot-traveller.png"],
+.compare-table thead img[src$="peugeot-traveller.png"],
+.recent-vehicle-card img[src$="peugeot-traveller.png"] {
+  --vehicle-scale: 1.293;
+  --vehicle-shift-x: -6.82%;
+  --vehicle-shift-y: 1.44%;
+}
+
+.vehicle-image-wrap img[src$="porsche-911.png"],
+.vehicle-card--compact .vehicle-image-wrap img[src$="porsche-911.png"],
+.compare-table thead img[src$="porsche-911.png"],
+.recent-vehicle-card img[src$="porsche-911.png"] {
+  --vehicle-scale: 1.020;
+  --vehicle-shift-x: 0.00%;
+  --vehicle-shift-y: -2.49%;
+}
+
+.vehicle-image-wrap img[src$="porsche-panamera.png"],
+.vehicle-card--compact .vehicle-image-wrap img[src$="porsche-panamera.png"],
+.compare-table thead img[src$="porsche-panamera.png"],
+.recent-vehicle-card img[src$="porsche-panamera.png"] {
+  --vehicle-scale: 0.956;
+  --vehicle-shift-x: 0.00%;
+  --vehicle-shift-y: -0.55%;
+}
+
+.vehicle-image-wrap img[src$="porsche-taycan.png"],
+.vehicle-card--compact .vehicle-image-wrap img[src$="porsche-taycan.png"],
+.compare-table thead img[src$="porsche-taycan.png"],
+.recent-vehicle-card img[src$="porsche-taycan.png"] {
+  --vehicle-scale: 0.957;
+  --vehicle-shift-x: 0.01%;
+  --vehicle-shift-y: -0.57%;
+}
+
+.vehicle-image-wrap img[src$="ram-1500.png"],
+.vehicle-card--compact .vehicle-image-wrap img[src$="ram-1500.png"],
+.compare-table thead img[src$="ram-1500.png"],
+.recent-vehicle-card img[src$="ram-1500.png"] {
+  --vehicle-scale: 1.225;
+  --vehicle-shift-x: -5.42%;
+  --vehicle-shift-y: 3.69%;
+}
+
+.vehicle-image-wrap img[src$="renault-trafic.png"],
+.vehicle-card--compact .vehicle-image-wrap img[src$="renault-trafic.png"],
+.compare-table thead img[src$="renault-trafic.png"],
+.recent-vehicle-card img[src$="renault-trafic.png"] {
+  --vehicle-scale: 1.284;
+  --vehicle-shift-x: -6.86%;
+  --vehicle-shift-y: 0.80%;
+}
+
+.vehicle-image-wrap img[src$="rolls-royce-ghost.png"],
+.vehicle-card--compact .vehicle-image-wrap img[src$="rolls-royce-ghost.png"],
+.compare-table thead img[src$="rolls-royce-ghost.png"],
+.recent-vehicle-card img[src$="rolls-royce-ghost.png"] {
+  --vehicle-scale: 0.996;
+  --vehicle-shift-x: 0.01%;
+  --vehicle-shift-y: -1.75%;
+}
+
+.vehicle-image-wrap img[src$="subaru-forester.png"],
+.vehicle-card--compact .vehicle-image-wrap img[src$="subaru-forester.png"],
+.compare-table thead img[src$="subaru-forester.png"],
+.recent-vehicle-card img[src$="subaru-forester.png"] {
+  --vehicle-scale: 1.476;
+  --vehicle-shift-x: -0.13%;
+  --vehicle-shift-y: -2.26%;
+}
+
+.vehicle-image-wrap img[src$="suzuki-jimny.png"],
+.vehicle-card--compact .vehicle-image-wrap img[src$="suzuki-jimny.png"],
+.compare-table thead img[src$="suzuki-jimny.png"],
+.recent-vehicle-card img[src$="suzuki-jimny.png"] {
+  --vehicle-scale: 1.328;
+  --vehicle-shift-x: -8.73%;
+  --vehicle-shift-y: 2.03%;
+}
+
+.vehicle-image-wrap img[src$="tesla-model-3.png"],
+.vehicle-card--compact .vehicle-image-wrap img[src$="tesla-model-3.png"],
+.compare-table thead img[src$="tesla-model-3.png"],
+.recent-vehicle-card img[src$="tesla-model-3.png"] {
+  --vehicle-scale: 1.024;
+  --vehicle-shift-x: 0.01%;
+  --vehicle-shift-y: -2.68%;
+}
+
+.vehicle-image-wrap img[src$="tesla-model-y.png"],
+.vehicle-card--compact .vehicle-image-wrap img[src$="tesla-model-y.png"],
+.compare-table thead img[src$="tesla-model-y.png"],
+.recent-vehicle-card img[src$="tesla-model-y.png"] {
+  --vehicle-scale: 1.282;
+  --vehicle-shift-x: -6.43%;
+  --vehicle-shift-y: -11.01%;
+}
+
+.vehicle-image-wrap img[src$="toyota-corolla-cross-hybrid.png"],
+.vehicle-card--compact .vehicle-image-wrap img[src$="toyota-corolla-cross-hybrid.png"],
+.compare-table thead img[src$="toyota-corolla-cross-hybrid.png"],
+.recent-vehicle-card img[src$="toyota-corolla-cross-hybrid.png"] {
+  --vehicle-scale: 0.966;
+  --vehicle-shift-x: 0.01%;
+  --vehicle-shift-y: -0.98%;
+}
+
+.vehicle-image-wrap img[src$="toyota-fortuner.png"],
+.vehicle-card--compact .vehicle-image-wrap img[src$="toyota-fortuner.png"],
+.compare-table thead img[src$="toyota-fortuner.png"],
+.recent-vehicle-card img[src$="toyota-fortuner.png"] {
+  --vehicle-scale: 0.952;
+  --vehicle-shift-x: 0.01%;
+  --vehicle-shift-y: -0.55%;
+}
+
+.vehicle-image-wrap img[src$="toyota-hiace-commuter.png"],
+.vehicle-card--compact .vehicle-image-wrap img[src$="toyota-hiace-commuter.png"],
+.compare-table thead img[src$="toyota-hiace-commuter.png"],
+.recent-vehicle-card img[src$="toyota-hiace-commuter.png"] {
+  --vehicle-scale: 1.240;
+  --vehicle-shift-x: -5.94%;
+  --vehicle-shift-y: 5.48%;
+}
+
+.vehicle-image-wrap img[src$="toyota-hiace.png"],
+.vehicle-card--compact .vehicle-image-wrap img[src$="toyota-hiace.png"],
+.compare-table thead img[src$="toyota-hiace.png"],
+.recent-vehicle-card img[src$="toyota-hiace.png"] {
+  --vehicle-scale: 0.947;
+  --vehicle-shift-x: 0.00%;
+  --vehicle-shift-y: -0.33%;
+}
+
+.vehicle-image-wrap img[src$="toyota-hilux-gr-sport.png"],
+.vehicle-card--compact .vehicle-image-wrap img[src$="toyota-hilux-gr-sport.png"],
+.compare-table thead img[src$="toyota-hilux-gr-sport.png"],
+.recent-vehicle-card img[src$="toyota-hilux-gr-sport.png"] {
+  --vehicle-scale: 1.038;
+  --vehicle-shift-x: 0.01%;
+  --vehicle-shift-y: -3.22%;
+}
+
+.vehicle-image-wrap img[src$="toyota-hilux.png"],
+.vehicle-card--compact .vehicle-image-wrap img[src$="toyota-hilux.png"],
+.compare-table thead img[src$="toyota-hilux.png"],
+.recent-vehicle-card img[src$="toyota-hilux.png"] {
+  --vehicle-scale: 0.997;
+  --vehicle-shift-x: 0.04%;
+  --vehicle-shift-y: -1.94%;
+}
+
+.vehicle-image-wrap img[src$="toyota-land-cruiser-300.png"],
+.vehicle-card--compact .vehicle-image-wrap img[src$="toyota-land-cruiser-300.png"],
+.compare-table thead img[src$="toyota-land-cruiser-300.png"],
+.recent-vehicle-card img[src$="toyota-land-cruiser-300.png"] {
+  --vehicle-scale: 1.427;
+  --vehicle-shift-x: -6.82%;
+  --vehicle-shift-y: -0.07%;
+}
+
+.vehicle-image-wrap img[src$="toyota-prado.png"],
+.vehicle-card--compact .vehicle-image-wrap img[src$="toyota-prado.png"],
+.compare-table thead img[src$="toyota-prado.png"],
+.recent-vehicle-card img[src$="toyota-prado.png"] {
+  --vehicle-scale: 0.975;
+  --vehicle-shift-x: 0.03%;
+  --vehicle-shift-y: -1.24%;
+}
+
+.vehicle-image-wrap img[src$="volkswagen-multivan.png"],
+.vehicle-card--compact .vehicle-image-wrap img[src$="volkswagen-multivan.png"],
+.compare-table thead img[src$="volkswagen-multivan.png"],
+.recent-vehicle-card img[src$="volkswagen-multivan.png"] {
+  --vehicle-scale: 1.200;
+  --vehicle-shift-x: -6.17%;
+  --vehicle-shift-y: 5.00%;
+}
+
+.vehicle-image-wrap img[src$="volvo-ex30.png"],
+.vehicle-card--compact .vehicle-image-wrap img[src$="volvo-ex30.png"],
+.compare-table thead img[src$="volvo-ex30.png"],
+.recent-vehicle-card img[src$="volvo-ex30.png"] {
+  --vehicle-scale: 1.364;
+  --vehicle-shift-x: -9.57%;
+  --vehicle-shift-y: 8.02%;
+}
+
+@media (max-width: 767.98px) {
+  .vehicle-image-wrap {
+    height: 195px;
+    min-height: 195px;
+  }
+
+  .vehicle-card--compact .vehicle-image-wrap {
+    height: 170px;
+    min-height: 170px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .vehicle-image-wrap img,
+  .vehicle-card--compact .vehicle-image-wrap img {
+    transition: none;
+  }
+}

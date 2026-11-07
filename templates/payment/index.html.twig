@@ -204,6 +204,31 @@
                 </div>
             {% endif %}
         {% endif %}
+
+        {% if customer_refunds %}
+            <article class="operation-card mt-5" id="refund-history">
+                <span class="section-kicker">Refund history</span>
+                <h2>Your refunds</h2>
+                <p>Track cancellation, payment-correction, security-deposit, and booking-modification refunds in one place.</p>
+                <div class="admin-table-wrap">
+                    <table class="admin-table">
+                        <thead><tr><th>Booking</th><th>Type</th><th>Amount</th><th>Status</th><th>Processed</th><th>Reference</th></tr></thead>
+                        <tbody>
+                        {% for refund in customer_refunds %}
+                            <tr>
+                                <td><a href="{{ page_url('booking-view', {reference: refund.booking.reference}) }}">{{ refund.booking.reference }}</a><small>{{ refund.booking.vehicle.name }}</small></td>
+                                <td>{{ refund.refundTypeLabel }}</td>
+                                <td>{{ refund.amount|money }}</td>
+                                <td><span class="status-badge status-badge--{{ refund.status|status_class }}">{{ refund.status|humanize_label }}</span></td>
+                                <td>{{ refund.processedAt ? refund.processedAt|date('M j, Y g:i A') : '—' }}</td>
+                                <td>{{ refund.referenceNumber ?: '—' }}</td>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </article>
+        {% endif %}
     </div>
 </section>
 {% endblock %}

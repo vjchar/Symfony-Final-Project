@@ -205,7 +205,7 @@ final class VerificationTest extends WebTestCase
         $this->client->loginUser($this->customer);
         $this->submitBooking($this->client);
         $booking = $this->bookings()[0];
-        $this->em()->createQuery('UPDATE '.Booking::class.' b SET b.status = :completed')->execute(['completed' => 'completed']);
+        $this->completeWithSettlement($booking);
         $crawler = $this->client->request('GET', '/account/rate-trip');
         $this->client->request('POST', '/account/rate-trip', [
             '_token' => $crawler->filter('.rating-form input[name="_token"]')->attr('value'),

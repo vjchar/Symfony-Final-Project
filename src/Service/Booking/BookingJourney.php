@@ -37,6 +37,12 @@ final readonly class BookingJourney
             'documents' => 'bi-person-vcard',
             'verification' => 'bi-shield-check',
             'preparing' => 'bi-tools',
+            'ready_pickup' => 'bi-key',
+            'ready_delivery' => 'bi-truck',
+            'active', 'early_return_pending', 'extension_pending' => 'bi-car-front',
+            'extension_payment', 'return_payment', 'return_payment_verification' => 'bi-credit-card',
+            'settlement_pending', 'returned' => 'bi-clipboard-check',
+            'deposit_refund_pending', 'refund_pending', 'refund_processed' => 'bi-arrow-counterclockwise',
             'review' => 'bi-star',
             'complete' => 'bi-check2-circle',
             'closed' => 'bi-x-circle',
@@ -50,11 +56,22 @@ final readonly class BookingJourney
     public function priority(): int
     {
         return match ($this->stage) {
+            'extension_payment' => 120,
             'payment' => 115,
             'documents' => 110,
+            'ready_pickup', 'ready_delivery' => 105,
+            'return_payment' => 100,
+            'settlement_pending' => 98,
+            'return_payment_verification' => 97,
+            'deposit_refund_pending' => 96,
+            'refund_pending' => 90,
             'verification' => 85,
             'preparing' => 80,
+            'early_return_pending', 'extension_pending' => 75,
+            'active' => 65,
             'review' => 55,
+            'refund_processed' => 50,
+            'returned' => 40,
             default => 10,
         };
     }

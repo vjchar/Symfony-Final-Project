@@ -101,7 +101,7 @@ final class ReviewTest extends WebTestCase
     {
         $this->submitBooking($this->client);
         $booking = $this->bookings()[0];
-        $this->em()->createQuery('UPDATE '.Booking::class.' b SET b.status = :completed')->execute(['completed' => 'completed']);
+        $this->completeWithSettlement($booking);
 
         return $booking;
     }

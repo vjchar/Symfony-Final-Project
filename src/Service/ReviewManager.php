@@ -5,6 +5,7 @@ namespace App\Service;
 use App\Entity\Booking;
 use App\Entity\Review;
 use App\Entity\User;
+use App\Repository\RentalSettlementRepository;
 use App\Repository\ReviewRepository;
 use App\Service\Booking\RunsInTransaction;
 use Doctrine\ORM\EntityManagerInterface;
@@ -12,9 +13,8 @@ use Symfony\Component\HttpFoundation\File\UploadedFile;
 
 /**
  * v15 rate-trip.php and submit_vehicle_review(): one moderated review per
- * completed booking, with up to three trip photos. (v15 also waits for the
- * return settlement to be settled; settlements come with the admin rental
- * workflow, so a completed booking is enough for now.)
+ * completed booking whose return settlement is settled, with up to three
+ * trip photos.
  */
 final class ReviewManager
 {
@@ -26,6 +26,7 @@ final class ReviewManager
     public function __construct(
         private readonly EntityManagerInterface $entityManager,
         private readonly ReviewRepository $reviews,
+        private readonly RentalSettlementRepository $settlements,
         private readonly PrivateFileStorage $storage,
         private readonly NotificationCenter $notifications,
         private readonly AuditLogger $auditLogger,
@@ -61,7 +62,9 @@ final class ReviewManager
      */
     public function submit(?Booking $booking, User $user, array $scores, string $title, string $body, bool $consent, array $photos): Review
     {
-        if (null === $booking || !$booking->isOwnedBy($user) || 'completed' !== $booking->getStatus() || null !== $this->reviews->findForBooking($booking)) {
+        if (null === $booking || !$booking->isOwnedBy($user) || 'completed' !== $booking->getStatus()
+            || true !== $this->settlements->findForBooking($booking)?->isSettled()
+            || null !== $this->reviews->findForBooking($booking)) {
             throw new \DomainException('This completed booking is not eligible for another review.');
         }
 

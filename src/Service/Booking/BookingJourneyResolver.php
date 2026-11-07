@@ -4,7 +4,13 @@ namespace App\Service\Booking;
 
 use App\Entity\Booking;
 use App\Entity\Notification;
+use App\Entity\Payment;
+use App\Entity\RentalSettlement;
 use App\Repository\CustomerDocumentRepository;
+use App\Repository\PaymentRefundRepository;
+use App\Repository\PaymentRepository;
+use App\Repository\RentalAdjustmentRequestRepository;
+use App\Repository\RentalSettlementRepository;
 use App\Repository\ReviewRepository;
 use App\Routing\PageUrlGenerator;
 use App\Service\Document\DocumentChecklist;
@@ -14,9 +20,10 @@ use App\Service\Payment\PaymentSummary;
 /**
  * v15 booking_next_step(). A pending booking goes payment, then documents,
  * then verification, as in v15 resolve_pending_booking_journey(); once
- * confirmed the vehicle is being prepared; a completed booking asks for a
- * review. The other v15 stages (pickup, active rental, return settlement,
- * refunds) come with the admin rental workflow.
+ * confirmed the vehicle is being prepared, then it is ready for pickup or
+ * delivery, then on the road. After the return the customer follows the
+ * settlement: a balance to pay or a deposit refund on its way, and once
+ * settled and completed, a review. A cancelled booking shows its refund.
  */
 final class BookingJourneyResolver
 {
@@ -25,6 +32,10 @@ final class BookingJourneyResolver
         private readonly PaymentLedger $ledger,
         private readonly CustomerDocumentRepository $documents,
         private readonly ReviewRepository $reviews,
+        private readonly RentalSettlementRepository $settlements,
+        private readonly PaymentRefundRepository $refunds,
+        private readonly RentalAdjustmentRequestRepository $adjustments,
+        private readonly PaymentRepository $payments,
     ) {
     }
 
@@ -46,10 +57,14 @@ final class BookingJourneyResolver
                 'Your payment and required documents have been verified. We’ll notify you when the vehicle is ready for %s.',
                 'Vehicle delivery' === $booking->getPickupMethod() ? 'delivery' : 'pickup',
             )),
-            'completed' => null === $this->reviews->findForBooking($booking)
-                ? $journey('review', null, 'Rate Your Rental', 'Your rental is complete. Share your experience with a verified review.', 'Rate Your Rental', $this->pageUrls->generate('rate-trip', $reference), 'success', actionRequired: true)
-                : $journey('complete', null, 'Rental Complete', 'Your rental and review process are complete.', 'View Booking', $bookingUrl, 'success', noAction: true),
-            'cancelled' => $journey('closed', null, 'Booking Cancelled', 'This booking is cancelled and has no remaining customer action.', 'View Booking', $bookingUrl, 'secondary', noAction: true),
+            // v15 resolve_ready_booking_journey()
+            'ready' => $booking->isDelivery()
+                ? $journey('ready_delivery', 5, 'Ready for Delivery', 'Your vehicle has been prepared and is ready for the scheduled delivery.', 'View Delivery Details', $bookingUrl.'#pickup-details', 'success', actionRequired: true)
+                : $journey('ready_pickup', 5, 'Ready for Pickup', 'Your vehicle has been prepared and is ready for pickup.', 'View Pickup Details', $bookingUrl.'#pickup-details', 'success', actionRequired: true),
+            'active' => $this->active($journey, $booking, $payments, $reference, $bookingUrl),
+            'returned' => $this->returned($journey, $booking, $payments, $bookingUrl),
+            'completed' => $this->completed($journey, $booking, $payments, $reference, $bookingUrl),
+            'cancelled' => $this->cancelled($journey, $booking, $bookingUrl),
             'rejected', 'no_show' => $journey('closed', null, 'Booking Closed', 'This booking has no remaining customer action.', 'View Booking', $bookingUrl, 'secondary', noAction: true),
             default => $journey('booking', 1, 'Booking Created', 'Your reservation has been saved.', 'View Booking', $bookingUrl, 'info'),
         };
@@ -127,6 +142,113 @@ final class BookingJourneyResolver
             'document' => ['url' => $this->pageUrls->generate('documents'), 'label' => 'Open Documents'],
             'payment' => ['url' => $this->pageUrls->generate('payments'), 'label' => 'Open Payments'],
             default => ['url' => $this->pageUrls->generate('notifications'), 'label' => 'View Update'],
+        };
+    }
+
+    /**
+     * v15 resolve_active_booking_journey().
+     *
+     * @param callable(string, ?int, string, string, string, string, string, bool=, bool=): BookingJourney $journey
+     * @param array{reference: string}                                                                       $reference
+     */
+    private function active(callable $journey, Booking $booking, PaymentSummary $payments, array $reference, string $bookingUrl): BookingJourney
+    {
+        $paymentUrl = $this->pageUrls->generate('payments', $reference);
+        $adjustmentUrl = $this->pageUrls->generate('rental-adjustment', $reference);
+        $owed = $payments->depositDue + $payments->rentalDue;
+        if ($owed > 0) {
+            return $journey('payment', null, 'Payment Balance Required', sprintf('A payment correction or remaining obligation requires ₱%s before the account is fully settled.', number_format($owed)), 'Review Payments', $paymentUrl, 'warning', actionRequired: true);
+        }
+        if ($payments->extensionDue > 0) {
+            return $journey('extension_payment', null, 'Pay Extension Balance', 'Your approved extension has an outstanding balance before the new return schedule can activate.', 'Pay Extension Balance', $paymentUrl, 'warning', actionRequired: true);
+        }
+
+        $unresolved = $this->adjustments->findUnresolvedFor($booking);
+
+        return match (true) {
+            null !== $unresolved && !$unresolved->isExtension() => $journey('early_return_pending', null, 'Early Return Request Pending', 'Your request is waiting for the rental team. No action is required right now.', 'View Return Request', $adjustmentUrl, 'info', noAction: true),
+            null !== $unresolved => $journey('extension_pending', null, 'Extension Request Pending', 'Your extension request is being reviewed. No action is required right now.', 'View Extension Request', $adjustmentUrl, 'info', noAction: true),
+            default => $journey('active', null, 'Rental Active', 'Your rental is active. You can manage an early return or request an extension from the rental details.', 'View Active Rental', $bookingUrl, 'info'),
+        };
+    }
+
+    /**
+     * v15 resolve_returned_booking_journey().
+     *
+     * @param callable(string, ?int, string, string, string, string, string, bool=, bool=): BookingJourney $journey
+     */
+    private function returned(callable $journey, Booking $booking, PaymentSummary $payments, string $bookingUrl): BookingJourney
+    {
+        $settlementUrl = $bookingUrl.'#settlement';
+        $settlement = $this->settlements->findForBooking($booking);
+        if (null === $settlement) {
+            return $journey('settlement_pending', null, 'Return Settlement Pending', 'Your vehicle return is recorded. The rental team is finalizing the security-deposit settlement and any legitimate return deductions.', 'View Return Details', $settlementUrl, 'info', noAction: true);
+        }
+        if (null !== $balance = $this->returnBalance($journey, $booking, $payments, $settlement, 'Your security deposit was applied to the final return deductions. Complete the remaining %s balance to finish settlement.', 'Pay Outstanding Balance')) {
+            return $balance;
+        }
+        if (RentalSettlement::STATUS_REFUND_PENDING === $settlement->getStatus()) {
+            return $journey('deposit_refund_pending', null, 'Security Deposit Refund Pending', sprintf('Your return settlement is complete. A security-deposit refund of ₱%s is being handled by the rental team. No action is required right now.', number_format($settlement->getDepositRefundAmount())), 'View Settlement', $settlementUrl, 'info', noAction: true);
+        }
+
+        return $journey('returned', null, 'Rental Financially Settled', 'The return settlement is complete. No customer action is required while the team closes the rental.', 'View Settlement', $settlementUrl, 'success', noAction: true);
+    }
+
+    /**
+     * v15 resolve_completed_booking_journey().
+     *
+     * @param callable(string, ?int, string, string, string, string, string, bool=, bool=): BookingJourney $journey
+     * @param array{reference: string}                                                                       $reference
+     */
+    private function completed(callable $journey, Booking $booking, PaymentSummary $payments, array $reference, string $bookingUrl): BookingJourney
+    {
+        $settlement = $this->settlements->findForBooking($booking);
+        if (null !== $settlement) {
+            if (null !== $balance = $this->returnBalance($journey, $booking, $payments, $settlement, 'A financial correction reopened an outstanding balance of %s. Complete it to restore final settlement.', 'Review Payments')) {
+                return $balance;
+            }
+            if (RentalSettlement::STATUS_REFUND_PENDING === $settlement->getStatus()) {
+                return $journey('deposit_refund_pending', null, 'Security Deposit Refund Pending', 'Your rental is returned, but the security-deposit refund is still being processed. No action is required right now.', 'View Settlement', $bookingUrl.'#settlement', 'info', noAction: true);
+            }
+        }
+
+        return null === $this->reviews->findForBooking($booking)
+            ? $journey('review', null, 'Rate Your Rental', 'Your rental is complete. Share your experience with a verified review.', 'Rate Your Rental', $this->pageUrls->generate('rate-trip', $reference), 'success', actionRequired: true)
+            : $journey('complete', null, 'Rental Complete', 'Your rental and review process are complete.', 'View Booking', $bookingUrl, 'success', noAction: true);
+    }
+
+    /**
+     * v15: a return balance still owed after settlement, or its payment waiting for verification.
+     *
+     * @param callable(string, ?int, string, string, string, string, string, bool=, bool=): BookingJourney $journey
+     */
+    private function returnBalance(callable $journey, Booking $booking, PaymentSummary $payments, RentalSettlement $settlement, string $owedMessage, string $owedButton): ?BookingJourney
+    {
+        $owed = $payments->depositDue + $payments->rentalDue + $payments->extraDue;
+        if ($owed <= 0 && RentalSettlement::STATUS_BALANCE_DUE !== $settlement->getStatus()) {
+            return null;
+        }
+        $paymentUrl = $this->pageUrls->generate('payments', ['reference' => $booking->getReference()]);
+        if ($this->payments->sumPendingOfType($booking, Payment::TYPE_EXTRA_CHARGE) > 0) {
+            return $journey('return_payment_verification', null, 'Return Payment Verification', 'Your payment toward the outstanding return balance is awaiting administrator verification. No action is required right now.', 'View Payments', $paymentUrl, 'info', noAction: true);
+        }
+
+        return $journey('return_payment', null, 'Outstanding Return Balance', sprintf($owedMessage, '₱'.number_format($owed)), $owedButton, $paymentUrl, 'warning', actionRequired: true);
+    }
+
+    /**
+     * v15 resolve_cancelled_booking_journey().
+     *
+     * @param callable(string, ?int, string, string, string, string, string, bool=, bool=): BookingJourney $journey
+     */
+    private function cancelled(callable $journey, Booking $booking, string $bookingUrl): BookingJourney
+    {
+        $refunds = $this->refunds->summaryForBooking($booking);
+
+        return match (true) {
+            $refunds->pending > 0 => $journey('refund_pending', null, 'Refund Pending', sprintf('Your booking is cancelled and a refund of ₱%s is awaiting processing.', number_format($refunds->pending)), 'View Refund Details', $bookingUrl.'#refunds', 'info', noAction: true),
+            $refunds->refunded > 0 => $journey('refund_processed', null, 'Refund Processed', sprintf('This booking is cancelled. Recorded refunds total ₱%s.', number_format($refunds->refunded)), 'View Refund History', $bookingUrl.'#refunds', 'success', noAction: true),
+            default => $journey('closed', null, 'Booking Cancelled', 'This booking is cancelled and has no remaining customer action.', 'View Booking', $bookingUrl, 'secondary', noAction: true),
         };
     }
 

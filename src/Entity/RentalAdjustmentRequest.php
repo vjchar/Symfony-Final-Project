@@ -128,6 +128,17 @@ class RentalAdjustmentRequest
         $this->activatedAt = new \DateTimeImmutable();
     }
 
+    /**
+     * v15 finalize_rental_adjustments_on_return(): once the vehicle is back an
+     * open early return is done and an open extension no longer applies.
+     */
+    public function closeOnReturn(): void
+    {
+        if (\in_array($this->status, self::UNRESOLVED_STATUSES, true)) {
+            $this->status = $this->isExtension() ? self::STATUS_CANCELLED : self::STATUS_COMPLETED;
+        }
+    }
+
     public function isExtension(): bool
     {
         return self::TYPE_EXTENSION === $this->requestType;

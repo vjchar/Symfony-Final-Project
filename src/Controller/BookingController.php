@@ -12,7 +12,10 @@ use App\Repository\BookingCancellationRequestRepository;
 use App\Repository\BookingDraftRepository;
 use App\Repository\BookingModificationRequestRepository;
 use App\Repository\BookingRepository;
+use App\Repository\PaymentRefundRepository;
 use App\Repository\RentalAdjustmentRequestRepository;
+use App\Repository\RentalSettlementRepository;
+use App\Repository\ReviewRepository;
 use App\Repository\VehicleRepository;
 use App\Service\Booking\BookingCalculator;
 use App\Service\Booking\BookingDraftManager;
@@ -235,6 +238,9 @@ final class BookingController extends AbstractController
         RentalAdjustmentRequestRepository $adjustments,
         PaymentLedger $ledger,
         DocumentManager $documents,
+        RentalSettlementRepository $settlements,
+        PaymentRefundRepository $refunds,
+        ReviewRepository $reviews,
     ): Response {
         $booking = $this->bookings->findOneBy(['reference' => $reference]);
         if (null === $booking || !$booking->isOwnedBy($user)) {
@@ -242,6 +248,9 @@ final class BookingController extends AbstractController
         }
 
         return $this->render('booking/show.html.twig', [
+            'settlement' => $settlements->findForBooking($booking),
+            'refunds' => $refunds->findForBooking($booking),
+            'review' => $reviews->findForBooking($booking),
             'booking' => $booking,
             'journey' => $this->journeys->resolve($booking),
             'payment_summary' => $ledger->summary($booking),

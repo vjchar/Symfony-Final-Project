@@ -3,6 +3,7 @@
 namespace App\Repository;
 
 use App\Entity\Booking;
+use App\Entity\RentalSettlement;
 use App\Entity\Review;
 use App\Entity\User;
 use App\Entity\Vehicle;
@@ -87,8 +88,9 @@ class ReviewRepository extends ServiceEntityRepository
     }
 
     /**
-     * v15 reviewable_bookings_for_user(): the account's completed bookings that
-     * have no review yet, most recently updated first.
+     * v15 reviewable_bookings_for_user(): the account's completed bookings whose
+     * return settlement is settled and that have no review yet, most recently
+     * updated first.
      *
      * @return list<Booking>
      */
@@ -98,12 +100,14 @@ class ReviewRepository extends ServiceEntityRepository
             ->select('b', 'v')
             ->from(Booking::class, 'b')
             ->join('b.vehicle', 'v')
+            ->join(RentalSettlement::class, 's', 'WITH', 's.booking = b AND s.status = :settled')
             ->leftJoin(Review::class, 'r', 'WITH', 'r.booking = b')
             ->where('b.user = :user')
             ->andWhere('b.status = :completed')
             ->andWhere('r.id IS NULL')
             ->setParameter('user', $user)
             ->setParameter('completed', 'completed')
+            ->setParameter('settled', RentalSettlement::STATUS_SETTLED)
             ->orderBy('b.updatedAt', 'DESC')
             ->addOrderBy('b.id', 'DESC')
             ->getQuery()

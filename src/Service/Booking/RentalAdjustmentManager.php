@@ -77,8 +77,8 @@ final class RentalAdjustmentManager
 
         $priceDifference = 0;
         if (RentalAdjustmentRequest::TYPE_EARLY_RETURN === $type) {
-            // v15 counts from started_at, which the rental desk step records; until then, pick-up
-            if ($requestedReturnAt <= $booking->getPickupAt() || $requestedReturnAt >= $booking->getReturnAt()) {
+            // v15 counts from started_at (the checkout), falling back to the scheduled pick-up
+            if ($requestedReturnAt <= ($booking->getStartedAt() ?? $booking->getPickupAt()) || $requestedReturnAt >= $booking->getReturnAt()) {
                 throw new \InvalidArgumentException('Choose a return time after vehicle release and before the current scheduled return.');
             }
             if ($requestedReturnAt <= new \DateTimeImmutable()) {

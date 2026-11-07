@@ -11,7 +11,9 @@ use App\Entity\Payment;
 final readonly class PaymentSummary
 {
     /**
-     * @param list<Payment> $payments newest first
+     * @param list<Payment> $payments  newest first
+     * @param int           $paidTotal verified payments less paid-out corrections and modification credits
+     * @param int           $grossPaid verified payments as received
      */
     public function __construct(
         public array $payments,
@@ -21,6 +23,7 @@ final readonly class PaymentSummary
         public int $extensionDue,
         public int $modificationDue,
         public int $paidTotal,
+        public int $grossPaid,
     ) {
     }
 

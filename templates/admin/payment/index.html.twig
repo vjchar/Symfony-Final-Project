@@ -1,14 +1,14 @@
 {% extends 'admin/base.html.twig' %}
 
-{% block title %}Payment Verification | VJ Car Rental{% endblock %}
+{% block title %}Payments &amp; Refund Management | VJ Car Rental{% endblock %}
 
 {% block admin_body %}
 <section class="admin-page-heading">
     <div class="container">
         <div>
             <span class="section-kicker">Financial controls</span>
-            <h1>Payment verification</h1>
-            <p>Verify customer payments against the transaction reference and proof. A verified deposit confirms the booking once both documents are approved.</p>
+            <h1>Payments &amp; refund management</h1>
+            <p>Verify customer payments and manage all four refund types through one auditable financial workflow. A verified deposit confirms the booking once both documents are approved.</p>
         </div>
         <a class="btn btn-primary" href="{{ path('app_admin_reports') }}">Open Reports</a>
     </div>
@@ -72,6 +72,19 @@
                                     <input class="form-control form-control-sm" name="notes" maxlength="2000" placeholder="Internal note" aria-label="Internal note">
                                     <button class="btn btn-primary btn-sm" type="submit">Save</button>
                                 </form>
+                                {% set balance = refundable[payment.id] ?? 0 %}
+                                {% if payment.paid and balance > 0 %}
+                                    <details class="refund-create-details mt-2">
+                                        <summary>Create Payment Refund</summary>
+                                        <form class="admin-inline-form mt-2" method="post" action="{{ path('app_admin_payment_refund', {id: payment.id}) }}">
+                                            <input type="hidden" name="_token" value="{{ csrf_token('refund-payment-' ~ payment.id) }}">
+                                            <input class="form-control form-control-sm" name="refund_amount" type="number" min="1" max="{{ balance }}" placeholder="Amount (max {{ balance|money }})" aria-label="Refund amount" required>
+                                            <input class="form-control form-control-sm" name="refund_reason" maxlength="2000" placeholder="Reason: duplicate, overpayment, correction..." aria-label="Refund reason" required>
+                                            <input class="form-control form-control-sm" name="refund_notes" maxlength="2000" placeholder="Admin note" aria-label="Admin note">
+                                            <button class="btn btn-outline btn-sm" type="submit">Create Refund</button>
+                                        </form>
+                                    </details>
+                                {% endif %}
                             </td>
                         </tr>
                     {% else %}
@@ -80,6 +93,81 @@
                 </tbody>
             </table>
         </div>
+    </div>
+    <div class="container">
+        <article class="admin-editor refund-management-panel mt-5" id="refund-history">
+            <div class="admin-editor__heading">
+                <div>
+                    <span class="section-kicker">Unified financial controls</span>
+                    <h2>Refund Management</h2>
+                    <p>Cancellation, payment-correction, security-deposit, and modification refunds share one traceable workflow tied to verified payments.</p>
+                </div>
+            </div>
+            <form class="booking-selector mb-3" method="get" action="{{ path('app_admin_payments') }}">
+                <label for="refundStatus">Refund status</label>
+                <select class="form-select" id="refundStatus" name="refund_status">
+                    <option value="all">All</option>
+                    {% for option in refund_statuses %}<option value="{{ option }}" {{ refund_status == option ? 'selected' }}>{{ option|humanize_label }}</option>{% endfor %}
+                </select>
+                <label for="refundType">Refund type</label>
+                <select class="form-select" id="refundType" name="refund_type">
+                    <option value="all">All refund types</option>
+                    {% for key, label in refund_type_labels %}<option value="{{ key }}" {{ refund_type == key ? 'selected' }}>{{ label }}</option>{% endfor %}
+                </select>
+                <label class="visually-hidden" for="refundQuery">Search refunds</label>
+                <input class="form-control" id="refundQuery" name="refund_q" value="{{ refund_query }}" placeholder="Booking, customer, vehicle, refund reference">
+                <button class="btn btn-outline" type="submit">Filter Refunds</button>
+            </form>
+            <div class="admin-table-wrap">
+                <table class="admin-table refund-management-table">
+                    <thead><tr><th>Booking</th><th>Customer</th><th>Refund type</th><th class="refund-amount-column">Amount / source</th><th>Status</th><th>Reference</th><th>Action</th></tr></thead>
+                    <tbody>
+                    {% for refund in refunds %}
+                        {% set booking = refund.booking %}
+                        {% set source = refund.payment %}
+                        <tr>
+                            <td><strong>{{ booking.reference }}</strong><small>{{ booking.vehicle.name }}</small></td>
+                            <td>{{ booking.user.name }}<small>{{ booking.user.email }}</small></td>
+                            <td>
+                                <strong>{{ refund.refundTypeLabel }}</strong>
+                                <small>{{ refund.reason }}</small>
+                                {% if refund.adminNote %}<small>Admin note: {{ refund.adminNote }}</small>{% endif %}
+                            </td>
+                            <td class="refund-amount-column">
+                                <strong>{{ refund.amount|money }}</strong>
+                                <small>From {{ source.paymentType|humanize_label }} payment of {{ source.amount|money }}</small>
+                                <small>Remaining refundable on payment: {{ (refundable[source.id] ?? 0)|money }}</small>
+                            </td>
+                            <td>
+                                <span class="status-badge status-badge--{{ refund.status|status_class }}">{{ refund.status|humanize_label }}</span>
+                                {% if refund.processedAt %}<small>{{ refund.processedAt|date('M j, Y g:i A') }}</small>{% endif %}
+                            </td>
+                            <td>{{ refund.referenceNumber ?: '—' }}</td>
+                            <td>
+                                {% set next = refund.nextStatuses %}
+                                {% if next %}
+                                    <form class="admin-inline-form" method="post" action="{{ path('app_admin_refund_status', {id: refund.id}) }}">
+                                        <input type="hidden" name="_token" value="{{ csrf_token('refund-status-' ~ refund.id) }}">
+                                        <select class="form-select form-select-sm" name="refund_status" required aria-label="Refund action for {{ booking.reference }}">
+                                            <option value="">Action</option>
+                                            {% for transition in next %}
+                                                <option value="{{ transition }}">{{ {approved: 'Approve', processing: 'Mark Processing', refunded: 'Mark Refunded', rejected: 'Reject', failed: 'Mark Failed', cancelled: 'Cancel Refund'}[transition] ?? transition|humanize_label }}</option>
+                                            {% endfor %}
+                                        </select>
+                                        <input class="form-control form-control-sm" name="refund_reference" maxlength="120" placeholder="Refund reference (auto-generated if blank on completion)" aria-label="Refund reference">
+                                        <input class="form-control form-control-sm" name="refund_notes" maxlength="2000" placeholder="Admin note" aria-label="Admin note">
+                                        <button class="btn btn-primary btn-sm" type="submit">Save</button>
+                                    </form>
+                                {% else %}—{% endif %}
+                            </td>
+                        </tr>
+                    {% else %}
+                        <tr><td colspan="7">No refunds match this filter.</td></tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </article>
     </div>
 </section>
 {% endblock %}

@@ -9,7 +9,9 @@ use App\Entity\User;
 use App\Form\PaymentType;
 use App\Repository\BookingModificationRequestRepository;
 use App\Repository\BookingRepository;
+use App\Repository\PaymentRefundRepository;
 use App\Repository\RentalAdjustmentRequestRepository;
+use App\Repository\RentalSettlementRepository;
 use App\Service\Booking\BookingJourneyResolver;
 use App\Service\Payment\PaymentLedger;
 use App\Service\Payment\PaymentManager;
@@ -44,6 +46,7 @@ final class PaymentController extends AbstractController
         PaymentManager $manager,
         RentalAdjustmentRequestRepository $adjustments,
         BookingModificationRequestRepository $modifications,
+        PaymentRefundRepository $refunds,
     ): Response {
         $eligible = array_values(array_filter(
             $this->bookings->findForUser($user),
@@ -89,13 +92,20 @@ final class PaymentController extends AbstractController
             'approved_modification' => null === $booking ? null : $modifications->findAwaitingPaymentFor($booking),
             'journey' => null === $booking ? null : $this->journeys->resolve($booking),
             'accounts' => $manager->accounts(),
+            'customer_refunds' => $refunds->findForUser($user),
             'form' => $form->createView(),
             'errors' => $errors,
         ], new Response(status: [] === $errors ? Response::HTTP_OK : Response::HTTP_UNPROCESSABLE_ENTITY));
     }
 
     #[Route('/bookings/{reference}/invoice', name: 'app_invoice', methods: ['GET'])]
-    public function invoice(string $reference, #[CurrentUser] User $user, RentalAdjustmentRequestRepository $adjustments): Response
+    public function invoice(
+        string $reference,
+        #[CurrentUser] User $user,
+        RentalAdjustmentRequestRepository $adjustments,
+        PaymentRefundRepository $refunds,
+        RentalSettlementRepository $settlements,
+    ): Response
     {
         $booking = $this->bookings->findOneBy(['reference' => $reference]);
         if (null === $booking || !$booking->isOwnedBy($user)) {
@@ -115,6 +125,8 @@ final class PaymentController extends AbstractController
             'summary' => $summary,
             'extension_total' => $extensionTotal,
             'amount_due' => 'cancelled' === $booking->getStatus() ? 0 : $summary->amountDue(),
+            'refunds' => $refunds->summaryForBooking($booking),
+            'settlement' => $settlements->findForBooking($booking),
         ]);
     }
 

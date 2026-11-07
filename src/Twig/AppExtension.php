@@ -66,10 +66,10 @@ final class AppExtension
     public function statusClass(?string $status): string
     {
         return match ($status) {
-            'confirmed', 'completed', 'converted', 'approved', 'activated', 'available', 'read', 'closed', 'paid' => 'success',
-            'cancelled', 'rejected', 'inactive', 'failed', 'damaged', 'unavailable', 'expired' => 'danger',
-            'pending', 'new', 'reserved', 'scheduled', 'ready' => 'warning',
-            'active', 'returned', 'rented', 'in_progress', 'refunded', 'processing' => 'info',
+            'confirmed', 'completed', 'converted', 'approved', 'activated', 'available', 'read', 'closed', 'paid', 'settled' => 'success',
+            'cancelled', 'rejected', 'inactive', 'failed', 'damaged', 'unavailable', 'expired', 'balance_due' => 'danger',
+            'pending', 'new', 'reserved', 'scheduled', 'ready', 'refund_pending' => 'warning',
+            'active', 'returned', 'rented', 'in_progress', 'refunded', 'processing', 'finalized' => 'info',
             default => 'secondary',
         };
     }

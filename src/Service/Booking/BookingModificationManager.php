@@ -4,13 +4,18 @@ namespace App\Service\Booking;
 
 use App\Entity\Booking;
 use App\Entity\BookingModificationRequest;
+use App\Entity\Payment;
+use App\Entity\PaymentRefund;
 use App\Entity\User;
 use App\Form\Model\BookingRequest;
 use App\Repository\BookingCancellationRequestRepository;
 use App\Repository\BookingModificationRequestRepository;
 use App\Repository\BookingRepository;
 use App\Repository\MaintenanceRecordRepository;
+use App\Repository\PaymentRefundRepository;
+use App\Repository\PaymentRepository;
 use App\Service\AuditLogger;
+use App\Service\Payment\RefundManager;
 use Doctrine\DBAL\LockMode;
 use Doctrine\ORM\EntityManagerInterface;
 
@@ -18,8 +23,8 @@ use Doctrine\ORM\EntityManagerInterface;
  * v15 booking-management-service.php, modifications: a customer asks to change
  * a booking before pickup and an administrator approves or rejects it.
  * An approval that costs nothing more is applied at once; one that costs more
- * is applied once its payment is verified (activatePaid()). v15's
- * modification refund credits arrive with the refunds step.
+ * is applied once its payment is verified (activatePaid()). A cheaper
+ * change gives the difference back from the verified rental payments.
  */
 final class BookingModificationManager
 {
@@ -35,6 +40,9 @@ final class BookingModificationManager
         private readonly BookingModificationRequestRepository $modifications,
         private readonly BookingCancellationRequestRepository $cancellations,
         private readonly AuditLogger $auditLogger,
+        private readonly PaymentRepository $payments,
+        private readonly PaymentRefundRepository $refunds,
+        private readonly RefundManager $refundManager,
     ) {
     }
 
@@ -188,6 +196,19 @@ final class BookingModificationManager
         $booking->reschedule($quote);
         $modification->markActivated();
         $this->entityManager->flush();
+
+        // v15 modification_refundable_paid_amount(): verified balance and modification payments, less refunds already under way
+        if ($modification->getPriceDifference() < 0) {
+            $paid = 0;
+            foreach ($this->payments->findForBooking($booking) as $payment) {
+                if ($payment->isPaid() && \in_array($payment->getPaymentType(), [Payment::TYPE_BALANCE, Payment::TYPE_MODIFICATION], true)) {
+                    $paid += $payment->getAmount();
+                }
+            }
+            $credit = min(abs($modification->getPriceDifference()), max(0, $paid - $this->refunds->summaryForBooking($booking)->total()));
+            $this->refundManager->allocate($booking, $credit, PaymentRefund::TYPE_BOOKING_MODIFICATION, 'Credit from approved booking modification', $admin, modification: $modification, paymentTypes: [Payment::TYPE_BALANCE, Payment::TYPE_MODIFICATION]);
+        }
+
         $this->auditLogger->log('booking_modification_activated', 'booking_modification', $modification->getId(), ['booking_id' => $booking->getId()], $admin);
     }
 }

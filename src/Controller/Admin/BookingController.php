@@ -5,8 +5,10 @@ namespace App\Controller\Admin;
 use App\Entity\User;
 use App\Repository\BookingCancellationRequestRepository;
 use App\Repository\BookingModificationRequestRepository;
+use App\Repository\BookingRepository;
 use App\Service\Booking\BookingCancellationManager;
 use App\Service\Booking\BookingModificationManager;
+use App\Service\Rental\RentalDesk;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -15,19 +17,36 @@ use Symfony\Component\Security\Http\Attribute\CurrentUser;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 /**
- * v15 admin-bookings.php, its pending modification and cancellation queues.
- * (The booking list and status transitions arrive with the admin bookings step.)
+ * v15 admin-bookings.php: its pending modification and cancellation queues,
+ * and marking a confirmed booking's vehicle ready for the rental desk.
+ * (The full booking list and the other status transitions, such as reject
+ * and no-show, arrive with the admin bookings step.)
  */
 #[IsGranted('ROLE_ADMIN')]
 final class BookingController extends AbstractController
 {
     #[Route('/admin/bookings', name: 'app_admin_bookings', methods: ['GET'])]
-    public function index(BookingModificationRequestRepository $modifications, BookingCancellationRequestRepository $cancellations): Response
+    public function index(BookingModificationRequestRepository $modifications, BookingCancellationRequestRepository $cancellations, BookingRepository $bookings): Response
     {
         return $this->render('admin/booking/index.html.twig', [
             'modifications' => $modifications->findPending(),
             'cancellations' => $cancellations->findPending(),
+            'preparing' => $bookings->findAwaitingPreparation(),
         ]);
+    }
+
+    #[Route('/admin/bookings/{id}/ready', name: 'app_admin_booking_ready', requirements: ['id' => '\d+'], methods: ['POST'])]
+    public function markReady(int $id, Request $request, #[CurrentUser] User $admin, BookingRepository $bookings, RentalDesk $desk): Response
+    {
+        $booking = $bookings->find($id);
+        $this->review($request, 'booking-ready-'.$id, 'Booking status updated to Ready.', static function (string $decision, string $note) use ($booking, $desk, $admin): void {
+            if (null === $booking) {
+                throw new \DomainException('That booking status transition is not allowed.');
+            }
+            $desk->markReady($booking, $admin, $note);
+        });
+
+        return $this->redirect($this->generateUrl('app_admin_bookings').'#preparation-queue', Response::HTTP_SEE_OTHER);
     }
 
     #[Route('/admin/bookings/modifications/{id}/review', name: 'app_admin_modification_review', methods: ['POST'])]

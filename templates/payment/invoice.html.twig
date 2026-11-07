@@ -49,10 +49,32 @@
                     {% endif %}
                     <tr class="invoice-total"><td>Current rental total</td><td>{{ booking.total|money }}</td></tr>
                     <tr><td>Refundable security deposit</td><td>{{ booking.deposit|money }}</td></tr>
-                    <tr><td>Verified payments (gross)</td><td>−{{ summary.paidTotal|money }}</td></tr>
+                    {% if settlement %}
+                        <tr><td>Deposit deductions</td><td>−{{ settlement.totalDeductions|money }}</td></tr>
+                        <tr><td>Security deposit refund</td><td>{{ settlement.depositRefundAmount|money }}</td></tr>
+                        {% if settlement.outstandingBalance > 0 %}<tr><td>Outstanding return balance</td><td>{{ settlement.outstandingBalance|money }}</td></tr>{% endif %}
+                    {% endif %}
+                    <tr><td>Verified payments (gross)</td><td>−{{ summary.grossPaid|money }}</td></tr>
+                    {% if refunds.refunded > 0 %}
+                        <tr><td>Processed refunds</td><td>+{{ refunds.refunded|money }}</td></tr>
+                        <tr><td>Net verified payments</td><td>−{{ max(0, summary.grossPaid - refunds.refunded)|money }}</td></tr>
+                    {% endif %}
+                    {% if refunds.pending > 0 %}
+                        <tr><td>Refund pending / processing</td><td>{{ refunds.pending|money }}</td></tr>
+                    {% endif %}
                     <tr class="invoice-balance"><td>Current amount due</td><td>{{ amount_due|money }}</td></tr>
                 </tbody>
             </table>
+            {% if refunds.refunds %}
+                <div class="invoice-refunds">
+                    <h2>Refund history</h2>
+                    <table class="invoice-table"><thead><tr><th>Refund type</th><th>Amount</th><th>Status</th></tr></thead><tbody>
+                    {% for refund in refunds.refunds %}
+                        <tr><td>{{ refund.refundTypeLabel }}<small>{{ refund.reason }}</small></td><td>{{ refund.amount|money }}<small>{{ refund.processedAt ? ' · ' ~ refund.processedAt|date('M j, Y') }}{{ refund.referenceNumber ? ' · ' ~ refund.referenceNumber }}</small></td><td>{{ refund.status|humanize_label }}</td></tr>
+                    {% endfor %}
+                    </tbody></table>
+                </div>
+            {% endif %}
             <div class="invoice-footer">
                 <p><strong>Status:</strong> {{ booking.status|humanize_label }}</p>
                 <p>This statement reflects records in the VJ Car Rental system. Pending payments are excluded until verified.</p>

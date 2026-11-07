@@ -18,6 +18,7 @@ use App\Service\Booking\RentalAdjustmentManager;
 use App\Service\Booking\RunsInTransaction;
 use App\Service\NotificationCenter;
 use App\Service\PrivateFileStorage;
+use App\Service\Rental\SettlementRefresher;
 use Doctrine\DBAL\LockMode;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
@@ -52,6 +53,7 @@ final class PaymentManager
         private readonly BookingConfirmer $confirmer,
         private readonly RentalAdjustmentManager $rentalAdjustments,
         private readonly BookingModificationManager $bookingModifications,
+        private readonly SettlementRefresher $settlements,
     ) {
     }
 
@@ -166,7 +168,8 @@ final class PaymentManager
     /**
      * v15 review_payment(): an administrator marks a payment paid or failed.
      * A verified extension or modification payment activates the change, and a
-     * verified deposit confirms the booking once the documents are approved too.
+     * verified deposit confirms the booking once the documents are approved too,
+     * and a verified return charge brings the return settlement up to date.
      *
      * @throws \InvalidArgumentException|\DomainException with the v15 message
      */
@@ -206,6 +209,9 @@ final class PaymentManager
             }
 
             $booking = $payment->getBooking();
+            if ($paid && Payment::TYPE_EXTRA_CHARGE === $payment->getPaymentType()) {
+                $this->settlements->refresh($booking);
+            }
             if ($paid) {
                 $this->confirmer->confirmIfReady($booking, $admin);
             }

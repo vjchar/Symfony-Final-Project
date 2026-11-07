@@ -6,14 +6,17 @@ use App\Entity\Booking;
 use App\Entity\BookingCancellationRequest;
 use App\Entity\BookingModificationRequest;
 use App\Entity\Payment;
+use App\Entity\PaymentRefund;
 use App\Entity\RentalAdjustmentRequest;
+use App\Entity\RentalSettlement;
 use App\Entity\Vehicle;
 use Doctrine\ORM\EntityManagerInterface;
 
 /**
  * v15 admin_report_data() for one date range: bookings created in it, their
- * verified payments, the change-request pipeline and the most booked
- * vehicles. Refund and return-settlement figures come with those features.
+ * verified payments and refunds, the change-request pipeline, the deposit
+ * and settlement figures of admin_report_finance_summary() and the most
+ * booked vehicles.
  */
 final class RentalReport
 {
@@ -24,12 +27,20 @@ final class RentalReport
 
     /**
      * @return array{
-     *     rows: list<array{booking: Booking, paid: int}>,
+     *     rows: list<array{booking: Booking, paid: int, refunded: int}>,
      *     status_counts: array<string, int>,
      *     booking_value: int,
      *     verified_revenue: int,
+     *     refund_total: int,
+     *     net_revenue: int,
      *     deposits_collected: int,
+     *     deposits_held: int,
      *     rental_revenue: int,
+     *     refund_by_type: array<string, int>,
+     *     pending_refund_amount: int,
+     *     security_deposit_refunds: int,
+     *     deductions_retained: int,
+     *     outstanding_receivables: int,
      *     pending_adjustments: int,
      *     activated_extension_value: int,
      *     pending_modifications: int,
@@ -56,20 +67,28 @@ final class RentalReport
             ->getQuery()
             ->getResult();
 
+        $bookingIds = array_map(static fn (Booking $booking): ?int => $booking->getId(), $bookings);
         $paidPerBooking = [];
-        foreach ($this->paidPayments(array_map(static fn (Booking $booking): ?int => $booking->getId(), $bookings)) as $row) {
-            $paidPerBooking[(int) $row['booking']] = (int) $row['paid'];
+        foreach ($this->perBooking(Payment::class, $bookingIds, Payment::STATUS_PAID) as $row) {
+            $paidPerBooking[(int) $row['booking']] = (int) $row['total'];
+        }
+        $refundedPerBooking = [];
+        foreach ($this->perBooking(PaymentRefund::class, $bookingIds, PaymentRefund::STATUS_REFUNDED) as $row) {
+            $refundedPerBooking[(int) $row['booking']] = (int) $row['total'];
         }
         $rows = [];
         $statusCounts = [];
         $bookingValue = 0;
         $verifiedRevenue = 0;
+        $refundTotal = 0;
         foreach ($bookings as $booking) {
             $paid = $paidPerBooking[$booking->getId()] ?? 0;
-            $rows[] = ['booking' => $booking, 'paid' => $paid];
+            $refunded = $refundedPerBooking[$booking->getId()] ?? 0;
+            $rows[] = ['booking' => $booking, 'paid' => $paid, 'refunded' => $refunded];
             $statusCounts[$booking->getStatus()] = ($statusCounts[$booking->getStatus()] ?? 0) + 1;
             $bookingValue += $booking->getTotal();
             $verifiedRevenue += $paid;
+            $refundTotal += $refunded;
         }
 
         $finance = $this->entityManager->createQueryBuilder()
@@ -84,6 +103,20 @@ final class RentalReport
             ->getQuery()
             ->getSingleResult();
 
+        [$refundByType, $pendingRefunds, $refundedFromDeposits, $refundedFromOthers] = $this->refundSummary($fromAt, $toAt);
+        $settlements = $this->entityManager->createQueryBuilder()
+            ->select(
+                'COALESCE(SUM(CASE WHEN s.depositPaid < s.totalDeductions THEN s.depositPaid ELSE s.totalDeductions END), 0) AS retained',
+                'COALESCE(SUM(s.outstandingBalance), 0) AS outstanding',
+            )
+            ->from(RentalSettlement::class, 's')
+            ->where('s.finalizedAt BETWEEN :from AND :to')
+            ->setParameter('from', $fromAt)
+            ->setParameter('to', $toAt)
+            ->getQuery()
+            ->getSingleResult();
+        $retained = (int) $settlements['retained'];
+
         [$pendingAdjustments, $extensionValue] = $this->adjustmentSummary($fromAt, $toAt);
         $topVehicles = $this->topVehicles($fromAt, $toAt);
 
@@ -92,8 +125,18 @@ final class RentalReport
             'status_counts' => $statusCounts,
             'booking_value' => $bookingValue,
             'verified_revenue' => $verifiedRevenue,
+            'refund_total' => $refundTotal,
+            'net_revenue' => max(0, $verifiedRevenue - $refundTotal),
             'deposits_collected' => (int) $finance['deposits'],
-            'rental_revenue' => (int) $finance['rental'],
+            // still held: collected, less what went back and what the settlements kept
+            'deposits_held' => max(0, (int) $finance['deposits'] - $refundedFromDeposits - $retained),
+            // rental revenue includes the deposit deductions kept at settlement
+            'rental_revenue' => max(0, (int) $finance['rental'] - $refundedFromOthers + $retained),
+            'refund_by_type' => $refundByType,
+            'pending_refund_amount' => $pendingRefunds,
+            'security_deposit_refunds' => $refundByType[PaymentRefund::TYPE_SECURITY_DEPOSIT],
+            'deductions_retained' => $retained,
+            'outstanding_receivables' => (int) $settlements['outstanding'],
             'pending_adjustments' => $pendingAdjustments,
             'activated_extension_value' => $extensionValue,
             'pending_modifications' => $this->countBetween(BookingModificationRequest::class, 'createdAt', $fromAt, $toAt, BookingModificationRequest::STATUS_PENDING),
@@ -106,13 +149,13 @@ final class RentalReport
     /**
      * v15 rental-report CSV columns.
      *
-     * @param list<array{booking: Booking, paid: int}> $rows
+     * @param list<array{booking: Booking, paid: int, refunded: int}> $rows
      *
      * @return list<list<string|int>>
      */
     public function csvRows(array $rows): array
     {
-        $lines = [['Reference', 'Customer', 'Vehicle', 'Pickup', 'Original Return', 'Current Return', 'Status', 'Booking Total', 'Verified Payments']];
+        $lines = [['Reference', 'Customer', 'Vehicle', 'Pickup', 'Original Return', 'Current Return', 'Status', 'Booking Total', 'Verified Payments', 'Refunds', 'Net Verified Payments']];
         foreach ($rows as $row) {
             $booking = $row['booking'];
             $lines[] = [
@@ -125,6 +168,8 @@ final class RentalReport
                 $booking->getStatus(),
                 $booking->getTotal(),
                 $row['paid'],
+                $row['refunded'],
+                $row['paid'] - $row['refunded'],
             ];
         }
 
@@ -132,25 +177,68 @@ final class RentalReport
     }
 
     /**
-     * @param list<int|null> $bookingIds
+     * Verified payments or paid-out refunds, summed per booking.
      *
-     * @return list<array{booking: int, paid: string}>
+     * @param class-string<Payment|PaymentRefund> $entity
+     * @param list<int|null>                      $bookingIds
+     *
+     * @return list<array{booking: int, total: string}>
      */
-    private function paidPayments(array $bookingIds): array
+    private function perBooking(string $entity, array $bookingIds, string $status): array
     {
         if ([] === $bookingIds) {
             return [];
         }
 
         return $this->entityManager->createQueryBuilder()
-            ->select('IDENTITY(p.booking) AS booking', 'SUM(p.amount) AS paid')
-            ->from(Payment::class, 'p')
-            ->where('p.booking IN (:ids) AND p.status = :paid')
+            ->select('IDENTITY(e.booking) AS booking', 'SUM(e.amount) AS total')
+            ->from($entity, 'e')
+            ->where('e.booking IN (:ids) AND e.status = :status')
             ->setParameter('ids', $bookingIds)
-            ->setParameter('paid', Payment::STATUS_PAID)
-            ->groupBy('p.booking')
+            ->setParameter('status', $status)
+            ->groupBy('e.booking')
             ->getQuery()
             ->getArrayResult();
+    }
+
+    /**
+     * v15 admin_report_finance_summary(), refunds created in the period: paid
+     * out per type, still open, and paid out from deposits or other payments.
+     *
+     * @return array{array<string, int>, int, int, int}
+     */
+    private function refundSummary(\DateTimeImmutable $from, \DateTimeImmutable $to): array
+    {
+        $rows = $this->entityManager->createQueryBuilder()
+            ->select('r.refundType AS type', 'r.status AS status', 'p.paymentType AS paymentType', 'COALESCE(SUM(r.amount), 0) AS amount')
+            ->from(PaymentRefund::class, 'r')
+            ->join('r.payment', 'p')
+            ->where('r.createdAt BETWEEN :from AND :to')
+            ->setParameter('from', $from)
+            ->setParameter('to', $to)
+            ->groupBy('r.refundType', 'r.status', 'p.paymentType')
+            ->getQuery()
+            ->getArrayResult();
+
+        $byType = array_fill_keys(array_keys(PaymentRefund::TYPE_LABELS), 0);
+        $pending = 0;
+        $fromDeposits = 0;
+        $fromOthers = 0;
+        foreach ($rows as $row) {
+            $amount = (int) $row['amount'];
+            if (PaymentRefund::STATUS_REFUNDED === $row['status']) {
+                $byType[$row['type']] = ($byType[$row['type']] ?? 0) + $amount;
+                if (Payment::TYPE_DEPOSIT === $row['paymentType']) {
+                    $fromDeposits += $amount;
+                } else {
+                    $fromOthers += $amount;
+                }
+            } elseif (\in_array($row['status'], PaymentRefund::OPEN_STATUSES, true)) {
+                $pending += $amount;
+            }
+        }
+
+        return [$byType, $pending, $fromDeposits, $fromOthers];
     }
 
     /**

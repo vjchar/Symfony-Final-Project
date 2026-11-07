@@ -11,9 +11,8 @@ use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 
 /**
  * v15 rental_calendar_events(): the operational schedule built from bookings,
- * maintenance records and rental adjustments. (The booking's real checkout
- * and check-in times come with the rental desk, so an active rental spans its
- * scheduled pickup and return.)
+ * maintenance records and rental adjustments. An active rental spans its real
+ * checkout and check-in, or the scheduled pickup and return until they happen.
  */
 final class RentalCalendar
 {
@@ -50,17 +49,19 @@ final class RentalCalendar
                 $events[] = $this->bookingEvent($booking, 'return', $booking->getReturnAt());
             }
             if ($wants('active') && \in_array($booking->getStatus(), ['active', 'returned', 'completed'], true)) {
+                $startedAt = $booking->getStartedAt() ?? $booking->getPickupAt();
+                $endedAt = $booking->getReturnedAt() ?? $booking->getReturnAt();
                 $events[] = new CalendarEvent(
                     'active-'.$booking->getId(),
                     'active',
                     $booking->getVehicle()->getName().' — Active rental',
-                    max($booking->getPickupAt(), $start),
+                    max($startedAt, $start),
                     (string) $booking->getVehicle()->getName(),
                     $booking->getReference(),
                     $booking->getUser()->getName(),
                     $booking->getStatus(),
-                    sprintf('Active rental period · %s to %s', $booking->getPickupAt()->format('M j, Y g:i A'), $booking->getReturnAt()->format('M j, Y g:i A')),
-                    $this->urls->generate('app_admin_rentals'),
+                    sprintf('Active rental period · %s to %s', $startedAt->format('M j, Y g:i A'), $endedAt->format('M j, Y g:i A')),
+                    $this->urls->generate('app_admin_rentals', ['reference' => $booking->getReference()]),
                 );
             }
         }

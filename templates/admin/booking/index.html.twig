@@ -54,6 +54,30 @@
                 {% endfor %}
                 </tbody></table></div>
             </article>
+
+            <article class="admin-editor mt-4" id="preparation-queue">
+                <div class="admin-editor__heading"><div><span class="section-kicker">Vehicle preparation</span><h2>Ready for preparation</h2><p>Payment and documents are verified. Mark the vehicle ready once it is prepared; the Rental Desk then handles the checkout.</p></div><span class="status-badge status-badge--info">{{ preparing|length }} confirmed</span></div>
+                <div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Booking</th><th>Customer</th><th>Handover</th><th>Fleet state</th><th>Action</th></tr></thead><tbody>
+                {% for booking in preparing %}
+                    <tr>
+                        <td><strong>{{ booking.reference }}</strong><small>{{ booking.vehicle.name }}</small></td>
+                        <td>{{ booking.user.name }}<small>{{ booking.user.email }}</small></td>
+                        <td>{{ booking.pickupAt|date('M j, Y g:i A') }}<small>{{ booking.pickupMethod }} · {{ booking.delivery ? (booking.deliveryAddress ?: 'Delivery address on booking') : booking.pickupLocation }}</small></td>
+                        <td><span class="status-badge status-badge--{{ booking.vehicle.availabilityStatus|status_class }}">{{ booking.vehicle.availabilityStatus|humanize_label }}</span></td>
+                        <td>
+                            <form class="admin-inline-form" method="post" action="{{ path('app_admin_booking_ready', {id: booking.id}) }}">
+                                <input type="hidden" name="_token" value="{{ csrf_token('booking-ready-' ~ booking.id) }}">
+                                <input type="hidden" name="decision" value="ready">
+                                <input class="form-control form-control-sm" name="admin_note" maxlength="3000" placeholder="Preparation note" aria-label="Preparation note">
+                                <button class="btn btn-primary btn-sm" type="submit"><i class="bi bi-key" aria-hidden="true"></i> {{ booking.delivery ? 'Mark Ready for Delivery' : 'Mark Ready for Pickup' }}</button>
+                            </form>
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr><td colspan="5">No confirmed bookings are waiting for vehicle preparation.</td></tr>
+                {% endfor %}
+                </tbody></table></div>
+            </article>
         </div>
     </div>
 </section>

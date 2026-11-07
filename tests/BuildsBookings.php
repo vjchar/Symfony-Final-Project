@@ -4,7 +4,10 @@ namespace App\Tests;
 
 use App\Entity\Booking;
 use App\Entity\BookingDraft;
+use App\Entity\Payment;
 use App\Entity\Promo;
+use App\Entity\RentalSettlement;
+use App\Entity\User;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 
@@ -46,6 +49,30 @@ trait BuildsBookings
             'terms' => '1',
             'form_action' => $action,
         ], static fn (mixed $value): bool => null !== $value));
+    }
+
+    /**
+     * Skips the rental desk: the booking is completed, its deposit and rental
+     * total are verified cash payments, and its return settlement is settled
+     * (nothing deducted, the deposit refunded), which is what a review needs.
+     * Needs LogsInUsers for the administrator who records it.
+     */
+    private function completeWithSettlement(Booking $booking): void
+    {
+        $em = $this->em();
+        $em->createQuery('UPDATE '.Booking::class.' b SET b.status = :completed WHERE b.id = :id')->execute(['completed' => 'completed', 'id' => $booking->getId()]);
+        // an existing administrator is reused as is: saving it again would change its password hash and log it out
+        $admin = $em->getRepository(User::class)->findOneBy(['email' => self::ADMIN_EMAIL])
+            ?? $this->createUser(self::ADMIN_EMAIL, User::ROLE_ADMIN, name: 'Vina Admin');
+        $booking = $em->find(Booking::class, $booking->getId());
+        foreach ([Payment::TYPE_DEPOSIT => $booking->getDeposit(), Payment::TYPE_BALANCE => $booking->getTotal()] as $type => $amount) {
+            $payment = new Payment($booking, $booking->getUser(), $type, Payment::METHOD_CASH, $amount, '', '');
+            $payment->review(Payment::STATUS_PAID, '', $admin);
+            $em->persist($payment);
+        }
+        $settlement = new RentalSettlement($booking, 0, 0, 0, 0, 0, $admin);
+        $em->persist($settlement);
+        $em->flush();
     }
 
     private function day(int $offset): string

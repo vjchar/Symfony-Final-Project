@@ -3,6 +3,7 @@
 namespace App\Controller\Admin;
 
 use App\Entity\Booking;
+use App\Entity\PaymentRefund;
 use App\Repository\VehicleRepository;
 use App\Service\Admin\RentalCalendar;
 use App\Service\Admin\RentalReport;
@@ -110,6 +111,7 @@ final class OperationsController extends AbstractController
             'from' => $fromDate,
             'to' => $toDate,
             'booking_statuses' => Booking::STATUSES,
+            'refund_type_labels' => PaymentRefund::TYPE_LABELS,
         ]);
     }
 

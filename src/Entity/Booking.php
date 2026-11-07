@@ -11,9 +11,11 @@ use Doctrine\ORM\Mapping as ORM;
 
 /**
  * A reservation in the v15 bookings table, priced from a BookingQuote. An
- * approved modification re-prices it and an extension moves its return.
- * (v15's admin workflow columns such as approved_at, started_at and
- * admin_notes arrive with the admin bookings pages.)
+ * approved modification re-prices it and an extension moves its return. The
+ * rental desk moves it on: ready → active (checkout) → returned (check-in) →
+ * completed, stamping v15's ready_at, started_at, returned_at and completed_at.
+ * (v15's approved_at, rejected_at and no_show_at arrive with the admin
+ * bookings status controls.)
  */
 #[ORM\Entity(repositoryClass: BookingRepository::class)]
 #[ORM\Table(name: 'bookings')]
@@ -99,6 +101,21 @@ class Booking
     #[ORM\Column(nullable: true)]
     private ?\DateTimeImmutable $cancelledAt = null;
 
+    #[ORM\Column(nullable: true)]
+    private ?\DateTimeImmutable $readyAt = null;
+
+    #[ORM\Column(nullable: true)]
+    private ?\DateTimeImmutable $startedAt = null;
+
+    #[ORM\Column(nullable: true)]
+    private ?\DateTimeImmutable $returnedAt = null;
+
+    #[ORM\Column(nullable: true)]
+    private ?\DateTimeImmutable $completedAt = null;
+
+    #[ORM\Column(type: Types::TEXT, nullable: true)]
+    private ?string $adminNotes = null;
+
     #[ORM\Column]
     private \DateTimeImmutable $createdAt;
 
@@ -151,6 +168,58 @@ class Booking
         $this->status = 'confirmed';
     }
 
+    /**
+     * v15 update_booking_status(…, 'ready'): the vehicle is prepared for
+     * pickup or delivery. RentalDesk checks the requirements first.
+     */
+    public function markReady(string $notes = ''): void
+    {
+        $this->moveTo('confirmed', 'ready', 'That booking status transition is not allowed.');
+        $this->readyAt = new \DateTimeImmutable();
+        $this->setAdminNotes($notes);
+    }
+
+    /**
+     * v15 checkout_booking(): the vehicle leaves with the customer.
+     */
+    public function checkOut(): void
+    {
+        $this->moveTo('ready', 'active', 'Only a ready booking can be checked out.');
+        $this->startedAt = new \DateTimeImmutable();
+    }
+
+    /**
+     * v15 checkin_booking(): the vehicle is back and inspected.
+     */
+    public function checkIn(): void
+    {
+        $this->moveTo('active', 'returned', 'Only an active rental can be checked in.');
+        $this->returnedAt = new \DateTimeImmutable();
+    }
+
+    /**
+     * v15 admin-rentals.php "complete": the settled rental is closed.
+     */
+    public function complete(string $notes = ''): void
+    {
+        $this->moveTo('returned', 'completed', 'That booking status transition is not allowed.');
+        $this->completedAt = new \DateTimeImmutable();
+        $this->setAdminNotes($notes);
+    }
+
+    /**
+     * v15 review_refund(): refunding a confirmed booking's deposit as a
+     * correction sends it back to waiting for payment.
+     */
+    public function reopenForPayment(): void
+    {
+        if (!\in_array($this->status, ['confirmed', 'ready'], true)) {
+            throw new \DomainException('That booking status transition is not allowed.');
+        }
+        $this->status = 'pending';
+        $this->readyAt = null;
+    }
+
     public function cancel(): void
     {
         $this->status = 'cancelled';
@@ -181,6 +250,21 @@ class Booking
     public function isPrePickup(): bool
     {
         return \in_array($this->status, self::PRE_PICKUP_STATUSES, true);
+    }
+
+    private function moveTo(string $from, string $to, string $refusal): void
+    {
+        if ($from !== $this->status) {
+            throw new \DomainException($refusal);
+        }
+        $this->status = $to;
+    }
+
+    private function setAdminNotes(string $notes): void
+    {
+        if ('' !== trim($notes)) {
+            $this->adminNotes = mb_substr(trim($notes), 0, 3000);
+        }
     }
 
     private function applyQuote(BookingQuote $quote): void
@@ -241,6 +325,36 @@ class Booking
     public function getOriginalReturnAt(): ?\DateTimeImmutable
     {
         return $this->originalReturnAt;
+    }
+
+    public function getReadyAt(): ?\DateTimeImmutable
+    {
+        return $this->readyAt;
+    }
+
+    public function getStartedAt(): ?\DateTimeImmutable
+    {
+        return $this->startedAt;
+    }
+
+    public function getReturnedAt(): ?\DateTimeImmutable
+    {
+        return $this->returnedAt;
+    }
+
+    public function getCompletedAt(): ?\DateTimeImmutable
+    {
+        return $this->completedAt;
+    }
+
+    public function getAdminNotes(): string
+    {
+        return (string) $this->adminNotes;
+    }
+
+    public function isDelivery(): bool
+    {
+        return 'Vehicle delivery' === $this->pickupMethod;
     }
 
     public function getCancelledAt(): ?\DateTimeImmutable

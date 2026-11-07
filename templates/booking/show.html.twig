@@ -105,7 +105,27 @@
                         {% endif %}
                         <div class="d-flex flex-wrap gap-2">
                             <a class="btn btn-primary" href="{{ page_url('rental-adjustment', reference) }}"><i class="bi bi-clock-history"></i> Manage Return Schedule</a>
+                            {% if payment_summary.extensionDue > 0 %}
+                                <a class="btn btn-outline" href="{{ page_url('payments', reference) }}">Pay Extension {{ payment_summary.extensionDue|money }}</a>
+                            {% endif %}
                         </div>
+                    </article>
+                {% elseif booking.status == 'completed' %}
+                    <article class="booking-management-panel">
+                        {% if not settlement or not settlement.settled %}
+                            <span class="section-kicker">Financial settlement</span>
+                            <h2>Final settlement still in progress</h2>
+                            <p>Your rental is returned, but a refund or outstanding return balance still needs to be finalized before the verified review step opens.</p>
+                        {% else %}
+                            <span class="section-kicker">Completed trip</span>
+                            <h2>Share your experience</h2>
+                            {% if review %}
+                                <p>Your review is currently <strong>{{ review.status|humanize_label }}</strong>.</p>
+                            {% else %}
+                                <p>Your verified review helps future renters choose confidently.</p>
+                                <a class="btn btn-primary" href="{{ page_url('rate-trip', reference) }}">Rate This Trip</a>
+                            {% endif %}
+                        {% endif %}
                     </article>
                 {% endif %}
                 {% if modifications %}
@@ -113,6 +133,29 @@
                         <span class="section-kicker">Pre-pickup changes</span>
                         <h2>Modification history</h2>
                         <div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Requested</th><th>Status</th><th>Price impact</th></tr></thead><tbody>{% for item in modifications %}<tr><td>{{ item.requestedAt|date('M j, Y g:i A') }}</td><td><span class="status-badge status-badge--{{ item.status|status_class }}">{{ item.status|humanize_label }}</span></td><td>{{ item.priceDifference >= 0 ? '+' : '−' }}{{ (item.priceDifference|abs)|money }}</td></tr>{% endfor %}</tbody></table></div>
+                    </article>
+                {% endif %}
+                {% if settlement %}
+                    <article class="booking-management-panel" id="settlement">
+                        <span class="section-kicker">Return settlement</span>
+                        <h2>Security deposit settlement</h2>
+                        {{ include('booking/_settlement_figures.html.twig') }}
+                        <p class="display-note">Settlement status: <strong>{{ settlement.status|humanize_label }}</strong> · finalized {{ settlement.finalizedAt|date('M j, Y g:i A') }}</p>
+                    </article>
+                {% endif %}
+                {% if refunds or booking.status == 'cancelled' %}
+                    <article class="booking-management-panel refund-history-panel" id="refunds">
+                        <span class="section-kicker">Refunds &amp; financial adjustments</span>
+                        <h2>Refund transaction history</h2>
+                        {% if not refunds %}
+                            <p class="display-note">No refund transaction is recorded for this booking.</p>
+                        {% else %}
+                            <div class="admin-table-wrap"><table class="admin-table refund-history-table"><thead><tr><th>Type</th><th class="refund-amount-column">Amount</th><th>Status</th><th>Processed</th><th>Reference</th></tr></thead><tbody>
+                            {% for refund in refunds %}
+                                <tr><td>{{ refund.refundTypeLabel }}<small>{{ refund.reason }}</small></td><td class="refund-amount-column">{{ refund.amount|money }}</td><td class="status-cell"><span class="status-badge status-badge--{{ refund.status|status_class }}">{{ refund.status|humanize_label }}</span></td><td>{{ refund.processedAt ? refund.processedAt|date('M j, Y g:i A') : '—' }}</td><td>{{ refund.referenceNumber ?: '—' }}</td></tr>
+                            {% endfor %}
+                            </tbody></table></div>
+                        {% endif %}
                     </article>
                 {% endif %}
             </div>

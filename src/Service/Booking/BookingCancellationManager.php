@@ -4,20 +4,24 @@ namespace App\Service\Booking;
 
 use App\Entity\Booking;
 use App\Entity\BookingCancellationRequest;
+use App\Entity\PaymentRefund;
 use App\Entity\User;
 use App\Repository\BookingCancellationRequestRepository;
 use App\Repository\BookingModificationRequestRepository;
+use App\Repository\PaymentRefundRepository;
 use App\Service\AuditLogger;
+use App\Service\NotificationCenter;
 use App\Service\Payment\PaymentLedger;
+use App\Service\Payment\RefundManager;
+use App\Service\Rental\VehicleStatusSync;
 use Doctrine\DBAL\LockMode;
 use Doctrine\ORM\EntityManagerInterface;
 
 /**
  * v15 booking-management-service.php, cancellations: a customer asks to cancel
- * before pickup and an administrator approves or rejects it. Verified
- * payments are refundable in full more than 24 hours before pickup. (Refund
- * records arrive with the admin payments step, so the refund is estimated but
- * not yet recorded.)
+ * before pickup and an administrator approves or rejects it. What was paid
+ * (less refunds already under way) is refundable in full more than 24 hours
+ * before pickup; approving creates those refunds for the payments desk.
  */
 final class BookingCancellationManager
 {
@@ -33,13 +37,17 @@ final class BookingCancellationManager
         private readonly BookingModificationRequestRepository $modifications,
         private readonly AuditLogger $auditLogger,
         private readonly PaymentLedger $ledger,
+        private readonly PaymentRefundRepository $refunds,
+        private readonly RefundManager $refundManager,
+        private readonly NotificationCenter $notifications,
+        private readonly VehicleStatusSync $vehicles,
     ) {
     }
 
     public function estimate(Booking $booking): CancellationEstimate
     {
-        // v15 cancellation_refund_preview(): verified payments (no refund records yet)
-        $paid = $this->ledger->summary($booking)->paidTotal;
+        // v15 cancellation_refund_preview(): verified payments less refunds already paid out or under way
+        $paid = max(0, $this->ledger->summary($booking)->grossPaid - $this->refunds->summaryForBooking($booking)->total());
         $hours = (int) floor(($booking->getPickupAt()->getTimestamp() - time()) / 3600);
         $refundable = $hours > self::REFUND_CUTOFF_HOURS ? $paid : 0;
 
@@ -83,7 +91,8 @@ final class BookingCancellationManager
 
     /**
      * v15 review_booking_cancellation(): the refund split is recalculated and,
-     * on approval, the booking is cancelled and its dates are freed.
+     * on approval, the booking is cancelled, its dates are freed and the
+     * refundable amount becomes cancellation refunds.
      *
      * @throws \InvalidArgumentException|\DomainException
      */
@@ -106,8 +115,17 @@ final class BookingCancellationManager
 
             $estimate = $this->estimate($booking);
             $cancellation->review($decision, $admin, $note, $estimate->refundable, $estimate->nonRefundable);
+            $reference = $booking->getReference();
             if (BookingCancellationRequest::STATUS_APPROVED === $decision) {
                 $booking->cancel();
+                $this->entityManager->flush();
+                $this->vehicles->sync($booking->getVehicle());
+                $this->refundManager->allocate($booking, $estimate->refundable, PaymentRefund::TYPE_CANCELLATION, 'Approved cancellation for booking '.$reference, $admin, cancellation: $cancellation);
+                $this->notifications->notifyUser($booking->getUser(), 'Cancellation Approved', sprintf('Booking %s was cancelled. %s', $reference, $estimate->refundable > 0
+                    ? sprintf('A refund of ₱%s is awaiting processing.', number_format($estimate->refundable))
+                    : 'No refund is due under the current cancellation cutoff policy.'), 'cancellation', $booking);
+            } else {
+                $this->notifications->notifyUser($booking->getUser(), 'Cancellation Rejected', sprintf('The cancellation request for booking %s was not approved. Your existing booking remains unchanged.', $reference), 'cancellation', $booking);
             }
             $this->entityManager->flush();
         });

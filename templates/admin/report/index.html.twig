@@ -39,6 +39,8 @@
             <article><i class="bi bi-calendar-check" aria-hidden="true"></i><span><strong>{{ rows|length }}</strong><small>Bookings</small></span></article>
             <article><i class="bi bi-receipt" aria-hidden="true"></i><span><strong>{{ booking_value|money }}</strong><small>Booking value</small></span></article>
             <article><i class="bi bi-cash-stack" aria-hidden="true"></i><span><strong>{{ verified_revenue|money }}</strong><small>Verified payments</small></span></article>
+            <article><i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i><span><strong>{{ refund_total|money }}</strong><small>Processed refunds</small></span></article>
+            <article><i class="bi bi-graph-up-arrow" aria-hidden="true"></i><span><strong>{{ net_revenue|money }}</strong><small>Net verified payments</small></span></article>
             <article><i class="bi bi-check2-circle" aria-hidden="true"></i><span><strong>{{ status_counts.completed ?? 0 }}</strong><small>Completed rentals</small></span></article>
         </div>
 
@@ -51,6 +53,17 @@
         <div class="rental-adjustment-report-summary mt-3">
             <article><span>Rental revenue</span><strong>{{ rental_revenue|money }}</strong></article>
             <article><span>Security deposits collected</span><strong>{{ deposits_collected|money }}</strong></article>
+            <article><span>Deposits held</span><strong>{{ deposits_held|money }}</strong></article>
+            <article><span>Deposit deductions retained</span><strong>{{ deductions_retained|money }}</strong></article>
+            <article><span>Security deposit refunds</span><strong>{{ security_deposit_refunds|money }}</strong></article>
+            <article><span>Outstanding receivables</span><strong>{{ outstanding_receivables|money }}</strong></article>
+            <article><span>Pending refund amount</span><strong>{{ pending_refund_amount|money }}</strong></article>
+            <article><span>Processed refunds</span><strong>{{ refund_total|money }}</strong></article>
+        </div>
+        <div class="rental-adjustment-report-summary mt-3">
+            {% for type, label in refund_type_labels %}
+                <article><span>{{ label }}</span><strong>{{ (refund_by_type[type] ?? 0)|money }}</strong></article>
+            {% endfor %}
         </div>
 
         <div class="dashboard-grid">
@@ -89,7 +102,7 @@
         <div class="admin-table-wrap mt-4" aria-label="Rental report details">
             <table class="admin-table">
                 <thead>
-                    <tr><th>Reference</th><th>Customer</th><th>Vehicle</th><th>Schedule</th><th>Status</th><th>Total</th><th>Paid</th></tr>
+                    <tr><th>Reference</th><th>Customer</th><th>Vehicle</th><th>Schedule</th><th>Status</th><th>Total</th><th>Paid</th><th>Refunded</th><th>Net paid</th></tr>
                 </thead>
                 <tbody>
                     {% for row in rows %}
@@ -107,9 +120,11 @@
                             <td><span class="status-badge status-badge--{{ booking.status|status_class }}">{{ booking.status|humanize_label }}</span></td>
                             <td>{{ booking.total|money }}</td>
                             <td>{{ row.paid|money }}</td>
+                            <td>{{ row.refunded|money }}</td>
+                            <td>{{ max(0, row.paid - row.refunded)|money }}</td>
                         </tr>
                     {% else %}
-                        <tr><td colspan="7">No booking records in this period.</td></tr>
+                        <tr><td colspan="9">No booking records in this period.</td></tr>
                     {% endfor %}
                 </tbody>
             </table>

@@ -20,6 +20,29 @@ Version 15. Customers register at `/register`.
 Outside production the forgot-password page shows the reset link itself, as
 Version 15 does; set `MAILER_DSN` in `.env.local` to also have it emailed.
 
+## Deploying
+
+The committed `.env` is for local development. On a public server, put these
+in `.env.local` (never committed) or real environment variables:
+
+```bash
+APP_ENV=prod
+APP_DEBUG=0
+APP_SECRET=<32+ random characters, e.g. php -r "echo bin2hex(random_bytes(32));">
+SYMFONY_TRUSTED_HOSTS='^(www\.)?your-domain\.com$'
+DATABASE_URL=...                 # a database user with a strong password
+MAILER_DSN=...                   # so password-reset links are emailed
+```
+
+Then run `composer install --no-dev --optimize-autoloader` and
+`php bin/console cache:clear`. Create the first administrator at `/setup`
+straight away, since it stays open until one exists.
+
+A debug build (`APP_ENV=dev`) only answers the addresses in
+`DEBUG_ALLOWED_IPS`, because its profiler and error pages show configuration
+and secrets. If the app sits behind a reverse proxy, set
+`SYMFONY_TRUSTED_PROXIES` so the visitor's real IP is used.
+
 ## Tests
 
 ```bash

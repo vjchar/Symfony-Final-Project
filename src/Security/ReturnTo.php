@@ -16,7 +16,9 @@ final class ReturnTo
             || !str_starts_with($path, '/')
             || str_starts_with($path, '//')
             || str_contains($path, '\\')
-            || preg_match('/[\r\n]/', $path)
+            // any control character: browsers silently drop tabs and newlines,
+            // so "/\t/evil.com" would otherwise be followed as "//evil.com"
+            || preg_match('/[\x00-\x1F\x7F]/', $path)
         ) {
             return null;
         }

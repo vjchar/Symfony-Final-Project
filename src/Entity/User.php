@@ -5,6 +5,7 @@ namespace App\Entity;
 use App\Repository\UserRepository;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
+use Symfony\Component\Security\Core\User\EquatableInterface;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
 use Symfony\Component\Validator\Constraints as Assert;
@@ -19,7 +20,7 @@ use Symfony\Component\Validator\Constraints as Assert;
 // v15 words the duplicate-email error differently on register.php and profile.php.
 #[UniqueEntity('email', message: 'An account already uses that email address.', groups: ['registration'])]
 #[UniqueEntity('email', message: 'That email is already registered.', groups: ['profile'])]
-class User implements UserInterface, PasswordAuthenticatedUserInterface
+class User implements UserInterface, PasswordAuthenticatedUserInterface, EquatableInterface
 {
     public const ROLE_CUSTOMER = 'customer';
     public const ROLE_ADMIN = 'admin';
@@ -200,6 +201,29 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function getCreatedAt(): \DateTimeImmutable
     {
         return $this->createdAt;
+    }
+
+    /**
+     * Called on every request with the account freshly loaded from the database
+     * ($user) and the copy kept in the session ($this). Returning false signs the
+     * visitor out, so a deactivated account loses access immediately instead of
+     * when its session expires. The other checks are the ones Symfony makes for
+     * users that are not equatable: identifier, roles and password.
+     */
+    public function isEqualTo(UserInterface $user): bool
+    {
+        if (!$user instanceof self || !$user->isActive()) {
+            return false;
+        }
+
+        if ($this->getUserIdentifier() !== $user->getUserIdentifier() || $this->getRoles() !== $user->getRoles()) {
+            return false;
+        }
+
+        // the session copy holds the CRC32C of the hash (see __serialize())
+        $current = (string) $user->getPassword();
+
+        return $this->password === $current || $this->password === hash('crc32c', $current);
     }
 
     /**

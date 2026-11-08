@@ -7,6 +7,7 @@ use App\Form\ResetPasswordType;
 use App\Service\PasswordResetManager;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
+use Symfony\Component\HttpFoundation\IpUtils;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Attribute\MapQueryParameter;
@@ -37,8 +38,11 @@ final class PasswordResetController extends AbstractController
                 $link = $this->resets->request($form->get('email')->getData());
                 // the same answer whether or not the account exists
                 $message = 'If that account exists, a password-reset link has been prepared.';
-                // v15 shows the link on the page outside production, where no mail goes out
-                $localResetLink = 'prod' === $environment ? null : $link;
+                // v15 shows the link on the page during local development, where no
+                // mail goes out. Showing it to anyone else would let them reset any
+                // account, so it also requires a request from this machine.
+                $isLocal = IpUtils::checkIp((string) $request->getClientIp(), ['127.0.0.1', '::1']);
+                $localResetLink = 'prod' !== $environment && $isLocal ? $link : null;
                 $form = $this->createForm(ForgotPasswordType::class);
             } else {
                 $message = $form->get('email')->getErrors()->current()->getMessage();

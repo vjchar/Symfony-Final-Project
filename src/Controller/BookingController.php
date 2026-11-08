@@ -26,10 +26,12 @@ use App\Service\Booking\DraftPreview;
 use App\Service\Document\DocumentManager;
 use App\Service\Payment\PaymentLedger;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\DependencyInjection\Attribute\Target;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Attribute\MapQueryParameter;
+use Symfony\Component\RateLimiter\RateLimiterFactoryInterface;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\CurrentUser;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
@@ -166,10 +168,16 @@ final class BookingController extends AbstractController
      * v15 booking-estimate.php: the live price used by booking-vehicle-preview.js.
      */
     #[Route('/booking/estimate', name: 'app_booking_estimate', methods: ['POST'])]
-    public function estimate(Request $request): JsonResponse
-    {
-        if (!$this->isGranted('ROLE_CUSTOMER')) {
+    public function estimate(
+        Request $request,
+        #[Target('booking_estimate')] RateLimiterFactoryInterface $estimateLimiter,
+    ): JsonResponse {
+        $user = $this->getUser();
+        if (!$user instanceof User || !$this->isGranted('ROLE_CUSTOMER')) {
             return $this->estimateError('Sign in with a customer account to calculate a booking estimate.', Response::HTTP_UNAUTHORIZED);
+        }
+        if (!$estimateLimiter->create('user-'.$user->getId())->consume()->isAccepted()) {
+            return $this->estimateError('Too many price checks in a short time. Wait a moment and try again.', Response::HTTP_TOO_MANY_REQUESTS);
         }
 
         $bookingRequest = new BookingRequest();

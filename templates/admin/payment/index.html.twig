@@ -62,6 +62,7 @@
                                 {% if payment.notes %}<small>{{ payment.notes }}</small>{% endif %}
                             </td>
                             <td>
+                                {% if payment.pending %}
                                 <form class="admin-inline-form" method="post" action="{{ path('app_admin_payment_review', {id: payment.id, status: filter}) }}">
                                     <input type="hidden" name="_token" value="{{ csrf_token('review-payment-' ~ payment.id) }}">
                                     <select class="form-select form-select-sm" name="status" required aria-label="Payment status for {{ booking.reference }}">
@@ -72,6 +73,9 @@
                                     <input class="form-control form-control-sm" name="notes" maxlength="2000" placeholder="Internal note" aria-label="Internal note">
                                     <button class="btn btn-primary btn-sm" type="submit">Save</button>
                                 </form>
+                                {% else %}
+                                <small>Reviewed. Use a refund to correct a verified payment.</small>
+                                {% endif %}
                                 {% set balance = refundable[payment.id] ?? 0 %}
                                 {% if payment.paid and balance > 0 %}
                                     <details class="refund-create-details mt-2">

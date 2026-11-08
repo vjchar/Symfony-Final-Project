@@ -6,6 +6,7 @@ use App\Entity\Booking;
 use App\Entity\Notification;
 use App\Entity\Payment;
 use App\Entity\User;
+use App\Service\Payment\PaymentManager;
 use App\Tests\BuildsBookings;
 use App\Tests\LogsInUsers;
 use App\Tests\UploadsFiles;
@@ -138,6 +139,84 @@ final class PaymentTest extends WebTestCase
         $this->em()->createQuery('UPDATE '.Payment::class.' p SET p.status = :paid')->execute(['paid' => Payment::STATUS_PAID]);
         $this->client->request('GET', '/bookings/'.$booking->getReference().'/invoice');
         self::assertSelectorTextContains('.invoice-balance', '₱18,600');
+    }
+
+    public function testPendingPaymentsCountAgainstWhatIsDue(): void
+    {
+        $booking = $this->book();
+        $this->pay($booking, ['method' => 'cash', 'amount' => '3000']);
+        self::assertCount(1, $this->payments());
+
+        // ₱5,000 deposit with ₱3,000 awaiting verification leaves ₱2,000
+        $this->pay($booking, ['method' => 'cash', 'amount' => '3000']);
+        self::assertSelectorTextContains('.alert-danger', 'Enter an amount no greater than the current amount due of ₱2,000. Payments awaiting verification are already counted.');
+        self::assertCount(1, $this->payments());
+
+        $this->pay($booking, ['method' => 'cash', 'amount' => '2000']);
+        self::assertCount(2, $this->payments());
+    }
+
+    public function testOverlappingPaymentsCannotBothBeVerified(): void
+    {
+        $booking = $this->book();
+        // two full deposits already waiting (e.g. recorded before this check existed)
+        $first = $this->pendingPayment($booking, Payment::TYPE_DEPOSIT, 5000);
+        $second = $this->pendingPayment($booking, Payment::TYPE_DEPOSIT, 5000);
+        $manager = static::getContainer()->get(PaymentManager::class);
+        $admin = $this->em()->getRepository(User::class)->findOneBy(['email' => self::ADMIN_EMAIL]);
+
+        $manager->review($first, Payment::STATUS_PAID, '', $admin);
+
+        try {
+            $manager->review($second, Payment::STATUS_PAID, '', $admin);
+            self::fail('A second full deposit was verified.');
+        } catch (\DomainException $error) {
+            self::assertSame('This payment of ₱5,000 is more than the ₱0 still due for this deposit. Mark it failed and ask the customer to submit the correct amount.', $error->getMessage());
+        }
+        self::assertSame(Payment::STATUS_PENDING, $this->em()->find(Payment::class, $second->getId())->getStatus());
+
+        // it can still be turned down
+        $manager->review($this->em()->find(Payment::class, $second->getId()), Payment::STATUS_FAILED, 'Duplicate', $admin);
+        self::assertSame(Payment::STATUS_FAILED, $this->em()->find(Payment::class, $second->getId())->getStatus());
+    }
+
+    public function testAReviewedPaymentCannotBeReviewedAgain(): void
+    {
+        $booking = $this->book();
+        $payment = $this->pendingPayment($booking, Payment::TYPE_DEPOSIT, 5000);
+        $manager = static::getContainer()->get(PaymentManager::class);
+        $admin = $this->em()->getRepository(User::class)->findOneBy(['email' => self::ADMIN_EMAIL]);
+        $manager->review($payment, Payment::STATUS_PAID, '', $admin);
+
+        $this->expectException(\DomainException::class);
+        $this->expectExceptionMessage('This payment was already reviewed.');
+        $manager->review($this->em()->find(Payment::class, $payment->getId()), Payment::STATUS_FAILED, '', $admin);
+    }
+
+    public function testAdminPageOnlyOffersReviewForPendingPayments(): void
+    {
+        $booking = $this->book();
+        $pending = $this->pendingPayment($booking, Payment::TYPE_DEPOSIT, 2000);
+        $verified = $this->pendingPayment($booking, Payment::TYPE_DEPOSIT, 3000);
+        $admin = $this->em()->getRepository(User::class)->findOneBy(['email' => self::ADMIN_EMAIL]);
+        static::getContainer()->get(PaymentManager::class)->review($verified, Payment::STATUS_PAID, '', $admin);
+
+        $this->client->loginUser($admin);
+        $this->client->request('GET', '/admin/payments');
+
+        self::assertSelectorExists(sprintf('form[action^="/admin/payments/%d/review"]', $pending->getId()));
+        self::assertSelectorNotExists(sprintf('form[action^="/admin/payments/%d/review"]', $verified->getId()));
+    }
+
+    private function pendingPayment(Booking $booking, string $type, int $amount): Payment
+    {
+        $em = $this->em();
+        $booking = $em->find(Booking::class, $booking->getId());
+        $payment = new Payment($booking, $booking->getUser(), $type, Payment::METHOD_CASH, $amount, '', '');
+        $em->persist($payment);
+        $em->flush();
+
+        return $payment;
     }
 
     private function book(): Booking

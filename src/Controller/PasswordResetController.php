@@ -7,10 +7,12 @@ use App\Form\ResetPasswordType;
 use App\Service\PasswordResetManager;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
+use Symfony\Component\DependencyInjection\Attribute\Target;
 use Symfony\Component\HttpFoundation\IpUtils;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Attribute\MapQueryParameter;
+use Symfony\Component\RateLimiter\RateLimiterFactoryInterface;
 use Symfony\Component\Routing\Attribute\Route;
 
 /**
@@ -27,14 +29,20 @@ final class PasswordResetController extends AbstractController
     public function request(
         Request $request,
         #[Autowire('%kernel.environment%')] string $environment,
+        #[Target('password_reset_request')] RateLimiterFactoryInterface $resetLimiter,
     ): Response {
         $form = $this->createForm(ForgotPasswordType::class);
         $form->handleRequest($request);
 
         $message = null;
         $localResetLink = null;
+        $status = Response::HTTP_OK;
         if ($form->isSubmitted()) {
-            if ($form->isValid()) {
+            if (!$resetLimiter->create($request->getClientIp())->consume()->isAccepted()) {
+                $message = 'Too many reset requests from your network. Please try again in a few minutes.';
+                $status = Response::HTTP_TOO_MANY_REQUESTS;
+                $form = $this->createForm(ForgotPasswordType::class);
+            } elseif ($form->isValid()) {
                 $link = $this->resets->request($form->get('email')->getData());
                 // the same answer whether or not the account exists
                 $message = 'If that account exists, a password-reset link has been prepared.';
@@ -53,7 +61,7 @@ final class PasswordResetController extends AbstractController
             'form' => $form,
             'message' => $message,
             'local_reset_link' => $localResetLink,
-        ]);
+        ], Response::HTTP_OK === $status ? null : new Response(status: $status));
     }
 
     #[Route('/reset-password', name: 'app_reset_password', methods: ['GET', 'POST'])]

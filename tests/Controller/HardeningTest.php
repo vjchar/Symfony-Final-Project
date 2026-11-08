@@ -2,6 +2,7 @@
 
 namespace App\Tests\Controller;
 
+use App\Entity\ContactMessage;
 use App\Entity\PasswordReset;
 use App\Entity\User;
 use App\EventListener\SecurityHeadersListener;
@@ -18,6 +19,7 @@ final class HardeningTest extends WebTestCase
     use LogsInUsers;
 
     private const CUSTOMER_EMAIL = 'juan@test.vj';
+    private const CONTACT_EMAIL = 'limit-test@test.vj';
     // TEST-NET-3: listed in DEBUG_ALLOWED_IPS by .env.test, but not local
     private const ALLOWED_REMOTE_IP = '203.0.113.5';
     // TEST-NET-2: not allowed anywhere
@@ -105,6 +107,58 @@ final class HardeningTest extends WebTestCase
 
         $this->client->request('GET', '/account');
         self::assertResponseIsSuccessful();
+    }
+
+    public function testSignUpAttemptsAreLimitedPerNetwork(): void
+    {
+        for ($attempt = 1; $attempt <= 6; ++$attempt) {
+            $this->client->request('GET', '/register');
+            // an invalid sign-up still counts, so the duplicate-email answer can't be farmed
+            $this->client->submitForm('Create Account', ['registration_form[name]' => '']);
+        }
+
+        self::assertResponseStatusCodeSame(429);
+        self::assertSelectorTextContains('.alert-danger', 'Too many sign-up attempts from your network. Please try again later.');
+    }
+
+    public function testContactMessagesAreLimitedPerNetwork(): void
+    {
+        $this->removeContactMessages();
+        try {
+            for ($attempt = 1; $attempt <= 6; ++$attempt) {
+                $this->client->request('GET', '/contact');
+                $this->client->submitForm('Send Message', [
+                    'contact[name]' => 'Juan Dela Cruz',
+                    'contact[email]' => self::CONTACT_EMAIL,
+                    'contact[subject]' => 'Vehicle information',
+                    'contact[message]' => 'Is the Toyota Hiace available for a family trip next month?',
+                ]);
+            }
+
+            self::assertResponseStatusCodeSame(429);
+            self::assertSelectorTextContains('.alert-danger', 'Too many messages from your network.');
+            self::assertSame(5, static::getContainer()->get('doctrine')->getRepository(ContactMessage::class)->count(['email' => self::CONTACT_EMAIL]));
+        } finally {
+            $this->removeContactMessages();
+        }
+    }
+
+    public function testResetRequestsAreLimitedPerNetwork(): void
+    {
+        // different addresses each time, so only the per-network limit applies
+        for ($attempt = 1; $attempt <= 6; ++$attempt) {
+            $this->requestReset(sprintf('nobody-%d@test.vj', $attempt));
+        }
+
+        self::assertResponseStatusCodeSame(429);
+        self::assertSelectorTextContains('.alert-info', 'Too many reset requests from your network.');
+    }
+
+    private function removeContactMessages(): void
+    {
+        static::getContainer()->get('doctrine')->getManager()
+            ->createQuery('DELETE FROM '.ContactMessage::class.' m WHERE m.email = :email')
+            ->execute(['email' => self::CONTACT_EMAIL]);
     }
 
     /**

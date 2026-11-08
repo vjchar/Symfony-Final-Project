@@ -78,6 +78,44 @@ final class PaymentManager
         if (!$booking->isOwnedBy($user)) {
             throw new \DomainException('This booking does not belong to your account.');
         }
+
+        // The booking row stays locked until the payment is saved, so two
+        // submissions sent at the same moment are checked one after the other
+        // and the second one sees the first one's pending amount.
+        [$payment, $adjustment, $modification] = $this->transactional(function () use ($booking, $user, $type, $method, $amount, $reference, $proof): array {
+            $this->entityManager->refresh($booking, LockMode::PESSIMISTIC_WRITE);
+
+            return $this->createPayment($booking, $user, $type, $method, $amount, $reference, $proof);
+        });
+
+        [$title, $message] = $this->customerMessage($booking, $type);
+        $this->notifications->notifyUser($user, $title, $message, 'payment', $booking);
+        $this->notifications->notifyAdmins(
+            'Payment awaiting verification',
+            sprintf('A %s payment was submitted for booking %s.', str_replace('_', ' ', $type), $booking->getReference()),
+            'payment',
+            $booking,
+        );
+        $this->entityManager->flush();
+        $this->auditLogger->log('payment_submitted', 'payment', $payment->getId(), [
+            'booking_id' => $booking->getId(),
+            'rental_adjustment_id' => $adjustment?->getId(),
+            'booking_modification_id' => $modification?->getId(),
+        ]);
+
+        return $payment;
+    }
+
+    /**
+     * Checks the submission against what is still due and saves it. Runs while
+     * the booking row is locked (see submit()).
+     *
+     * @return array{Payment, ?RentalAdjustmentRequest, ?BookingModificationRequest}
+     *
+     * @throws \InvalidArgumentException|\DomainException with the v15 message
+     */
+    private function createPayment(Booking $booking, User $user, string $type, string $method, string $amount, string $reference, ?UploadedFile $proof): array
+    {
         if (\in_array($booking->getStatus(), ['cancelled', 'rejected', 'no_show'], true)) {
             throw new \DomainException('This booking no longer accepts payments.');
         }
@@ -120,9 +158,14 @@ final class PaymentManager
                 throw new \InvalidArgumentException(sprintf('Enter an amount no greater than the outstanding return balance of ₱%s.', number_format($outstanding)));
             }
         } else {
-            $maximum = Payment::TYPE_DEPOSIT === $type ? $summary->depositDue : $summary->rentalDue;
+            // payments still awaiting verification count against what is due,
+            // so the same deposit or balance can't be submitted twice
+            $pending = $this->payments->sumPendingOfType($booking, $type);
+            $maximum = max(0, (Payment::TYPE_DEPOSIT === $type ? $summary->depositDue : $summary->rentalDue) - $pending);
             if ($amountValue < 1 || $amountValue > $maximum) {
-                throw new \InvalidArgumentException('Enter an amount no greater than the current amount due.');
+                throw new \InvalidArgumentException($pending > 0
+                    ? sprintf('Enter an amount no greater than the current amount due of ₱%s. Payments awaiting verification are already counted.', number_format($maximum))
+                    : 'Enter an amount no greater than the current amount due.');
             }
         }
 
@@ -147,22 +190,7 @@ final class PaymentManager
             throw $error;
         }
 
-        [$title, $message] = $this->customerMessage($booking, $type);
-        $this->notifications->notifyUser($user, $title, $message, 'payment', $booking);
-        $this->notifications->notifyAdmins(
-            'Payment awaiting verification',
-            sprintf('A %s payment was submitted for booking %s.', str_replace('_', ' ', $type), $booking->getReference()),
-            'payment',
-            $booking,
-        );
-        $this->entityManager->flush();
-        $this->auditLogger->log('payment_submitted', 'payment', $payment->getId(), [
-            'booking_id' => $booking->getId(),
-            'rental_adjustment_id' => $adjustment?->getId(),
-            'booking_modification_id' => $modification?->getId(),
-        ]);
-
-        return $payment;
+        return [$payment, $adjustment, $modification];
     }
 
     /**
@@ -196,6 +224,10 @@ final class PaymentManager
                 if (BookingModificationRequest::STATUS_APPROVED !== $modification->getStatus()) {
                     throw new \DomainException('This booking modification is no longer awaiting activation.');
                 }
+            }
+
+            if ($paid) {
+                $this->assertWithinAmountDue($payment);
             }
 
             $payment->review($status, $notes, $admin);
@@ -239,6 +271,42 @@ final class PaymentManager
         });
 
         $this->auditLogger->log('payment_'.$status, 'payment', $payment->getId(), [], $admin);
+    }
+
+    /**
+     * A deposit, balance or return-charge payment may only be verified while it
+     * still fits what is due, so approving several pending payments can't take
+     * more than the booking costs. The booking row is locked so two
+     * administrators verifying payments at once are checked in turn.
+     *
+     * Extension and modification payments are tied to one approved change and
+     * are already checked against it.
+     */
+    private function assertWithinAmountDue(Payment $payment): void
+    {
+        $type = $payment->getPaymentType();
+        if (!\in_array($type, [Payment::TYPE_DEPOSIT, Payment::TYPE_BALANCE, Payment::TYPE_EXTRA_CHARGE], true)) {
+            return;
+        }
+
+        $booking = $payment->getBooking();
+        $this->entityManager->refresh($booking, LockMode::PESSIMISTIC_WRITE);
+        // this payment is still pending, so the summary does not count it yet
+        $summary = $this->ledger->summary($booking);
+        $due = match ($type) {
+            Payment::TYPE_DEPOSIT => $summary->depositDue,
+            Payment::TYPE_BALANCE => $summary->rentalDue,
+            default => $summary->extraDue,
+        };
+
+        if ($payment->getAmount() > $due) {
+            throw new \DomainException(sprintf(
+                'This payment of ₱%s is more than the ₱%s still due for this %s. Mark it failed and ask the customer to submit the correct amount.',
+                number_format($payment->getAmount()),
+                number_format($due),
+                str_replace('_', ' ', $type),
+            ));
+        }
     }
 
     /**

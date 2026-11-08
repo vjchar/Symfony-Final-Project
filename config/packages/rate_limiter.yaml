@@ -1,0 +1,25 @@
+# Limits for public forms and endpoints that can be scripted. Sign-in has its
+# own limit (login_throttling in security.yaml). Each limiter is keyed by
+# visitor IP, except the booking estimate, which needs a signed-in customer.
+framework:
+    rate_limiter:
+        # new accounts per IP: also slows checking which emails are registered
+        registration:
+            policy: sliding_window
+            limit: 5
+            interval: '1 hour'
+        # contact messages per IP
+        contact_form:
+            policy: sliding_window
+            limit: 5
+            interval: '15 minutes'
+        # reset requests per IP; each account is also limited to one per 15 minutes
+        password_reset_request:
+            policy: sliding_window
+            limit: 5
+            interval: '15 minutes'
+        # live price checks per customer while building a booking
+        booking_estimate:
+            policy: sliding_window
+            limit: 60
+            interval: '1 minute'

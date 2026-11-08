@@ -15,6 +15,8 @@ use Symfony\Component\Form\FormInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
+use Symfony\Component\DependencyInjection\Attribute\Target;
+use Symfony\Component\RateLimiter\RateLimiterFactoryInterface;
 use Symfony\Component\Routing\Attribute\Route;
 
 /**
@@ -31,8 +33,10 @@ final class RegistrationController extends AbstractController
     }
 
     #[Route('/register', name: 'app_register', methods: ['GET', 'POST'])]
-    public function register(Request $request): Response
-    {
+    public function register(
+        Request $request,
+        #[Target('registration')] RateLimiterFactoryInterface $registrationLimiter,
+    ): Response {
         $returnTo = ReturnTo::sanitize($request->query->get('return_to') ?? $request->getPayload()->get('return_to'));
 
         if ($this->getUser()) {
@@ -42,6 +46,16 @@ final class RegistrationController extends AbstractController
         $user = new User();
         $form = $this->createForm(RegistrationFormType::class, $user);
         $form->handleRequest($request);
+
+        // every attempt counts, so the "email already used" answer can't be farmed
+        if ($form->isSubmitted() && !$registrationLimiter->create($request->getClientIp())->consume()->isAccepted()) {
+            $this->addFlash('danger', 'Too many sign-up attempts from your network. Please try again later.');
+
+            return $this->render('registration/register.html.twig', [
+                'form' => $this->createForm(RegistrationFormType::class, new User()),
+                'return_to' => $returnTo,
+            ], new Response(status: Response::HTTP_TOO_MANY_REQUESTS));
+        }
 
         if ($form->isSubmitted() && $form->isValid()) {
             $this->createAccount($user, $form);

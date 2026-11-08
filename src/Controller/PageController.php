@@ -9,8 +9,10 @@ use App\Repository\AddonRepository;
 use App\Service\AuditLogger;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\DependencyInjection\Attribute\Target;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\RateLimiter\RateLimiterFactoryInterface;
 use Symfony\Component\Routing\Attribute\Route;
 
 /**
@@ -49,8 +51,12 @@ final class PageController extends AbstractController
     }
 
     #[Route('/contact', name: 'app_contact', methods: ['GET', 'POST'])]
-    public function contact(Request $request, EntityManagerInterface $entityManager, AuditLogger $auditLogger): Response
-    {
+    public function contact(
+        Request $request,
+        EntityManagerInterface $entityManager,
+        AuditLogger $auditLogger,
+        #[Target('contact_form')] RateLimiterFactoryInterface $contactLimiter,
+    ): Response {
         $message = new ContactMessage();
         // v15 prefills the form for a signed-in customer
         if (($user = $this->getUser()) instanceof User) {
@@ -60,6 +66,12 @@ final class PageController extends AbstractController
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
+            if (!$contactLimiter->create($request->getClientIp())->consume()->isAccepted()) {
+                $this->addFlash('danger', 'Too many messages from your network. Please wait a few minutes before sending another.');
+
+                return $this->render('page/contact.html.twig', ['form' => $form], new Response(status: Response::HTTP_TOO_MANY_REQUESTS));
+            }
+
             $entityManager->persist($message);
             $entityManager->flush();
             $auditLogger->log('contact_message_created', 'contact_message', $message->getId());

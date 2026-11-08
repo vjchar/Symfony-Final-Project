@@ -18,6 +18,7 @@ final class ContactTest extends WebTestCase
     protected function setUp(): void
     {
         $this->client = static::createClient();
+        static::getContainer()->get('cache.rate_limiter')->clear();
         $this->removeMessages();
     }
 

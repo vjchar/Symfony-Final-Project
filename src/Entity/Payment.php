@@ -129,10 +129,20 @@ class Payment
         if (!\in_array($status, [self::STATUS_PAID, self::STATUS_FAILED], true)) {
             throw new \InvalidArgumentException('Choose a valid payment status.');
         }
+        // a decision is final: flipping a verified payment would leave the
+        // booking confirmation, applied changes and refunds out of step with it
+        if (!$this->isPending()) {
+            throw new \DomainException('This payment was already reviewed.');
+        }
         $this->status = $status;
         $this->notes = mb_substr(trim($notes), 0, 2000);
         $this->recordedBy = $admin;
         $this->paidAt = self::STATUS_PAID === $status ? new \DateTimeImmutable() : null;
+    }
+
+    public function isPending(): bool
+    {
+        return self::STATUS_PENDING === $this->status;
     }
 
     public function isPaid(): bool

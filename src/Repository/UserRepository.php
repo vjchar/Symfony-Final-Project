@@ -49,6 +49,22 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
         return $qb->getQuery()->getResult();
     }
 
+    /**
+     * v15 password_reset_record(): an active account with an unexpired reset for this token.
+     */
+    public function findByUsableResetToken(string $tokenHash, \DateTimeImmutable $now): ?User
+    {
+        return $this->createQueryBuilder('u')
+            ->where('u.resetTokenHash = :hash')
+            ->andWhere('u.resetExpiresAt >= :now')
+            ->andWhere('u.status = :active')
+            ->setParameter('hash', $tokenHash)
+            ->setParameter('now', $now)
+            ->setParameter('active', User::STATUS_ACTIVE)
+            ->getQuery()
+            ->getOneOrNullResult();
+    }
+
     public function countActiveAdmins(): int
     {
         return $this->count(['role' => User::ROLE_ADMIN, 'status' => User::STATUS_ACTIVE]);

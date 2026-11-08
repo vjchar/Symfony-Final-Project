@@ -7,7 +7,6 @@ use App\Entity\BookingCancellationRequest;
 use App\Entity\BookingModificationRequest;
 use App\Entity\Payment;
 use App\Entity\PaymentRefund;
-use App\Entity\RentalSettlement;
 use App\Entity\User;
 use App\Repository\PaymentRefundRepository;
 use App\Repository\PaymentRepository;
@@ -77,7 +76,6 @@ final class RefundManager
         User $admin,
         ?BookingCancellationRequest $cancellation = null,
         ?BookingModificationRequest $modification = null,
-        ?RentalSettlement $settlement = null,
         ?array $paymentTypes = null,
     ): array {
         if ($amount <= 0) {
@@ -95,7 +93,7 @@ final class RefundManager
                 continue;
             }
             $share = min($remaining, $available);
-            $refund = new PaymentRefund($payment, $refundType, $share, $reason, $cancellation, $modification, $settlement);
+            $refund = new PaymentRefund($payment, $refundType, $share, $reason, $cancellation, $modification);
             $this->entityManager->persist($refund);
             $this->entityManager->flush();
             $created[] = $refund;
@@ -209,7 +207,7 @@ final class RefundManager
             $this->entityManager->flush();
 
             $booking = $refund->getBooking();
-            if (null !== $refund->getRentalSettlement()) {
+            if (PaymentRefund::TYPE_SECURITY_DEPOSIT === $refund->getRefundType()) {
                 $this->settlements->refresh($booking);
             }
             if ($refund->isRefunded()

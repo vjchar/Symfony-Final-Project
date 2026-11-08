@@ -36,11 +36,10 @@ class ReviewRepository extends ServiceEntityRepository
     public function findForAdmin(string $status = 'pending'): array
     {
         $qb = $this->createQueryBuilder('r')
-            ->addSelect('u', 'v', 'b', 'p')
+            ->addSelect('u', 'v', 'b')
             ->join('r.user', 'u')
             ->join('r.vehicle', 'v')
             ->join('r.booking', 'b')
-            ->leftJoin('r.photos', 'p')
             ->orderBy('r.createdAt', 'DESC')
             ->addOrderBy('r.id', 'DESC');
         if ('all' !== $status) {
@@ -100,11 +99,11 @@ class ReviewRepository extends ServiceEntityRepository
             ->select('b', 'v')
             ->from(Booking::class, 'b')
             ->join('b.vehicle', 'v')
-            ->join(RentalSettlement::class, 's', 'WITH', 's.booking = b AND s.status = :settled')
             ->leftJoin(Review::class, 'r', 'WITH', 'r.booking = b')
             ->where('b.user = :user')
             ->andWhere('b.status = :completed')
             ->andWhere('r.id IS NULL')
+            ->andWhere('b.settlement.status = :settled')
             ->setParameter('user', $user)
             ->setParameter('completed', 'completed')
             ->setParameter('settled', RentalSettlement::STATUS_SETTLED)

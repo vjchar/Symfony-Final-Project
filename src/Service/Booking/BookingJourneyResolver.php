@@ -10,7 +10,6 @@ use App\Repository\CustomerDocumentRepository;
 use App\Repository\PaymentRefundRepository;
 use App\Repository\PaymentRepository;
 use App\Repository\RentalAdjustmentRequestRepository;
-use App\Repository\RentalSettlementRepository;
 use App\Repository\ReviewRepository;
 use App\Routing\PageUrlGenerator;
 use App\Service\Document\DocumentChecklist;
@@ -32,7 +31,6 @@ final class BookingJourneyResolver
         private readonly PaymentLedger $ledger,
         private readonly CustomerDocumentRepository $documents,
         private readonly ReviewRepository $reviews,
-        private readonly RentalSettlementRepository $settlements,
         private readonly PaymentRefundRepository $refunds,
         private readonly RentalAdjustmentRequestRepository $adjustments,
         private readonly PaymentRepository $payments,
@@ -180,7 +178,7 @@ final class BookingJourneyResolver
     private function returned(callable $journey, Booking $booking, PaymentSummary $payments, string $bookingUrl): BookingJourney
     {
         $settlementUrl = $bookingUrl.'#settlement';
-        $settlement = $this->settlements->findForBooking($booking);
+        $settlement = $booking->getSettlement();
         if (null === $settlement) {
             return $journey('settlement_pending', null, 'Return Settlement Pending', 'Your vehicle return is recorded. The rental team is finalizing the security-deposit settlement and any legitimate return deductions.', 'View Return Details', $settlementUrl, 'info', noAction: true);
         }
@@ -202,7 +200,7 @@ final class BookingJourneyResolver
      */
     private function completed(callable $journey, Booking $booking, PaymentSummary $payments, array $reference, string $bookingUrl): BookingJourney
     {
-        $settlement = $this->settlements->findForBooking($booking);
+        $settlement = $booking->getSettlement();
         if (null !== $settlement) {
             if (null !== $balance = $this->returnBalance($journey, $booking, $payments, $settlement, 'A financial correction reopened an outstanding balance of %s. Complete it to restore final settlement.', 'Review Payments')) {
                 return $balance;

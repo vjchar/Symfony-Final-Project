@@ -237,7 +237,9 @@ final class RentalDeskTest extends WebTestCase
     {
         $this->em()->clear();
 
-        return $this->em()->getRepository(RentalSettlement::class)->findOneBy([]);
+        $booking = $this->em()->getRepository(Booking::class)->findOneBy([]);
+
+        return $booking->getSettlement();
     }
 
     private function notifications(string $title): int

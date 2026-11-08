@@ -11,7 +11,6 @@ use App\Repository\BookingModificationRequestRepository;
 use App\Repository\BookingRepository;
 use App\Repository\PaymentRefundRepository;
 use App\Repository\RentalAdjustmentRequestRepository;
-use App\Repository\RentalSettlementRepository;
 use App\Service\Booking\BookingJourneyResolver;
 use App\Service\Payment\PaymentLedger;
 use App\Service\Payment\PaymentManager;
@@ -104,7 +103,6 @@ final class PaymentController extends AbstractController
         #[CurrentUser] User $user,
         RentalAdjustmentRequestRepository $adjustments,
         PaymentRefundRepository $refunds,
-        RentalSettlementRepository $settlements,
     ): Response
     {
         $booking = $this->bookings->findOneBy(['reference' => $reference]);
@@ -126,7 +124,7 @@ final class PaymentController extends AbstractController
             'extension_total' => $extensionTotal,
             'amount_due' => 'cancelled' === $booking->getStatus() ? 0 : $summary->amountDue(),
             'refunds' => $refunds->summaryForBooking($booking),
-            'settlement' => $settlements->findForBooking($booking),
+            'settlement' => $booking->getSettlement(),
         ]);
     }
 

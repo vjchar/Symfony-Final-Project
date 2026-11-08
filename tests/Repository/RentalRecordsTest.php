@@ -10,7 +10,6 @@ use App\Entity\RentalSettlement;
 use App\Entity\User;
 use App\Repository\PaymentRefundRepository;
 use App\Repository\RentalInspectionRepository;
-use App\Repository\RentalSettlementRepository;
 use App\Tests\BuildsBookings;
 use App\Tests\LogsInUsers;
 use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
@@ -18,7 +17,7 @@ use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 
 /**
- * The v15 rental_inspections, rental_settlements and payment_refunds records,
+ * The v15 rental_inspections, return settlement and payment_refunds records,
  * saved and read back through their repositories.
  */
 final class RentalRecordsTest extends WebTestCase
@@ -47,7 +46,7 @@ final class RentalRecordsTest extends WebTestCase
         if (!$this->em()->isOpen()) {
             static::getContainer()->get('doctrine')->resetManager();
         }
-        // inspections, settlements, payments and refunds go with the bookings (ON DELETE CASCADE)
+        // inspections, payments and refunds go with the bookings (ON DELETE CASCADE)
         $this->clearBookings();
         parent::tearDown();
     }
@@ -97,18 +96,18 @@ final class RentalRecordsTest extends WebTestCase
 
     public function testSettlementWorksOutTheDepositRefundOrTheBalanceDue(): void
     {
-        $refund = new RentalSettlement($this->booking, 5000, 1000, 300, 200, 0, $this->admin, 'Minor scratch');
+        $refund = RentalSettlement::calculate(5000, 1000, 300, 200, 0, 'Minor scratch');
         self::assertSame(1500, $refund->getTotalDeductions());
         self::assertSame(3500, $refund->getDepositRefundAmount());
         self::assertSame(0, $refund->getOutstandingBalance());
         self::assertSame(RentalSettlement::STATUS_REFUND_PENDING, $refund->getStatus());
 
-        $balance = new RentalSettlement($this->booking, 5000, 6000, 0, 500, 0, $this->admin);
+        $balance = RentalSettlement::calculate(5000, 6000, 0, 500, 0);
         self::assertSame(0, $balance->getDepositRefundAmount());
         self::assertSame(1500, $balance->getOutstandingBalance());
         self::assertSame(RentalSettlement::STATUS_BALANCE_DUE, $balance->getStatus());
 
-        self::assertSame(RentalSettlement::STATUS_SETTLED, (new RentalSettlement($this->booking, 2000, 2000, 0, 0, 0, $this->admin))->getStatus());
+        self::assertSame(RentalSettlement::STATUS_SETTLED, RentalSettlement::calculate(2000, 2000, 0, 0, 0)->getStatus());
 
         // v15 refresh_rental_settlement_status()
         $balance->refreshStatus(0, 0, false);
@@ -121,15 +120,20 @@ final class RentalRecordsTest extends WebTestCase
 
     public function testOneSettlementPerBookingIsSavedAndFound(): void
     {
-        $this->save(new RentalSettlement($this->booking, 5000, 0, 0, 0, 1200, $this->admin));
+        self::assertNull($this->booking->getSettlement(), 'nothing until the return is settled');
+        $this->booking->finalizeSettlement(5000, 0, 0, 0, 1200, $this->admin, 'Late fee');
+        $this->save();
 
-        $settlement = $this->repository(RentalSettlement::class, RentalSettlementRepository::class)->findForBooking($this->reloadedBooking());
+        $booking = $this->reloadedBooking();
+        $settlement = $booking->getSettlement();
         self::assertNotNull($settlement);
         self::assertSame(3800, $settlement->getDepositRefundAmount());
-        self::assertSame('Vina Admin', $settlement->getFinalizedBy()->getName());
+        self::assertSame(RentalSettlement::STATUS_REFUND_PENDING, $settlement->getStatus());
+        self::assertSame('Late fee', $settlement->getNotes());
+        self::assertSame('Vina Admin', $booking->getSettlementFinalizedBy()->getName());
 
-        $this->expectException(UniqueConstraintViolationException::class);
-        $this->save(new RentalSettlement($this->reloadedBooking(), 5000, 0, 0, 0, 0, $this->reloadedAdmin()));
+        $this->expectExceptionMessage('This rental already has a finalized settlement.');
+        $booking->finalizeSettlement(5000, 0, 0, 0, 0, $this->reloadedAdmin());
     }
 
     public function testRefundsMoveThroughTheV15Statuses(): void
@@ -173,11 +177,11 @@ final class RentalRecordsTest extends WebTestCase
     public function testRefundTotalsCountOpenAndPaidRefunds(): void
     {
         $payment = $this->verifiedPayment(5000);
-        $settlement = new RentalSettlement($this->booking, 5000, 1500, 0, 0, 0, $this->admin);
-        $open = new PaymentRefund($payment, PaymentRefund::TYPE_SECURITY_DEPOSIT, 2000, 'Deposit', rentalSettlement: $settlement);
-        $paid = new PaymentRefund($payment, PaymentRefund::TYPE_SECURITY_DEPOSIT, 1500, 'Deposit', rentalSettlement: $settlement);
+        $this->booking->finalizeSettlement(5000, 1500, 0, 0, 0, $this->admin);
+        $open = new PaymentRefund($payment, PaymentRefund::TYPE_SECURITY_DEPOSIT, 2000, 'Deposit');
+        $paid = new PaymentRefund($payment, PaymentRefund::TYPE_SECURITY_DEPOSIT, 1500, 'Deposit');
         $rejected = new PaymentRefund($payment, PaymentRefund::TYPE_PAYMENT_CORRECTION, 900, 'Duplicate');
-        $this->save($settlement, $open, $paid, $rejected);
+        $this->save($open, $paid, $rejected);
         foreach ([PaymentRefund::STATUS_APPROVED, PaymentRefund::STATUS_PROCESSING, PaymentRefund::STATUS_REFUNDED] as $status) {
             $paid->transitionTo($status, $this->admin);
         }
@@ -188,7 +192,7 @@ final class RentalRecordsTest extends WebTestCase
         self::assertSame(3500, $refunds->committedAmountForPayment($payment));
         self::assertSame(1500, $refunds->committedAmountForPayment($payment, except: $open));
         self::assertSame(1500, $refunds->refundableBalance($payment), 'rejected refunds give the money back to the balance');
-        self::assertSame(['pending' => 2000, 'refunded' => 1500], $refunds->depositTotalsForSettlement($settlement));
+        self::assertSame(['pending' => 2000, 'refunded' => 1500], $refunds->depositTotalsForBooking($this->booking));
         self::assertCount(3, $refunds->findForBooking($this->booking));
     }
 

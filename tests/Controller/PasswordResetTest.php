@@ -2,7 +2,6 @@
 
 namespace App\Tests\Controller;
 
-use App\Entity\PasswordReset;
 use App\Entity\User;
 use App\Tests\LogsInUsers;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
@@ -23,7 +22,7 @@ final class PasswordResetTest extends WebTestCase
         $this->client = static::createClient();
         static::getContainer()->get('cache.rate_limiter')->clear();
         static::getContainer()->get('doctrine')->getManager()
-            ->createQuery('DELETE FROM '.PasswordReset::class)->execute();
+            ->createQuery('UPDATE '.User::class.' u SET u.resetTokenHash = NULL, u.resetExpiresAt = NULL, u.resetRequestedAt = NULL')->execute();
         $this->createUser(self::CUSTOMER_EMAIL);
     }
 
@@ -81,19 +80,20 @@ final class PasswordResetTest extends WebTestCase
         self::assertEmailTextBodyContains($email, $link);
 
         // only the hash is stored
-        $reset = $this->resets()[0];
         parse_str((string) parse_url($link, \PHP_URL_QUERY), $query);
-        self::assertSame(hash('sha256', $query['token']), $reset->getTokenHash());
+        self::assertSame(hash('sha256', $query['token']), $this->customer()->getResetTokenHash());
     }
 
     public function testOneRequestPerFifteenMinutes(): void
     {
         $this->requestReset(self::CUSTOMER_EMAIL);
+        $firstHash = $this->customer()->getResetTokenHash();
         $this->requestReset(self::CUSTOMER_EMAIL);
 
         self::assertSelectorTextContains('.alert-info', self::PREPARED);
         self::assertSelectorNotExists('.local-reset-link');
-        self::assertCount(1, $this->resets());
+        self::assertNotNull($firstHash);
+        self::assertSame($firstHash, $this->customer()->getResetTokenHash(), 'the second request leaves the first link in place');
     }
 
     public function testResetsThePasswordOnceAndSignsInWithIt(): void
@@ -144,7 +144,7 @@ final class PasswordResetTest extends WebTestCase
 
         $em = static::getContainer()->get('doctrine')->getManager();
         $user = $em->getRepository(User::class)->findOneBy(['email' => self::CUSTOMER_EMAIL]);
-        $em->persist(new PasswordReset($user, hash('sha256', 'expired-token'), new \DateTimeImmutable('-1 minute')));
+        $user->startPasswordReset(hash('sha256', 'expired-token'), new \DateTimeImmutable('-1 minute'));
         $em->flush();
 
         $this->client->request('POST', '/reset-password?token=expired-token', ['reset_password' => [
@@ -166,12 +166,11 @@ final class PasswordResetTest extends WebTestCase
         return $this->client->getCrawler()->selectLink('Open password reset')->link()->getUri();
     }
 
-    /** @return list<PasswordReset> */
-    private function resets(): array
+    private function customer(): User
     {
         $em = static::getContainer()->get('doctrine')->getManager();
         $em->clear();
 
-        return $em->getRepository(PasswordReset::class)->findAll();
+        return $em->getRepository(User::class)->findOneBy(['email' => self::CUSTOMER_EMAIL]);
     }
 }

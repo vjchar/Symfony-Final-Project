@@ -39,7 +39,7 @@
                     {% if review.photos is not empty %}
                         <div class="admin-review-photos">
                             {% for photo in review.photos %}
-                                <img src="{{ path('app_file_review_photo', {id: photo.id}) }}" alt="Customer review upload">
+                                <img src="{{ path('app_file_review_photo', {id: review.id, index: loop.index0}) }}" alt="Customer review upload">
                             {% endfor %}
                         </div>
                     {% endif %}

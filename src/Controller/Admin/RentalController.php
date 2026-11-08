@@ -8,7 +8,6 @@ use App\Repository\BookingRepository;
 use App\Repository\PaymentRefundRepository;
 use App\Repository\RentalAdjustmentRequestRepository;
 use App\Repository\RentalInspectionRepository;
-use App\Repository\RentalSettlementRepository;
 use App\Service\Booking\RentalAdjustmentManager;
 use App\Service\Payment\PaymentLedger;
 use App\Service\Rental\InspectionReading;
@@ -42,7 +41,6 @@ final class RentalController extends AbstractController
     public function index(
         RentalAdjustmentRequestRepository $adjustments,
         RentalInspectionRepository $inspections,
-        RentalSettlementRepository $settlements,
         PaymentRefundRepository $refunds,
         PaymentLedger $ledger,
         #[MapQueryParameter] string $reference = '',
@@ -58,7 +56,7 @@ final class RentalController extends AbstractController
             'selected' => $selected,
             'inspections' => null === $selected ? [] : $inspections->findForBooking($selected),
             'selected_adjustments' => null === $selected ? [] : $adjustments->findForBooking($selected),
-            'settlement' => null === $selected ? null : $settlements->findForBooking($selected),
+            'settlement' => $selected?->getSettlement(),
             'preview' => null === $selected ? null : $this->desk->preview($selected),
             'payment_summary' => null === $selected ? null : $ledger->summary($selected),
             'refunds' => null === $selected ? [] : $refunds->findForBooking($selected),

@@ -116,6 +116,14 @@ class Booking
     #[ORM\Column(type: Types::TEXT, nullable: true)]
     private ?string $adminNotes = null;
 
+    /** The return settlement, stored in the settlement_* columns (v15 rental_settlements). */
+    #[ORM\Embedded(class: RentalSettlement::class, columnPrefix: 'settlement_')]
+    private RentalSettlement $settlement;
+
+    #[ORM\ManyToOne]
+    #[ORM\JoinColumn(name: 'settlement_finalized_by')]
+    private ?User $settlementFinalizedBy = null;
+
     #[ORM\Column]
     private \DateTimeImmutable $createdAt;
 
@@ -128,6 +136,7 @@ class Booking
         $this->user = $user;
         $this->deposit = $quote->deposit();
         $this->addons = new ArrayCollection();
+        $this->settlement = new RentalSettlement();
         $this->applyQuote($quote);
         $this->createdAt = new \DateTimeImmutable();
         $this->updatedAt = new \DateTimeImmutable();
@@ -137,6 +146,35 @@ class Booking
     public function touch(): void
     {
         $this->updatedAt = new \DateTimeImmutable();
+    }
+
+    /**
+     * v15 finalize_return_settlement(): records the final bill once.
+     *
+     * @throws \DomainException when the booking already has one
+     */
+    public function finalizeSettlement(int $depositPaid, int $damageCharges, int $fuelCharges, int $lateCharges, int $otherCharges, User $admin, string $notes = ''): RentalSettlement
+    {
+        if ($this->settlement->isFinalized()) {
+            throw new \DomainException('This rental already has a finalized settlement.');
+        }
+        $this->settlement = RentalSettlement::calculate($depositPaid, $damageCharges, $fuelCharges, $lateCharges, $otherCharges, $notes);
+        $this->settlementFinalizedBy = $admin;
+
+        return $this->settlement;
+    }
+
+    /**
+     * v15 rental_settlement_for_booking(): null until the return is settled.
+     */
+    public function getSettlement(): ?RentalSettlement
+    {
+        return $this->settlement->isFinalized() ? $this->settlement : null;
+    }
+
+    public function getSettlementFinalizedBy(): ?User
+    {
+        return $this->settlementFinalizedBy;
     }
 
     /**

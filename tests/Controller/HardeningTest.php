@@ -3,7 +3,6 @@
 namespace App\Tests\Controller;
 
 use App\Entity\ContactMessage;
-use App\Entity\PasswordReset;
 use App\Entity\User;
 use App\EventListener\SecurityHeadersListener;
 use App\Tests\LogsInUsers;
@@ -32,7 +31,7 @@ final class HardeningTest extends WebTestCase
         $this->client = static::createClient();
         static::getContainer()->get('cache.rate_limiter')->clear();
         static::getContainer()->get('doctrine')->getManager()
-            ->createQuery('DELETE FROM '.PasswordReset::class)->execute();
+            ->createQuery('UPDATE '.User::class.' u SET u.resetTokenHash = NULL, u.resetExpiresAt = NULL, u.resetRequestedAt = NULL')->execute();
     }
 
     public function testRequestsForAnUntrustedHostAreRefused(): void

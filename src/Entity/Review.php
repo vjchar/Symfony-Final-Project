@@ -3,8 +3,6 @@
 namespace App\Entity;
 
 use App\Repository\ReviewRepository;
-use Doctrine\Common\Collections\ArrayCollection;
-use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 
@@ -77,10 +75,14 @@ class Review
     #[ORM\Column(length: 20, options: ['default' => 'pending'])]
     private string $status = self::STATUS_PENDING;
 
-    /** @var Collection<int, ReviewPhoto> */
-    #[ORM\OneToMany(targetEntity: ReviewPhoto::class, mappedBy: 'review', cascade: ['persist'], orphanRemoval: true)]
-    #[ORM\OrderBy(['id' => 'ASC'])]
-    private Collection $photos;
+    /**
+     * Private filenames of the trip photos, in upload order (v15 review_photos,
+     * folded into a JSON column).
+     *
+     * @var list<string>
+     */
+    #[ORM\Column(type: Types::JSON)]
+    private array $photos = [];
 
     #[ORM\Column]
     private \DateTimeImmutable $createdAt;
@@ -104,7 +106,6 @@ class Review
         $this->customerSupport = $scores['customer_support'];
         $this->title = $title;
         $this->body = $body;
-        $this->photos = new ArrayCollection();
         $this->createdAt = new \DateTimeImmutable();
         $this->updatedAt = new \DateTimeImmutable();
     }
@@ -128,7 +129,7 @@ class Review
 
     public function addPhoto(string $filename): void
     {
-        $this->photos->add(new ReviewPhoto($this, $filename));
+        $this->photos[] = $filename;
     }
 
     public function getId(): ?int
@@ -197,11 +198,16 @@ class Review
     }
 
     /**
-     * @return Collection<int, ReviewPhoto>
+     * @return list<string>
      */
-    public function getPhotos(): Collection
+    public function getPhotos(): array
     {
-        return $this->photos;
+        return array_values($this->photos);
+    }
+
+    public function getPhoto(int $index): ?string
+    {
+        return $this->getPhotos()[$index] ?? null;
     }
 
     public function getCreatedAt(): \DateTimeImmutable

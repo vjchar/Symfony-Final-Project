@@ -6,7 +6,6 @@ use App\Entity\Booking;
 use App\Entity\BookingDraft;
 use App\Entity\Payment;
 use App\Entity\Promo;
-use App\Entity\RentalSettlement;
 use App\Entity\User;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
@@ -70,8 +69,7 @@ trait BuildsBookings
             $payment->review(Payment::STATUS_PAID, '', $admin);
             $em->persist($payment);
         }
-        $settlement = new RentalSettlement($booking, 0, 0, 0, 0, 0, $admin);
-        $em->persist($settlement);
+        $booking->finalizeSettlement(0, 0, 0, 0, 0, $admin);
         $em->flush();
     }
 

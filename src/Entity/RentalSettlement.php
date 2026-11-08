@@ -2,19 +2,19 @@
 
 namespace App\Entity;
 
-use App\Repository\RentalSettlementRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 
 /**
- * The final bill after a vehicle comes back (v15 rental_settlements): the
- * verified deposit held, minus damage, fuel, late and other charges, gives
- * either a deposit refund or a balance the customer still owes. One per booking.
+ * The final bill after a vehicle comes back (v15 rental_settlements, folded
+ * into the settlement_* columns of bookings): the verified deposit held, minus
+ * damage, fuel, late and other charges, gives either a deposit refund or a
+ * balance the customer still owes. One per booking, so it lives on the booking.
+ *
+ * A booking that has not been settled yet carries an empty settlement (no
+ * finalizedAt); Booking::getSettlement() returns null for it.
  */
-#[ORM\Entity(repositoryClass: RentalSettlementRepository::class)]
-#[ORM\Table(name: 'rental_settlements')]
-#[ORM\Index(name: 'idx_settlements_status', columns: ['status', 'finalized_at'])]
-#[ORM\HasLifecycleCallbacks]
+#[ORM\Embeddable]
 class RentalSettlement
 {
     public const STATUS_FINALIZED = 'finalized';
@@ -22,104 +22,83 @@ class RentalSettlement
     public const STATUS_REFUND_PENDING = 'refund_pending';
     public const STATUS_SETTLED = 'settled';
 
-    #[ORM\Id]
-    #[ORM\GeneratedValue]
-    #[ORM\Column]
-    private ?int $id = null;
-
-    #[ORM\OneToOne]
-    #[ORM\JoinColumn(nullable: false, unique: true, onDelete: 'CASCADE')]
-    private Booking $booking;
+    #[ORM\Column(options: ['default' => 0])]
+    private int $depositPaid = 0;
 
     #[ORM\Column(options: ['default' => 0])]
-    private int $depositPaid;
+    private int $damageCharges = 0;
 
     #[ORM\Column(options: ['default' => 0])]
-    private int $damageCharges;
+    private int $fuelCharges = 0;
 
     #[ORM\Column(options: ['default' => 0])]
-    private int $fuelCharges;
+    private int $lateCharges = 0;
 
     #[ORM\Column(options: ['default' => 0])]
-    private int $lateCharges;
+    private int $otherCharges = 0;
 
     #[ORM\Column(options: ['default' => 0])]
-    private int $otherCharges;
+    private int $totalDeductions = 0;
 
     #[ORM\Column(options: ['default' => 0])]
-    private int $totalDeductions;
+    private int $depositRefundAmount = 0;
 
     #[ORM\Column(options: ['default' => 0])]
-    private int $depositRefundAmount;
+    private int $outstandingBalance = 0;
 
-    #[ORM\Column(options: ['default' => 0])]
-    private int $outstandingBalance;
+    #[ORM\Column(length: 30, nullable: true)]
+    private ?string $status = null;
 
-    #[ORM\Column(length: 30, options: ['default' => self::STATUS_FINALIZED])]
-    private string $status = self::STATUS_FINALIZED;
-
-    #[ORM\Column]
-    private \DateTimeImmutable $finalizedAt;
-
-    #[ORM\ManyToOne]
-    #[ORM\JoinColumn(name: 'finalized_by', nullable: false)]
-    private User $finalizedBy;
+    #[ORM\Column(nullable: true)]
+    private ?\DateTimeImmutable $finalizedAt = null;
 
     #[ORM\Column(type: Types::TEXT, nullable: true)]
     private ?string $notes = null;
-
-    #[ORM\Column]
-    private \DateTimeImmutable $createdAt;
-
-    #[ORM\Column]
-    private \DateTimeImmutable $updatedAt;
 
     /**
      * v15 finalize_return_settlement() and rental_settlement_preview(): the
      * totals are worked out here so the amounts always agree.
      */
-    public function __construct(
-        Booking $booking,
+    public static function calculate(
         int $depositPaid,
         int $damageCharges,
         int $fuelCharges,
         int $lateCharges,
         int $otherCharges,
-        User $finalizedBy,
         string $notes = '',
-    ) {
-        $this->booking = $booking;
-        $this->depositPaid = max(0, $depositPaid);
-        $this->damageCharges = max(0, $damageCharges);
-        $this->fuelCharges = max(0, $fuelCharges);
-        $this->lateCharges = max(0, $lateCharges);
-        $this->otherCharges = max(0, $otherCharges);
-        $this->totalDeductions = $this->damageCharges + $this->fuelCharges + $this->lateCharges + $this->otherCharges;
-        $this->depositRefundAmount = max(0, $this->depositPaid - $this->totalDeductions);
-        $this->outstandingBalance = max(0, $this->totalDeductions - $this->depositPaid);
-        $this->status = match (true) {
-            $this->outstandingBalance > 0 => self::STATUS_BALANCE_DUE,
-            $this->depositRefundAmount > 0 => self::STATUS_REFUND_PENDING,
+    ): self {
+        $settlement = new self();
+        $settlement->depositPaid = max(0, $depositPaid);
+        $settlement->damageCharges = max(0, $damageCharges);
+        $settlement->fuelCharges = max(0, $fuelCharges);
+        $settlement->lateCharges = max(0, $lateCharges);
+        $settlement->otherCharges = max(0, $otherCharges);
+        $settlement->totalDeductions = $settlement->damageCharges + $settlement->fuelCharges + $settlement->lateCharges + $settlement->otherCharges;
+        $settlement->depositRefundAmount = max(0, $settlement->depositPaid - $settlement->totalDeductions);
+        $settlement->outstandingBalance = max(0, $settlement->totalDeductions - $settlement->depositPaid);
+        $settlement->status = match (true) {
+            $settlement->outstandingBalance > 0 => self::STATUS_BALANCE_DUE,
+            $settlement->depositRefundAmount > 0 => self::STATUS_REFUND_PENDING,
             default => self::STATUS_SETTLED,
         };
-        $this->finalizedBy = $finalizedBy;
-        $this->notes = mb_substr(trim($notes), 0, 3000);
-        $this->finalizedAt = $this->createdAt = $this->updatedAt = new \DateTimeImmutable();
+        $settlement->notes = mb_substr(trim($notes), 0, 3000);
+        $settlement->finalizedAt = new \DateTimeImmutable();
+
+        return $settlement;
     }
 
-    #[ORM\PreUpdate]
-    public function touch(): void
+    public function isFinalized(): bool
     {
-        $this->updatedAt = new \DateTimeImmutable();
+        return null !== $this->finalizedAt;
     }
 
     /**
      * v15 refresh_rental_settlement_status(), run after a deposit refund or a
      * return-charge payment changes.
      *
-     * @param int  $pendingRefunds   open (pending/approved/processing) security-deposit refunds for this settlement
-     * @param int  $refundedAmount   security-deposit refunds already paid out for this settlement
-     * @param bool $extraChargeDue   whether the booking still has an unpaid return charge
+     * @param int  $pendingRefunds open (pending/approved/processing) security-deposit refunds of the booking
+     * @param int  $refundedAmount security-deposit refunds of the booking already paid out
+     * @param bool $extraChargeDue whether the booking still has an unpaid return charge
      */
     public function refreshStatus(int $pendingRefunds, int $refundedAmount, bool $extraChargeDue): void
     {
@@ -139,16 +118,6 @@ class RentalSettlement
     public function isSettled(): bool
     {
         return self::STATUS_SETTLED === $this->status;
-    }
-
-    public function getId(): ?int
-    {
-        return $this->id;
-    }
-
-    public function getBooking(): Booking
-    {
-        return $this->booking;
     }
 
     public function getDepositPaid(): int
@@ -193,17 +162,12 @@ class RentalSettlement
 
     public function getStatus(): string
     {
-        return $this->status;
+        return (string) $this->status;
     }
 
-    public function getFinalizedAt(): \DateTimeImmutable
+    public function getFinalizedAt(): ?\DateTimeImmutable
     {
         return $this->finalizedAt;
-    }
-
-    public function getFinalizedBy(): User
-    {
-        return $this->finalizedBy;
     }
 
     public function getNotes(): string

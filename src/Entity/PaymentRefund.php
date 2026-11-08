@@ -87,10 +87,6 @@ class PaymentRefund
     #[ORM\JoinColumn(onDelete: 'SET NULL')]
     private ?BookingModificationRequest $bookingModification;
 
-    #[ORM\ManyToOne]
-    #[ORM\JoinColumn(onDelete: 'SET NULL')]
-    private ?RentalSettlement $rentalSettlement;
-
     #[ORM\Column]
     private int $amount;
 
@@ -148,7 +144,6 @@ class PaymentRefund
         string $reason,
         ?BookingCancellationRequest $cancellationRequest = null,
         ?BookingModificationRequest $bookingModification = null,
-        ?RentalSettlement $rentalSettlement = null,
         string $adminNote = '',
     ) {
         if (!\array_key_exists($refundType, self::TYPE_LABELS)) {
@@ -168,7 +163,6 @@ class PaymentRefund
         $this->reason = mb_substr(trim($reason), 0, 2000);
         $this->cancellationRequest = $cancellationRequest;
         $this->bookingModification = $bookingModification;
-        $this->rentalSettlement = $rentalSettlement;
         $this->adminNote = mb_substr(trim($adminNote), 0, 2000);
         $this->requestedAt = $this->createdAt = $this->updatedAt = new \DateTimeImmutable();
     }
@@ -274,11 +268,6 @@ class PaymentRefund
     public function getBookingModification(): ?BookingModificationRequest
     {
         return $this->bookingModification;
-    }
-
-    public function getRentalSettlement(): ?RentalSettlement
-    {
-        return $this->rentalSettlement;
     }
 
     public function getAmount(): int

@@ -8,7 +8,6 @@ use App\Entity\BookingModificationRequest;
 use App\Entity\Payment;
 use App\Entity\PaymentRefund;
 use App\Entity\RentalAdjustmentRequest;
-use App\Entity\RentalSettlement;
 use App\Entity\Vehicle;
 use Doctrine\ORM\EntityManagerInterface;
 
@@ -106,11 +105,11 @@ final class RentalReport
         [$refundByType, $pendingRefunds, $refundedFromDeposits, $refundedFromOthers] = $this->refundSummary($fromAt, $toAt);
         $settlements = $this->entityManager->createQueryBuilder()
             ->select(
-                'COALESCE(SUM(CASE WHEN s.depositPaid < s.totalDeductions THEN s.depositPaid ELSE s.totalDeductions END), 0) AS retained',
-                'COALESCE(SUM(s.outstandingBalance), 0) AS outstanding',
+                'COALESCE(SUM(CASE WHEN s.settlement.depositPaid < s.settlement.totalDeductions THEN s.settlement.depositPaid ELSE s.settlement.totalDeductions END), 0) AS retained',
+                'COALESCE(SUM(s.settlement.outstandingBalance), 0) AS outstanding',
             )
-            ->from(RentalSettlement::class, 's')
-            ->where('s.finalizedAt BETWEEN :from AND :to')
+            ->from(Booking::class, 's')
+            ->where('s.settlement.finalizedAt BETWEEN :from AND :to')
             ->setParameter('from', $fromAt)
             ->setParameter('to', $toAt)
             ->getQuery()

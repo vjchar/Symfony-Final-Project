@@ -8,7 +8,6 @@ use App\Repository\BookingModificationRequestRepository;
 use App\Repository\PaymentRefundRepository;
 use App\Repository\PaymentRepository;
 use App\Repository\RentalAdjustmentRequestRepository;
-use App\Repository\RentalSettlementRepository;
 
 /**
  * Reads a booking's payments into what is paid and what is due (v15
@@ -24,7 +23,6 @@ final class PaymentLedger
         private readonly RentalAdjustmentRequestRepository $adjustments,
         private readonly BookingModificationRequestRepository $modifications,
         private readonly PaymentRefundRepository $refunds,
-        private readonly RentalSettlementRepository $settlements,
     ) {
     }
 
@@ -64,7 +62,7 @@ final class PaymentLedger
         foreach ($this->modifications->findAllAwaitingPaymentFor($booking) as $modification) {
             $modificationCharges += max(0, $modification->getPriceDifference() - ($paidPerModification[$modification->getId()] ?? 0));
         }
-        $returnObligation = $this->settlements->findForBooking($booking)?->getOutstandingBalance() ?? $extraCharged;
+        $returnObligation = $booking->getSettlement()?->getOutstandingBalance() ?? $extraCharged;
 
         return new PaymentSummary(
             payments: $payments,

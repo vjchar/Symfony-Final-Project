@@ -4,7 +4,7 @@ namespace App\Controller;
 
 use App\Entity\CustomerDocument;
 use App\Entity\Payment;
-use App\Entity\ReviewPhoto;
+use App\Entity\Review;
 use App\Entity\User;
 use App\Service\PrivateFileStorage;
 use Doctrine\ORM\EntityManagerInterface;
@@ -46,12 +46,13 @@ final class SecureFileController extends AbstractController
         return $this->serve($user, $payment?->getUser(), PrivateFileStorage::PAYMENT_PROOFS, (string) $payment?->getProofFilename());
     }
 
-    #[Route('/files/review-photo/{id}', name: 'app_file_review_photo', requirements: ['id' => '\d+'], methods: ['GET'])]
-    public function reviewPhoto(int $id, #[CurrentUser] User $user): Response
+    #[Route('/files/review-photo/{id}/{index}', name: 'app_file_review_photo', requirements: ['id' => '\d+', 'index' => '\d+'], methods: ['GET'])]
+    public function reviewPhoto(int $id, int $index, #[CurrentUser] User $user): Response
     {
-        $photo = $this->entityManager->find(ReviewPhoto::class, $id);
+        $review = $this->entityManager->find(Review::class, $id);
+        $filename = $review?->getPhoto($index);
 
-        return $this->serve($user, $photo?->getReview()->getUser(), PrivateFileStorage::REVIEWS, (string) $photo?->getFilename());
+        return $this->serve($user, null === $filename ? null : $review->getUser(), PrivateFileStorage::REVIEWS, (string) $filename);
     }
 
     private function serve(User $viewer, ?User $owner, string $area, string $filename): Response

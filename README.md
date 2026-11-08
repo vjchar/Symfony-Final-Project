@@ -1,8 +1,15 @@
 # VJ Car Rental (Symfony)
 
 A Symfony 8.1 rebuild of the VJ Car Rental Version 15 PHP site. It uses the
-same pages, CSS, scripts, images and database tables as Version 15, and is
-built in the same steps as the course reference project.
+same pages, CSS, scripts and images as Version 15, and is built in the same
+steps as the course reference project.
+
+The database has 21 tables, three fewer than Version 15, with the same
+features. Records that only ever exist once per parent are stored on the
+parent: review photos are a JSON list on `reviews.photos`, the open password
+reset is in `users.reset_*`, and the return settlement is in
+`bookings.settlement_*`. Messenger runs `sync://`, so there is no
+`messenger_messages` table and no worker to run.
 
 ## Setup
 
@@ -65,8 +72,8 @@ php bin/phpunit
 The customer pages of Version 15 are all built: payments (GCash, bank
 transfer or cash, with proof upload) and invoices, rental documents,
 notifications, verified-trip reviews, favorites and vehicle comparison, on the
-v15 `payments`, `customer_documents`, `notifications`, `reviews`,
-`review_photos` and `favorites` tables. Uploaded documents, payment proofs and
+v15 `payments`, `customer_documents`, `notifications`, `reviews` and
+`favorites` tables. Uploaded documents, payment proofs and
 review photos are kept privately in `storage/` and served only to their owner
 and administrators.
 

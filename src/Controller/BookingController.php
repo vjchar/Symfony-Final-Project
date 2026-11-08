@@ -14,7 +14,6 @@ use App\Repository\BookingModificationRequestRepository;
 use App\Repository\BookingRepository;
 use App\Repository\PaymentRefundRepository;
 use App\Repository\RentalAdjustmentRequestRepository;
-use App\Repository\RentalSettlementRepository;
 use App\Repository\ReviewRepository;
 use App\Repository\VehicleRepository;
 use App\Service\Booking\BookingCalculator;
@@ -246,7 +245,6 @@ final class BookingController extends AbstractController
         RentalAdjustmentRequestRepository $adjustments,
         PaymentLedger $ledger,
         DocumentManager $documents,
-        RentalSettlementRepository $settlements,
         PaymentRefundRepository $refunds,
         ReviewRepository $reviews,
     ): Response {
@@ -256,7 +254,7 @@ final class BookingController extends AbstractController
         }
 
         return $this->render('booking/show.html.twig', [
-            'settlement' => $settlements->findForBooking($booking),
+            'settlement' => $booking->getSettlement(),
             'refunds' => $refunds->findForBooking($booking),
             'review' => $reviews->findForBooking($booking),
             'booking' => $booking,

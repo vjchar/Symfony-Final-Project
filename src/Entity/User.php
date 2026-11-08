@@ -63,6 +63,20 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface, Equatab
     #[ORM\Column(nullable: true)]
     private ?\DateTimeImmutable $lastLoginAt = null;
 
+    /**
+     * The open password reset (v15 password_resets, folded into users): only
+     * the sha256 of the emailed token is stored, and a new request replaces it.
+     */
+    #[ORM\Column(length: 64, unique: true, nullable: true)]
+    private ?string $resetTokenHash = null;
+
+    #[ORM\Column(nullable: true)]
+    private ?\DateTimeImmutable $resetExpiresAt = null;
+
+    /** Kept after the reset is used, for the one-request-per-15-minutes rule. */
+    #[ORM\Column(nullable: true)]
+    private ?\DateTimeImmutable $resetRequestedAt = null;
+
     #[ORM\Column]
     private \DateTimeImmutable $createdAt;
 
@@ -203,6 +217,37 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface, Equatab
         return $this->createdAt;
     }
 
+    public function startPasswordReset(string $tokenHash, \DateTimeImmutable $expiresAt): void
+    {
+        $this->resetTokenHash = $tokenHash;
+        $this->resetExpiresAt = $expiresAt;
+        $this->resetRequestedAt = new \DateTimeImmutable();
+    }
+
+    /**
+     * Spends the open reset, so its link stops working.
+     */
+    public function clearPasswordReset(): void
+    {
+        $this->resetTokenHash = null;
+        $this->resetExpiresAt = null;
+    }
+
+    public function getResetTokenHash(): ?string
+    {
+        return $this->resetTokenHash;
+    }
+
+    public function getResetExpiresAt(): ?\DateTimeImmutable
+    {
+        return $this->resetExpiresAt;
+    }
+
+    public function hasPasswordResetRequestSince(\DateTimeImmutable $since): bool
+    {
+        return null !== $this->resetRequestedAt && $this->resetRequestedAt >= $since;
+    }
+
     /**
      * Called on every request with the account freshly loaded from the database
      * ($user) and the copy kept in the session ($this). Returning false signs the
@@ -233,6 +278,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface, Equatab
     {
         $data = (array) $this;
         $data["\0".self::class."\0password"] = hash('crc32c', (string) $this->password);
+        $data["\0".self::class."\0resetTokenHash"] = null;
 
         return $data;
     }

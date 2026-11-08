@@ -5,7 +5,6 @@ namespace App\Repository;
 use App\Entity\Booking;
 use App\Entity\Payment;
 use App\Entity\PaymentRefund;
-use App\Entity\RentalSettlement;
 use App\Entity\User;
 use App\Service\Payment\RefundSummary;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
@@ -73,23 +72,23 @@ class PaymentRefundRepository extends ServiceEntityRepository
     }
 
     /**
-     * The security-deposit refunds of one settlement, as v15
-     * refresh_rental_settlement_status() totals them.
+     * The security-deposit refunds of a booking's settlement (only a return
+     * settlement creates them), as v15 refresh_rental_settlement_status() totals them.
      *
      * @return array{pending: int, refunded: int}
      */
-    public function depositTotalsForSettlement(RentalSettlement $settlement): array
+    public function depositTotalsForBooking(Booking $booking): array
     {
         $row = $this->createQueryBuilder('r')
             ->select(
                 'COALESCE(SUM(CASE WHEN r.status IN (:open) THEN r.amount ELSE 0 END), 0) AS pending',
                 'COALESCE(SUM(CASE WHEN r.status = :refunded THEN r.amount ELSE 0 END), 0) AS refunded',
             )
-            ->where('r.rentalSettlement = :settlement')
+            ->where('r.booking = :booking')
             ->andWhere('r.refundType = :type')
             ->setParameter('open', PaymentRefund::OPEN_STATUSES)
             ->setParameter('refunded', PaymentRefund::STATUS_REFUNDED)
-            ->setParameter('settlement', $settlement)
+            ->setParameter('booking', $booking)
             ->setParameter('type', PaymentRefund::TYPE_SECURITY_DEPOSIT)
             ->getQuery()
             ->getSingleResult();

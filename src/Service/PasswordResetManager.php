@@ -2,9 +2,7 @@
 
 namespace App\Service;
 
-use App\Entity\PasswordReset;
 use App\Entity\User;
-use App\Repository\PasswordResetRepository;
 use App\Repository\UserRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
@@ -26,7 +24,6 @@ final class PasswordResetManager
 
     public function __construct(
         private readonly UserRepository $users,
-        private readonly PasswordResetRepository $resets,
         private readonly EntityManagerInterface $entityManager,
         private readonly UserPasswordHasherInterface $passwordHasher,
         private readonly UrlGeneratorInterface $urlGenerator,
@@ -44,12 +41,12 @@ final class PasswordResetManager
     public function request(string $email): ?string
     {
         $user = $this->users->findOneBy(['email' => strtolower(trim($email)), 'status' => User::STATUS_ACTIVE]);
-        if (null === $user || $this->resets->hasRequestSince($user, new \DateTimeImmutable(self::REQUEST_INTERVAL))) {
+        if (null === $user || $user->hasPasswordResetRequestSince(new \DateTimeImmutable(self::REQUEST_INTERVAL))) {
             return null;
         }
 
         $token = bin2hex(random_bytes(32));
-        $this->entityManager->persist(new PasswordReset($user, hash('sha256', $token), new \DateTimeImmutable(self::LIFETIME)));
+        $user->startPasswordReset(hash('sha256', $token), new \DateTimeImmutable(self::LIFETIME));
         $this->entityManager->flush();
 
         $link = $this->urlGenerator->generate('app_reset_password', ['token' => $token], UrlGeneratorInterface::ABSOLUTE_URL);
@@ -58,22 +55,21 @@ final class PasswordResetManager
         return $link;
     }
 
-    public function find(string $token): ?PasswordReset
+    /**
+     * The account whose open reset matches this token, if it is still usable.
+     */
+    public function find(string $token): ?User
     {
         $token = trim($token);
 
-        return '' === $token ? null : $this->resets->findUsable(hash('sha256', $token), new \DateTimeImmutable());
+        return '' === $token ? null : $this->users->findByUsableResetToken(hash('sha256', $token), new \DateTimeImmutable());
     }
 
-    public function complete(PasswordReset $reset, string $plainPassword): void
+    public function complete(User $user, string $plainPassword): void
     {
-        $user = $reset->getUser();
-
-        $this->entityManager->wrapInTransaction(function () use ($user, $plainPassword): void {
-            $user->setPassword($this->passwordHasher->hashPassword($user, $plainPassword));
-            $this->entityManager->flush();
-            $this->resets->consumeAllFor($user, new \DateTimeImmutable());
-        });
+        $user->setPassword($this->passwordHasher->hashPassword($user, $plainPassword));
+        $user->clearPasswordReset();
+        $this->entityManager->flush();
     }
 
     private function sendLink(User $user, string $link): void

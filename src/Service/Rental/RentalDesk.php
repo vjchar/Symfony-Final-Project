@@ -15,7 +15,6 @@ use App\Repository\PaymentRefundRepository;
 use App\Repository\PaymentRepository;
 use App\Repository\RentalAdjustmentRequestRepository;
 use App\Repository\RentalInspectionRepository;
-use App\Repository\RentalSettlementRepository;
 use App\Service\AuditLogger;
 use App\Service\Booking\BookingConfirmer;
 use App\Service\Booking\RunsInTransaction;
@@ -39,7 +38,6 @@ final class RentalDesk
         private readonly EntityManagerInterface $entityManager,
         private readonly BookingRepository $bookings,
         private readonly RentalInspectionRepository $inspections,
-        private readonly RentalSettlementRepository $settlements,
         private readonly RentalAdjustmentRequestRepository $adjustments,
         private readonly BookingModificationRequestRepository $modifications,
         private readonly BookingCancellationRequestRepository $cancellations,
@@ -190,7 +188,7 @@ final class RentalDesk
             if ('returned' !== $booking->getStatus()) {
                 throw new \DomainException('Only a returned rental can be settled.');
             }
-            if (null !== $this->settlements->findForBooking($booking)) {
+            if (null !== $booking->getSettlement()) {
                 throw new \DomainException('This rental already has a finalized settlement.');
             }
             if (null === $this->inspections->findOneForBooking($booking, RentalInspection::TYPE_CHECKIN)) {
@@ -203,8 +201,7 @@ final class RentalDesk
                 throw new \InvalidArgumentException(sprintf('Damage, fuel, late, and other deductions must add up to the return-inspection extra charge of ₱%s.', number_format($preview->inspectionCharge)));
             }
 
-            $settlement = new RentalSettlement($booking, $preview->depositHeld, $amounts['damage'], $amounts['fuel'], $amounts['late'], $amounts['other'], $admin, $notes);
-            $this->entityManager->persist($settlement);
+            $settlement = $booking->finalizeSettlement($preview->depositHeld, $amounts['damage'], $amounts['fuel'], $amounts['late'], $amounts['other'], $admin, $notes);
             $this->entityManager->flush();
 
             $this->refundManager->allocate(
@@ -213,7 +210,6 @@ final class RentalDesk
                 PaymentRefund::TYPE_SECURITY_DEPOSIT,
                 'Unused security deposit after final return settlement',
                 $admin,
-                settlement: $settlement,
                 paymentTypes: [Payment::TYPE_DEPOSIT],
             );
 
@@ -233,8 +229,7 @@ final class RentalDesk
             return $settlement;
         });
 
-        $this->auditLogger->log('return_settlement_finalized', 'rental_settlement', $settlement->getId(), [
-            'booking_id' => $booking->getId(),
+        $this->auditLogger->log('return_settlement_finalized', 'booking', $booking->getId(), [
             'deposit_paid' => $settlement->getDepositPaid(),
             'deductions' => $settlement->getTotalDeductions(),
             'deposit_refund' => $settlement->getDepositRefundAmount(),

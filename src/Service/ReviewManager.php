@@ -5,7 +5,6 @@ namespace App\Service;
 use App\Entity\Booking;
 use App\Entity\Review;
 use App\Entity\User;
-use App\Repository\RentalSettlementRepository;
 use App\Repository\ReviewRepository;
 use App\Service\Booking\RunsInTransaction;
 use Doctrine\ORM\EntityManagerInterface;
@@ -26,7 +25,6 @@ final class ReviewManager
     public function __construct(
         private readonly EntityManagerInterface $entityManager,
         private readonly ReviewRepository $reviews,
-        private readonly RentalSettlementRepository $settlements,
         private readonly PrivateFileStorage $storage,
         private readonly NotificationCenter $notifications,
         private readonly AuditLogger $auditLogger,
@@ -63,7 +61,7 @@ final class ReviewManager
     public function submit(?Booking $booking, User $user, array $scores, string $title, string $body, bool $consent, array $photos): Review
     {
         if (null === $booking || !$booking->isOwnedBy($user) || 'completed' !== $booking->getStatus()
-            || true !== $this->settlements->findForBooking($booking)?->isSettled()
+            || true !== $booking->getSettlement()?->isSettled()
             || null !== $this->reviews->findForBooking($booking)) {
             throw new \DomainException('This completed booking is not eligible for another review.');
         }

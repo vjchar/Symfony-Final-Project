@@ -237,7 +237,10 @@ final class RentalDeskTest extends WebTestCase
     {
         $this->em()->clear();
 
-        $booking = $this->em()->getRepository(Booking::class)->findOneBy([]);
+        $booking = $this->em()->createQuery('SELECT b FROM '.Booking::class.' b WHERE b.settlement.finalizedAt IS NOT NULL')
+            ->setMaxResults(1)
+            ->getOneOrNullResult();
+        self::assertInstanceOf(Booking::class, $booking, 'a booking has a finalized settlement');
 
         return $booking->getSettlement();
     }

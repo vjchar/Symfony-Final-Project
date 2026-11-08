@@ -29,7 +29,8 @@ final class Version20261108120000 extends AbstractMigration
     {
         // review_photos -> reviews.photos
         $this->addSql('ALTER TABLE reviews ADD photos JSON DEFAULT NULL');
-        $this->addSql('UPDATE reviews r SET r.photos = COALESCE((SELECT JSON_ARRAYAGG(p.filename) FROM (SELECT review_id, filename FROM review_photos ORDER BY id) p WHERE p.review_id = r.id), JSON_ARRAY())');
+        // JSON_ARRAYAGG has no ORDER BY in MySQL 8, so GROUP_CONCAT keeps the upload order
+        $this->addSql('UPDATE reviews r SET r.photos = COALESCE((SELECT CAST(CONCAT(\'[\', GROUP_CONCAT(JSON_QUOTE(p.filename) ORDER BY p.id SEPARATOR \',\'), \']\') AS JSON) FROM review_photos p WHERE p.review_id = r.id), JSON_ARRAY())');
         $this->addSql('ALTER TABLE reviews MODIFY photos JSON NOT NULL');
         $this->addSql('ALTER TABLE review_photos DROP FOREIGN KEY FK_8200A7193E2E969B');
         $this->addSql('DROP TABLE review_photos');
@@ -38,7 +39,8 @@ final class Version20261108120000 extends AbstractMigration
         $this->addSql('ALTER TABLE users ADD reset_token_hash VARCHAR(64) DEFAULT NULL, ADD reset_expires_at DATETIME DEFAULT NULL, ADD reset_requested_at DATETIME DEFAULT NULL');
         $this->addSql('CREATE UNIQUE INDEX UNIQ_1483A5E9DC2A7551 ON users (reset_token_hash)');
         $this->addSql('UPDATE users u JOIN (SELECT user_id, MAX(created_at) AS requested_at FROM password_resets GROUP BY user_id) r ON r.user_id = u.id SET u.reset_requested_at = r.requested_at');
-        $this->addSql('UPDATE users u JOIN password_resets p ON p.id = (SELECT p2.id FROM password_resets p2 WHERE p2.user_id = u.id AND p2.used_at IS NULL AND p2.expires_at >= NOW() ORDER BY p2.created_at DESC, p2.id DESC LIMIT 1) SET u.reset_token_hash = p.token_hash, u.reset_expires_at = p.expires_at');
+        // the newest open reset per account: no newer open one exists for the same user
+        $this->addSql('UPDATE users u JOIN password_resets p ON p.user_id = u.id AND p.used_at IS NULL AND p.expires_at >= NOW() LEFT JOIN password_resets newer ON newer.user_id = p.user_id AND newer.used_at IS NULL AND newer.expires_at >= NOW() AND (newer.created_at > p.created_at OR (newer.created_at = p.created_at AND newer.id > p.id)) SET u.reset_token_hash = p.token_hash, u.reset_expires_at = p.expires_at WHERE newer.id IS NULL');
         $this->addSql('ALTER TABLE password_resets DROP FOREIGN KEY FK_9EDAFEA1A76ED395');
         $this->addSql('DROP TABLE password_resets');
 

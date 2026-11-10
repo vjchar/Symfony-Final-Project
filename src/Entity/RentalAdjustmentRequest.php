@@ -8,7 +8,8 @@ use Doctrine\ORM\Mapping as ORM;
 /**
  * An active rental's request to return early or keep the vehicle longer
  * (v15 rental_adjustment_requests). An approved extension is activated once
- * any extra cost is paid; an early return is only noted for the rental desk.
+ * any extra cost is paid; an approved early return is activated at once, and
+ * its price difference is the (negative) change to the rental total.
  */
 #[ORM\Entity(repositoryClass: RentalAdjustmentRequestRepository::class)]
 #[ORM\Table(name: 'rental_adjustment_requests')]

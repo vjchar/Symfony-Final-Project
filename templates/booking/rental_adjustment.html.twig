@@ -29,7 +29,7 @@
                 <article class="operation-card rental-adjustment-card">
                     <span class="section-kicker">Return sooner</span>
                     <h2>Request Early Return</h2>
-                    <p>Tell the rental desk when you plan to bring the vehicle back. This does not complete the rental automatically; mileage, fuel, inspection, damage, and final charges are still recorded at check-in.</p>
+                    <p>Tell the rental desk when you plan to bring the vehicle back. Once approved, your rental ends at that time and is priced again for the days you used; anything you already paid for unused days is refunded. Mileage, fuel, inspection, damage, and final charges are still recorded at check-in.</p>
                     <form method="post" class="row g-3" action="{{ path('app_rental_adjustment', reference) }}">
                         {{ form_widget(early_form._token) }}
                         <input type="hidden" name="action" value="submit_early_return">
@@ -74,13 +74,14 @@
             <span class="section-kicker">Rental change history</span>
             <h2>Adjustment requests</h2>
             {% if adjustments is empty %}<p>No rental adjustments have been requested for this booking.</p>{% else %}
-                <div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Type</th><th>Original return</th><th>Requested return</th><th>Price change</th><th>Status</th><th>Requested</th><th></th></tr></thead><tbody>
+                <div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Type</th><th>Original return</th><th>Requested return</th><th>Price change</th><th>Status</th><th>Rental desk note</th><th>Requested</th><th></th></tr></thead><tbody>
                 {% for item in adjustments %}<tr>
                     <td>{{ item.requestType|humanize_label }}</td>
                     <td>{{ item.originalReturnAt|date('M j, Y g:i A') }}</td>
                     <td>{{ item.requestedReturnAt|date('M j, Y g:i A') }}</td>
-                    <td>{{ item.extension ? item.priceDifference|money : '—' }}</td>
+                    <td>{% if item.priceDifference > 0 %}+{{ item.priceDifference|money }}{% elseif item.priceDifference < 0 %}−{{ (item.priceDifference|abs)|money }}{% if item.pending %} <small>(estimate)</small>{% endif %}{% else %}—{% endif %}</td>
                     <td><span class="status-badge status-badge--{{ item.status|status_class }}">{{ item.status|humanize_label }}</span></td>
+                    <td>{{ item.adminNote ?: '—' }}</td>
                     <td>{{ item.createdAt|date('M j, Y g:i A') }}</td>
                     <td>{% if item.pending %}<form method="post" action="{{ path('app_rental_adjustment_withdraw', {reference: booking.reference, id: item.id}) }}" data-confirm="Cancel this pending rental adjustment request?"><input type="hidden" name="_token" value="{{ csrf_token('withdraw-adjustment-' ~ item.id) }}"><button class="btn btn-outline btn-sm">Cancel</button></form>{% elseif item.extension and item.status == 'approved' %}<a class="btn btn-primary btn-sm" href="{{ page_url('payments', reference) }}">Pay Extension</a>{% endif %}</td>
                 </tr>{% endfor %}</tbody></table></div>

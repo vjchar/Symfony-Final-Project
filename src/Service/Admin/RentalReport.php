@@ -42,6 +42,8 @@ final class RentalReport
      *     outstanding_receivables: int,
      *     pending_adjustments: int,
      *     activated_extension_value: int,
+     *     early_return_count: int,
+     *     early_return_reduction: int,
      *     pending_modifications: int,
      *     cancellation_count: int,
      *     top_vehicles: list<array{name: string, rentals: int, value: int}>,
@@ -116,7 +118,7 @@ final class RentalReport
             ->getSingleResult();
         $retained = (int) $settlements['retained'];
 
-        [$pendingAdjustments, $extensionValue] = $this->adjustmentSummary($fromAt, $toAt);
+        [$pendingAdjustments, $extensionValue, $earlyReturns, $earlyReturnReduction] = $this->adjustmentSummary($fromAt, $toAt);
         $topVehicles = $this->topVehicles($fromAt, $toAt);
 
         return [
@@ -138,6 +140,8 @@ final class RentalReport
             'outstanding_receivables' => (int) $settlements['outstanding'],
             'pending_adjustments' => $pendingAdjustments,
             'activated_extension_value' => $extensionValue,
+            'early_return_count' => $earlyReturns,
+            'early_return_reduction' => $earlyReturnReduction,
             'pending_modifications' => $this->countBetween(BookingModificationRequest::class, 'createdAt', $fromAt, $toAt, BookingModificationRequest::STATUS_PENDING),
             'cancellation_count' => $this->countBetween(BookingCancellationRequest::class, 'requestedAt', $fromAt, $toAt),
             'top_vehicles' => $topVehicles,
@@ -241,7 +245,8 @@ final class RentalReport
     }
 
     /**
-     * @return array{int, int} pending adjustment requests, and the value of activated extensions
+     * @return array{int, int, int, int} pending adjustment requests, the value of activated extensions,
+     *                                   and the approved early returns with the rental value they gave up
      */
     private function adjustmentSummary(\DateTimeImmutable $from, \DateTimeImmutable $to): array
     {
@@ -257,16 +262,24 @@ final class RentalReport
 
         $pending = 0;
         $extensionValue = 0;
+        $earlyReturns = 0;
+        $earlyReturnReduction = 0;
         foreach ($rows as $row) {
             if (RentalAdjustmentRequest::STATUS_PENDING === $row['status']) {
                 $pending += (int) $row['total'];
             }
-            if (RentalAdjustmentRequest::TYPE_EXTENSION === $row['type'] && \in_array($row['status'], [RentalAdjustmentRequest::STATUS_ACTIVATED, RentalAdjustmentRequest::STATUS_COMPLETED], true)) {
+            $applied = \in_array($row['status'], [RentalAdjustmentRequest::STATUS_ACTIVATED, RentalAdjustmentRequest::STATUS_COMPLETED], true);
+            if (RentalAdjustmentRequest::TYPE_EXTENSION === $row['type'] && $applied) {
                 $extensionValue += (int) $row['value'];
+            }
+            // an early return completed at check-in without review changed nothing
+            if (RentalAdjustmentRequest::TYPE_EARLY_RETURN === $row['type'] && RentalAdjustmentRequest::STATUS_ACTIVATED === $row['status']) {
+                $earlyReturns += (int) $row['total'];
+                $earlyReturnReduction += abs((int) $row['value']);
             }
         }
 
-        return [$pending, $extensionValue];
+        return [$pending, $extensionValue, $earlyReturns, $earlyReturnReduction];
     }
 
     /**

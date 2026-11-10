@@ -3,14 +3,19 @@
 namespace App\Service\Booking;
 
 use App\Entity\Booking;
+use App\Entity\Payment;
+use App\Entity\PaymentRefund;
 use App\Entity\RentalAdjustmentRequest;
 use App\Entity\User;
 use App\Repository\BookingRepository;
 use App\Repository\MaintenanceRecordRepository;
+use App\Repository\PaymentRefundRepository;
+use App\Repository\PaymentRepository;
 use App\Repository\PromoRepository;
 use App\Repository\RentalAdjustmentRequestRepository;
 use App\Service\AuditLogger;
 use App\Service\NotificationCenter;
+use App\Service\Payment\RefundManager;
 use Doctrine\DBAL\LockMode;
 use Doctrine\ORM\EntityManagerInterface;
 
@@ -19,8 +24,10 @@ use Doctrine\ORM\EntityManagerInterface;
  * customer may ask to return early or to extend it, and the rental desk
  * approves or rejects the request. An extension that costs nothing more is
  * activated on approval; one that costs more is activated once its payment
- * is verified (activatePaidExtension()). An approved early return is only
- * noted: the real return is recorded at check-in.
+ * is verified (activatePaidExtension()). An approved early return is
+ * activated at once: the booking takes the earlier return, is priced again
+ * for fewer days, and what was paid for the unused days becomes a refund.
+ * The real return is still recorded at check-in.
  */
 final class RentalAdjustmentManager
 {
@@ -30,12 +37,18 @@ final class RentalAdjustmentManager
 
     private const TIME_PATTERN = '/^(?:[01]\d|2[0-3]):[0-5]\d$/';
 
+    // the payments an early-return credit can go back to (never the security deposit)
+    private const RENTAL_PAYMENT_TYPES = [Payment::TYPE_BALANCE, Payment::TYPE_EXTENSION, Payment::TYPE_MODIFICATION];
+
     public function __construct(
         private readonly EntityManagerInterface $entityManager,
         private readonly BookingRepository $bookings,
         private readonly MaintenanceRecordRepository $maintenance,
         private readonly PromoRepository $promos,
         private readonly RentalAdjustmentRequestRepository $adjustments,
+        private readonly PaymentRepository $payments,
+        private readonly PaymentRefundRepository $refunds,
+        private readonly RefundManager $refundManager,
         private readonly AuditLogger $auditLogger,
         private readonly NotificationCenter $notifications,
     ) {
@@ -84,6 +97,8 @@ final class RentalAdjustmentManager
             if ($requestedReturnAt <= new \DateTimeImmutable()) {
                 throw new \InvalidArgumentException('Choose a future early-return time.');
             }
+            // an estimate: the rental desk prices it again on approval
+            $priceDifference = -$this->earlyReturnPricing($booking, $requestedReturnAt)->reduction;
         } else {
             $this->assertExtensionAvailable($booking, $requestedReturnAt);
             $priceDifference = $this->extensionPricing($booking, $requestedReturnAt)->priceDifference;
@@ -97,6 +112,12 @@ final class RentalAdjustmentManager
             $adjustment = new RentalAdjustmentRequest($booking, $user, $type, $requestedReturnAt, $priceDifference, $reason);
             $this->entityManager->persist($adjustment);
             $booking->keepOriginalReturn();
+            $this->notifications->notifyAdmins(
+                RentalAdjustmentRequest::TYPE_EXTENSION === $type ? 'Rental extension requested' : 'Early return requested',
+                sprintf('%s asked to change the return of booking %s to %s.', $user->getName(), $booking->getReference(), $requestedReturnAt->format('M j, Y g:i A')),
+                'rental',
+                $booking,
+            );
             $this->entityManager->flush();
 
             return $adjustment;
@@ -122,7 +143,9 @@ final class RentalAdjustmentManager
 
     /**
      * v15 review_rental_adjustment_request(): an extension is checked and
-     * priced again before it is approved.
+     * priced again before it is approved; an early return is priced again,
+     * applied to the booking and refunded for the unused days. The customer
+     * is told the outcome either way.
      *
      * @throws \InvalidArgumentException|\DomainException
      */
@@ -135,21 +158,28 @@ final class RentalAdjustmentManager
         $action = $this->transactional(function () use ($adjustment, $decision, $admin, $note): string {
             $this->entityManager->refresh($adjustment, LockMode::PESSIMISTIC_WRITE);
             $booking = $adjustment->getBooking();
-            $this->entityManager->refresh($booking);
+            $this->entityManager->refresh($booking, LockMode::PESSIMISTIC_WRITE);
             if (!$adjustment->isPending() || 'active' !== $booking->getStatus()) {
                 throw new \DomainException('This request is no longer eligible for review.');
             }
+            $label = $adjustment->isExtension() ? 'Rental extension' : 'Early return';
 
             if ('reject' === $decision) {
                 $adjustment->reject($admin, $note);
+                $this->notifyCustomer($adjustment, $label.' not approved', sprintf(
+                    'Your %s request for booking %s was not approved. Your scheduled return stays %s.%s',
+                    mb_strtolower($label),
+                    $booking->getReference(),
+                    $booking->getReturnAt()->format('M j, Y g:i A'),
+                    self::noteSuffix($note),
+                ));
                 $this->entityManager->flush();
 
                 return 'rental_adjustment_rejected';
             }
 
             if (!$adjustment->isExtension()) {
-                $adjustment->approve($admin, $note);
-                $this->entityManager->flush();
+                $this->approveEarlyReturn($adjustment, $admin, $note);
 
                 return 'early_return_approved';
             }
@@ -161,12 +191,119 @@ final class RentalAdjustmentManager
             if (0 === $pricing->priceDifference) {
                 $this->activateExtension($adjustment, $pricing, $admin);
             }
+            $this->notifyCustomer($adjustment, 'Rental extension approved', sprintf(
+                0 === $pricing->priceDifference
+                    ? 'Booking %s now has a return time of %s.%s'
+                    : 'Your extension of booking %s to %s was approved. Pay the extension balance to activate the new return time.%s',
+                $booking->getReference(),
+                $pricing->requestedReturnAt->format('M j, Y g:i A'),
+                self::noteSuffix($note),
+            ));
             $this->entityManager->flush();
 
             return 'rental_extension_approved';
         });
 
         $this->auditLogger->log($action, 'rental_adjustment', $adjustment->getId(), ['admin_id' => $admin->getId(), 'price_difference' => $adjustment->getPriceDifference()], $admin);
+    }
+
+    /**
+     * The rental priced again up to an earlier return, at the booking's own
+     * daily rate, so an early return never costs more than the booking.
+     *
+     * @throws \InvalidArgumentException when the return is not between pickup and the current return
+     */
+    public function earlyReturnPricing(Booking $booking, \DateTimeImmutable $requestedReturnAt): EarlyReturnPricing
+    {
+        if ($requestedReturnAt <= $booking->getPickupAt() || $requestedReturnAt >= $booking->getReturnAt()) {
+            throw new \InvalidArgumentException('Choose a return time after vehicle release and before the current scheduled return.');
+        }
+        $days = max(1, (int) ceil(($requestedReturnAt->getTimestamp() - $booking->getPickupAt()->getTimestamp()) / 86400));
+        $dailyRate = intdiv($booking->getSubtotal(), $booking->getDays());
+        $subtotal = min($booking->getSubtotal(), $dailyRate * $days);
+        // the booking's promotion is kept even if it has since ended, as for extensions
+        $promo = '' === $booking->getPromoCode() ? null : $this->promos->findOneBy(['code' => $booking->getPromoCode()]);
+        $discount = $promo?->discountFor($subtotal) ?? min($booking->getDiscount(), $subtotal);
+        $total = min($booking->getTotal(), $subtotal + $booking->getAddonsTotal() + $booking->getDeliveryFee() - $discount);
+
+        return new EarlyReturnPricing($requestedReturnAt, $days, $subtotal, $booking->getAddonsTotal(), $discount, $total, $booking->getTotal() - $total);
+    }
+
+    /**
+     * Runs inside review()'s transaction with the booking locked.
+     *
+     * @throws \InvalidArgumentException|\DomainException
+     */
+    private function approveEarlyReturn(RentalAdjustmentRequest $adjustment, User $admin, string $note): void
+    {
+        $booking = $adjustment->getBooking();
+        if ($adjustment->getRequestedReturnAt() <= new \DateTimeImmutable()) {
+            throw new \DomainException('The requested early-return time has already passed. Reject the request or record the return at check-in.');
+        }
+        $pricing = $this->earlyReturnPricing($booking, $adjustment->getRequestedReturnAt());
+        // what was paid towards the rental (never the deposit), beyond the new total
+        $credit = min($pricing->reduction, max(0, $this->refundableRentalPayments($booking) - $pricing->total));
+
+        $adjustment->approve($admin, $note, -$pricing->reduction);
+        $booking->shortenTo($pricing->requestedReturnAt, $pricing->subtotal, $pricing->addonsTotal, $pricing->discount, $pricing->total);
+        $adjustment->markActivated(-$pricing->reduction);
+        $this->entityManager->flush();
+
+        $reference = $booking->getReference();
+        $this->refundManager->allocate(
+            $booking,
+            $credit,
+            PaymentRefund::TYPE_EARLY_RETURN,
+            sprintf('Unused rental days after the approved early return of booking %s', $reference),
+            $admin,
+            paymentTypes: self::RENTAL_PAYMENT_TYPES,
+        );
+        $this->notifyCustomer($adjustment, 'Early return approved', sprintf(
+            'Booking %s now ends on %s. %s%s',
+            $reference,
+            $pricing->requestedReturnAt->format('M j, Y g:i A'),
+            match (true) {
+                $credit > 0 => sprintf('A refund of ₱%s for the unused days is awaiting processing.', number_format($credit)),
+                $pricing->reduction > 0 => sprintf('Your rental total went down by ₱%s.', number_format($pricing->reduction)),
+                default => 'Your rental total is unchanged.',
+            },
+            self::noteSuffix($note),
+        ));
+        $this->entityManager->flush();
+
+        $this->auditLogger->log('early_return_activated', 'rental_adjustment', $adjustment->getId(), [
+            'admin_id' => $admin->getId(),
+            'new_return_at' => $pricing->requestedReturnAt->format('Y-m-d H:i:s'),
+            'reduction' => $pricing->reduction,
+            'refund' => $credit,
+        ], $admin);
+    }
+
+    /**
+     * Verified balance, extension and modification payments, less every refund
+     * already paid out or under way against them.
+     */
+    private function refundableRentalPayments(Booking $booking): int
+    {
+        $available = 0;
+        foreach ($this->payments->findForBooking($booking) as $payment) {
+            if ($payment->isPaid() && \in_array($payment->getPaymentType(), self::RENTAL_PAYMENT_TYPES, true)) {
+                $available += $this->refunds->refundableBalance($payment);
+            }
+        }
+
+        return $available;
+    }
+
+    private function notifyCustomer(RentalAdjustmentRequest $adjustment, string $title, string $message): void
+    {
+        $booking = $adjustment->getBooking();
+        $this->notifications->notifyUser($booking->getUser(), $title, $message, 'rental', $booking);
+    }
+
+    private static function noteSuffix(string $note): string
+    {
+        return '' === trim($note) ? '' : ' Rental desk note: '.mb_substr(trim($note), 0, 1500);
     }
 
     /**

@@ -11,7 +11,8 @@ use Doctrine\ORM\Mapping as ORM;
 
 /**
  * A reservation in the v15 bookings table, priced from a BookingQuote. An
- * approved modification re-prices it and an extension moves its return. The
+ * approved modification re-prices it, and an extension or an approved early
+ * return moves its return and re-prices it. The
  * rental desk moves it on: ready → active (checkout) → returned (check-in) →
  * completed, stamping v15's ready_at, started_at, returned_at and completed_at.
  * (v15's approved_at, rejected_at and no_show_at arrive with the admin
@@ -276,6 +277,24 @@ class Booking
      * v15 activate_extension_request(): the later return, re-priced.
      */
     public function extendTo(\DateTimeImmutable $returnAt, int $subtotal, int $addonsTotal, int $discount, int $total): void
+    {
+        $this->changeReturn($returnAt, $subtotal, $addonsTotal, $discount, $total);
+    }
+
+    /**
+     * An approved early return: the earlier return, re-priced for fewer days.
+     *
+     * @throws \DomainException unless an active rental moves to an earlier return
+     */
+    public function shortenTo(\DateTimeImmutable $returnAt, int $subtotal, int $addonsTotal, int $discount, int $total): void
+    {
+        if ('active' !== $this->status || $returnAt >= $this->returnAt) {
+            throw new \DomainException('An early return must be before the current scheduled return of an active rental.');
+        }
+        $this->changeReturn($returnAt, $subtotal, $addonsTotal, $discount, $total);
+    }
+
+    private function changeReturn(\DateTimeImmutable $returnAt, int $subtotal, int $addonsTotal, int $discount, int $total): void
     {
         $this->keepOriginalReturn();
         $this->returnAt = $returnAt;

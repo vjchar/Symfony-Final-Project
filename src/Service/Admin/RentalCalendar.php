@@ -101,7 +101,7 @@ final class RentalCalendar
                     $booking->getReference(),
                     $booking->getUser()->getName(),
                     $adjustment->getStatus(),
-                    'extension' === $eventType ? 'Approved/current extension return' : 'Expected return only; actual check-in remains separate.',
+                    'extension' === $eventType ? 'Approved/current extension return' : 'Approved early return; the rental now ends here and actual check-in remains separate.',
                     $this->urls->generate('app_admin_rentals'),
                 );
             }
@@ -184,7 +184,7 @@ final class RentalCalendar
     }
 
     /**
-     * @return list<RentalAdjustmentRequest> activated extensions and approved early returns in the range
+     * @return list<RentalAdjustmentRequest> activated extensions and approved or activated early returns in the range
      */
     private function adjustments(\DateTimeImmutable $start, \DateTimeImmutable $end, ?Vehicle $vehicle): array
     {

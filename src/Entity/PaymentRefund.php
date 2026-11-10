@@ -8,8 +8,8 @@ use Doctrine\ORM\Mapping as ORM;
 
 /**
  * Money going back to a customer from one verified payment (v15 payment_refunds).
- * It may come from a cancellation, a cheaper modification, a return settlement
- * (security deposit) or a manual correction, and moves through the v15 statuses:
+ * It may come from a cancellation, a cheaper modification, an approved early
+ * return, a return settlement (security deposit) or a manual correction, and moves through the v15 statuses:
  * pending → approved → processing → refunded (or rejected / failed / cancelled).
  */
 #[ORM\Entity(repositoryClass: PaymentRefundRepository::class)]
@@ -24,6 +24,7 @@ class PaymentRefund
     public const TYPE_PAYMENT_CORRECTION = 'payment_correction';
     public const TYPE_SECURITY_DEPOSIT = 'security_deposit';
     public const TYPE_BOOKING_MODIFICATION = 'booking_modification';
+    public const TYPE_EARLY_RETURN = 'early_return';
 
     /** v15 refund_type_labels() */
     public const TYPE_LABELS = [
@@ -31,6 +32,7 @@ class PaymentRefund
         self::TYPE_PAYMENT_CORRECTION => 'Payment Refund',
         self::TYPE_SECURITY_DEPOSIT => 'Security Deposit Refund',
         self::TYPE_BOOKING_MODIFICATION => 'Modification Refund',
+        self::TYPE_EARLY_RETURN => 'Early Return Refund',
     ];
 
     public const STATUS_PENDING = 'pending';

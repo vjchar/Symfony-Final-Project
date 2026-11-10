@@ -47,6 +47,8 @@
         <div class="rental-adjustment-report-summary">
             <article><span>Pending rental adjustments</span><strong>{{ pending_adjustments }}</strong></article>
             <article><span>Activated extension value</span><strong>{{ activated_extension_value|money }}</strong></article>
+            <article><span>Approved early returns</span><strong>{{ early_return_count }}</strong></article>
+            <article><span>Early-return price reductions</span><strong>{{ early_return_reduction|money }}</strong></article>
             <article><span>Pending booking modifications</span><strong>{{ pending_modifications }}</strong></article>
             <article><span>Cancellation requests</span><strong>{{ cancellation_count }}</strong></article>
         </div>

@@ -154,7 +154,8 @@ class PaymentRefundRepository extends ServiceEntityRepository
 
     /**
      * v15 payments_for_booking() corrective_refunded_amount: per payment, the
-     * paid-out corrections and modification credits, which no longer count as paid.
+     * paid-out corrections, modification credits and early-return credits,
+     * which no longer count as paid.
      *
      * @return array<int, int> payment id => amount
      */
@@ -167,7 +168,7 @@ class PaymentRefundRepository extends ServiceEntityRepository
             ->andWhere('r.refundType IN (:types)')
             ->setParameter('booking', $booking)
             ->setParameter('refunded', PaymentRefund::STATUS_REFUNDED)
-            ->setParameter('types', [PaymentRefund::TYPE_PAYMENT_CORRECTION, PaymentRefund::TYPE_BOOKING_MODIFICATION])
+            ->setParameter('types', [PaymentRefund::TYPE_PAYMENT_CORRECTION, PaymentRefund::TYPE_BOOKING_MODIFICATION, PaymentRefund::TYPE_EARLY_RETURN])
             ->groupBy('r.payment')
             ->getQuery()
             ->getArrayResult();

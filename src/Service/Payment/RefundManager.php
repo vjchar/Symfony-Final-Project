@@ -21,7 +21,8 @@ use Doctrine\ORM\EntityManagerInterface;
 /**
  * v15 payment-service.php, refunds: every refund is tied to one verified
  * payment and is never more than what is left on it. Cancellations, cheaper
- * modifications and return settlements create them automatically; an
+ * modifications, approved early returns and return settlements create them
+ * automatically; an
  * administrator can add a manual correction and moves each one through
  * approved → processing → refunded.
  */
@@ -42,6 +43,7 @@ final class RefundManager
         PaymentRefund::TYPE_PAYMENT_CORRECTION => 'payment_refund_created',
         PaymentRefund::TYPE_SECURITY_DEPOSIT => 'security_deposit_refund_created',
         PaymentRefund::TYPE_BOOKING_MODIFICATION => 'modification_refund_created',
+        PaymentRefund::TYPE_EARLY_RETURN => 'early_return_refund_created',
     ];
 
     public function __construct(

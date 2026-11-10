@@ -191,7 +191,9 @@ final class BookingChangeController extends AbstractController
             [$date, $time, $reason] = [$form->get('requested_date')->getData(), $form->get('requested_time')->getData(), $form->get('reason')->getData()];
             try {
                 if (!$form->isValid()) {
-                    throw new \DomainException(self::SESSION_EXPIRED);
+                    // errors on the form itself come from the CSRF token; the rest are field constraints
+                    $fieldError = $form->getErrors(true)->current();
+                    throw new \InvalidArgumentException(0 === \count($form->getErrors()) && false !== $fieldError ? $fieldError->getMessage() : self::SESSION_EXPIRED);
                 }
                 if ('preview_extension' === $action) {
                     $preview = $manager->previewExtension($booking, $user, $date, $time);

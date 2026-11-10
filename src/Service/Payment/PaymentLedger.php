@@ -11,8 +11,8 @@ use App\Repository\RentalAdjustmentRequestRepository;
 
 /**
  * Reads a booking's payments into what is paid and what is due (v15
- * booking_payment_summary()). A paid-out correction or modification credit no
- * longer counts as paid; cancellation and deposit refunds don't reopen a
+ * booking_payment_summary()). A paid-out correction, modification credit or
+ * early-return credit no longer counts as paid; cancellation and deposit refunds don't reopen a
  * balance. Once the return is settled, the return balance is the
  * settlement's outstanding balance.
  */

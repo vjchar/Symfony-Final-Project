@@ -35,6 +35,34 @@ class MaintenanceRecordRepository extends ServiceEntityRepository
     }
 
     /**
+     * The record list's search and filter, newest first. $query matches the
+     * vehicle name, service title, description or creator name; $status
+     * narrows to one status and is ignored when it isn't a known one.
+     *
+     * @return list<MaintenanceRecord>
+     */
+    public function search(string $query = '', string $status = ''): array
+    {
+        $qb = $this->createQueryBuilder('m')
+            ->addSelect('v', 'u')
+            ->join('m.vehicle', 'v')
+            ->join('m.createdBy', 'u')
+            ->orderBy('m.createdAt', 'DESC')
+            ->addOrderBy('m.id', 'DESC');
+
+        if ('' !== $query = trim($query)) {
+            $qb->andWhere('LOWER(v.name) LIKE :query OR LOWER(m.title) LIKE :query OR LOWER(m.description) LIKE :query OR LOWER(u.name) LIKE :query')
+                ->setParameter('query', '%'.addcslashes(mb_strtolower($query), '%_\\').'%');
+        }
+
+        if (\in_array($status, MaintenanceRecord::STATUSES, true)) {
+            $qb->andWhere('m.status = :status')->setParameter('status', $status);
+        }
+
+        return $qb->getQuery()->getResult();
+    }
+
+    /**
      * v15 booking_modification_maintenance_conflict(): scheduled or ongoing
      * work overlaps the period. Work with no end date blocks everything after it.
      */

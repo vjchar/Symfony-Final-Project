@@ -4,13 +4,23 @@
 {% block admin_context %}1{% endblock %}
 
 {% block body %}
+{# administrators manage staff records here too, so keep their navigation #}
+{% if is_granted('ROLE_ADMIN') %}
+    {{ include('admin/_nav.html.twig') }}
+{% endif %}
 <section class="admin-page-heading">
     <div class="container">
         <div>
-            <span class="section-kicker">Staff workspace</span>
+            <span class="section-kicker">{{ is_granted('ROLE_ADMIN') ? 'Record management' : 'Staff workspace' }}</span>
             <h1>{% block staff_heading %}{% endblock %}</h1>
             {% block staff_intro %}{% endblock %}
         </div>
+        {% if not is_granted('ROLE_ADMIN') %}
+            <form method="post" action="{{ path('app_logout') }}" class="staff-signout">
+                <input type="hidden" name="_csrf_token" value="{{ csrf_token('logout') }}">
+                <button class="btn btn-outline btn-sm" type="submit"><i class="bi bi-box-arrow-right" aria-hidden="true"></i> Sign Out</button>
+            </form>
+        {% endif %}
     </div>
 </section>
 <section class="content-section admin-section">

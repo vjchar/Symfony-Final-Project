@@ -3,7 +3,7 @@
 {% block title %}Maintenance | Staff | VJ Car Rental{% endblock %}
 
 {% block staff_heading %}Maintenance records{% endblock %}
-{% block staff_intro %}<p>Every service event in the fleet. You can edit or delete the records you created.</p>{% endblock %}
+{% block staff_intro %}<p>{{ is_granted('ROLE_ADMIN') ? 'Every service event logged by staff. As an administrator you can edit or delete any record.' : 'Every service event in the fleet. You can edit or delete the records you created.' }}</p>{% endblock %}
 
 {% block staff_body %}
 <p>
@@ -13,6 +13,29 @@
     <a class="btn btn-outline" href="{{ path('app_profile') }}">
         <i class="bi bi-person-gear" aria-hidden="true"></i> My Profile
     </a>
+</p>
+
+<form class="admin-search" method="get" action="{{ path('app_staff_maintenance') }}" role="search">
+    <label class="visually-hidden" for="recordSearch">Search records</label>
+    <input class="form-control" id="recordSearch" name="q" value="{{ query }}" placeholder="Search vehicle, service, description or staff name">
+    <label class="visually-hidden" for="recordStatus">Status</label>
+    <select class="form-select" id="recordStatus" name="status">
+        <option value="">All statuses</option>
+        {% for option in statuses %}
+            <option value="{{ option }}" {{ status == option ? 'selected' }}>{{ option|humanize_label }}</option>
+        {% endfor %}
+    </select>
+    <button class="btn btn-primary" type="submit"><i class="bi bi-search" aria-hidden="true"></i> Search</button>
+    {% if query != '' or status != '' %}
+        <a class="btn btn-outline" href="{{ path('app_staff_maintenance') }}">Clear</a>
+    {% endif %}
+</form>
+<p class="record-count">
+    {% if query != '' or status != '' %}
+        Showing {{ records|length }} of {{ total }} {{ total == 1 ? 'record' : 'records' }}
+    {% else %}
+        {{ total }} {{ total == 1 ? 'record' : 'records' }}
+    {% endif %}
 </p>
 
 <div class="admin-table-wrap">
@@ -52,7 +75,7 @@
                 </tr>
             {% else %}
                 <tr>
-                    <td colspan="6">No maintenance records yet.</td>
+                    <td colspan="6">{{ query != '' or status != '' ? 'No records match your search.' : 'No maintenance records yet.' }}</td>
                 </tr>
             {% endfor %}
         </tbody>

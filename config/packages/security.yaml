@@ -3,6 +3,11 @@ security:
     password_hashers:
         Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface: 'auto'
 
+    # Administrators can do everything staff can: open /staff and, through
+    # MaintenanceRecordVoter, view, edit and delete every staff record.
+    role_hierarchy:
+        ROLE_ADMIN: [ROLE_STAFF]
+
     # https://symfony.com/doc/current/security.html#loading-the-user-the-user-provider
     providers:
         app_user_provider:

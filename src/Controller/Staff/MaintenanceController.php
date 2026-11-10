@@ -11,6 +11,7 @@ use App\Service\MaintenanceRecordManager;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpKernel\Attribute\MapQueryParameter;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\CurrentUser;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
@@ -29,10 +30,19 @@ final class MaintenanceController extends AbstractController
     }
 
     #[Route('', name: 'app_staff_maintenance', methods: ['GET'])]
-    public function index(MaintenanceRecordRepository $records): Response
-    {
+    public function index(
+        MaintenanceRecordRepository $records,
+        #[MapQueryParameter] string $q = '',
+        #[MapQueryParameter] string $status = '',
+    ): Response {
+        $status = \in_array($status, MaintenanceRecord::STATUSES, true) ? $status : '';
+
         return $this->render('staff/maintenance/index.html.twig', [
-            'records' => $records->findAllForAdmin(),
+            'records' => $records->search($q, $status),
+            'query' => trim($q),
+            'status' => $status,
+            'statuses' => MaintenanceRecord::STATUSES,
+            'total' => $records->count([]),
         ]);
     }
 

@@ -1,0 +1,160 @@
+{% extends 'admin/base.html.twig' %}
+
+{% block title %}Manage Vehicles | VJ Car Rental{% endblock %}
+
+{% macro field(field, column, attr = {}) %}
+    <div class="{{ column }}">
+        {{ form_label(field, null, {label_attr: {class: 'form-label'}}) }}
+        {{ form_widget(field, {attr: attr}) }}
+        {{ form_help(field) }}
+    </div>
+{% endmacro %}
+
+{% block admin_body %}
+{% import _self as f %}
+<section class="admin-page-heading">
+    <div class="container">
+        <div>
+            <span class="section-kicker">Fleet content</span>
+            <h1>Manage vehicles</h1>
+            <p>
+                Create and update bookable vehicle records, images, pricing,
+                specifications, inclusions, and descriptions.
+            </p>
+        </div>
+
+        <a class="btn btn-primary" href="{{ path('app_admin_vehicles') }}">Add Vehicle</a>
+    </div>
+</section>
+
+<section class="content-section admin-section">
+    <div class="container">
+        <div class="admin-split admin-split--vehicles">
+            <div class="admin-list-stack">
+                <div class="admin-table-wrap" aria-label="Vehicle records">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>Vehicle</th>
+                                <th>Category</th>
+                                <th>Rate</th>
+                                <th>Status</th>
+                                <th><span class="visually-hidden">Action</span></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in vehicles %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ item.name }}</strong>
+                                        <small>{{ item.slug }}</small>
+                                    </td>
+                                    <td>{{ item.category }}</td>
+                                    <td>{{ item.price|money }}</td>
+                                    <td>
+                                        <span class="status-badge status-badge--{{ item.availabilityStatus|status_class }}">
+                                            {{ item.availabilityStatus|humanize_label }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <a
+                                            class="btn btn-outline btn-sm"
+                                            href="{{ path('app_admin_vehicles', {edit: item.id, page: page}) }}">
+                                            Edit
+                                        </a>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <nav class="admin-pagination" aria-label="Vehicle record pages">
+                    <a
+                        class="{{ page <= 1 ? 'is-disabled' }}"
+                        href="{{ path('app_admin_vehicles', {page: max(1, page - 1)}) }}"
+                        aria-label="Previous vehicle records page"
+                        {% if page <= 1 %}aria-disabled="true" tabindex="-1"{% endif %}>
+                        <i class="bi bi-arrow-left" aria-hidden="true"></i>
+                        Previous
+                    </a>
+
+                    <span aria-label="Page {{ page }} of {{ page_count }}. {{ total }} vehicles total.">
+                        Page <strong>{{ page }}</strong>
+                        of <strong>{{ page_count }}</strong>
+                        <small>{{ total }} vehicles</small>
+                    </span>
+
+                    <a
+                        class="{{ page >= page_count ? 'is-disabled' }}"
+                        href="{{ path('app_admin_vehicles', {page: min(page_count, page + 1)}) }}"
+                        aria-label="Next vehicle records page"
+                        {% if page >= page_count %}aria-disabled="true" tabindex="-1"{% endif %}>
+                        Next
+                        <i class="bi bi-arrow-right" aria-hidden="true"></i>
+                    </a>
+                </nav>
+            </div>
+
+            {{ form_start(form, {attr: {class: 'form admin-editor admin-editor--vehicle', novalidate: 'novalidate'}}) }}
+                <div class="admin-editor__heading">
+                    <div>
+                        <span class="section-kicker">
+                            {{ editing ? 'Edit vehicle' : 'New vehicle' }}
+                        </span>
+                        <h2>{{ editing ? editing.name : 'Vehicle details' }}</h2>
+                    </div>
+                </div>
+
+                {% for error in form.vars.errors.form.getErrors(true) %}
+                    <div class="alert alert-danger" role="alert">
+                        {{ error.message }}
+                    </div>
+                {% endfor %}
+
+                <div class="row g-3">
+                    {{ f.field(form.name, 'col-md-6') }}
+                    {{ f.field(form.slug, 'col-md-6') }}
+                    {{ f.field(form.brand, 'col-md-6') }}
+                    {{ f.field(form.category, 'col-md-6') }}
+                    {{ f.field(form.price, 'col-md-4') }}
+                    {{ f.field(form.deposit, 'col-md-4') }}
+                    {{ f.field(form.dailyKm, 'col-md-4') }}
+                    {{ f.field(form.seats, 'col-md-4') }}
+                    {{ f.field(form.availabilityStatus, 'col-md-8', {'aria-describedby': 'vehicleStatusHelp'}) }}
+
+                    <div class="col-12">
+                        <small class="form-help" id="vehicleStatusHelp">
+                            Reserved and rented states are assigned automatically from booking
+                            records. Use Maintenance for service downtime or Unavailable to
+                            prevent new reservations.
+                        </small>
+                    </div>
+
+                    {{ f.field(form.doors, 'col-md-4') }}
+                    {{ f.field(form.transmission, 'col-md-4') }}
+                    {{ f.field(form.fuel, 'col-md-4') }}
+                    {{ f.field(form.luggage, 'col-md-6') }}
+                    {{ f.field(form.image, 'col-md-6') }}
+                    {{ f.field(form.vehicleImage, 'col-12') }}
+                    {{ f.field(form.overviewTitle, 'col-12') }}
+                    {{ f.field(form.overview, 'col-12') }}
+                    {{ f.field(form.description, 'col-12') }}
+                    {{ f.field(form.inclusions, 'col-md-6') }}
+                    {{ f.field(form.features, 'col-md-6') }}
+                </div>
+
+                <div class="mt-3">
+                    {{ form_widget(form.isActive) }}
+                </div>
+
+                {{ form_rest(form) }}
+
+                <button class="btn btn-primary mt-4" type="submit">
+                    {{ editing ? 'Save Vehicle' : 'Create Vehicle' }}
+                </button>
+            {{ form_end(form) }}
+        </div>
+    </div>
+</section>
+{% endblock %}

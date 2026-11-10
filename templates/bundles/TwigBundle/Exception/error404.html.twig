@@ -1,0 +1,18 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Page Not Found | VJ Car Rental{% endblock %}
+
+{% block body %}
+<section class="content-section error-page">
+    <div class="container">
+        <i class="bi bi-signpost-split"></i>
+        <span class="section-kicker">Error 404</span>
+        <h1>That road ends here.</h1>
+        <p>The page may have moved or the address may be incorrect.</p>
+        <div class="d-flex flex-wrap justify-content-center gap-2">
+            <a class="btn btn-primary" href="{{ path('app_home') }}">Return Home</a>
+            <a class="btn btn-outline" href="{{ page_url('vehicles') }}">Browse Vehicles</a>
+        </div>
+    </div>
+</section>
+{% endblock %}

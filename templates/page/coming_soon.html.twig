@@ -1,0 +1,21 @@
+{% extends feature starts with 'admin' or feature in ['health', 'notifications'] ? 'admin/base.html.twig' : 'base.html.twig' %}
+
+{% set label = feature|humanize_label|replace({'Admin ': ''}) %}
+
+{% block title %}{{ label }} | VJ Car Rental{% endblock %}
+
+{% block body %}
+    {{ parent() }}
+    <section class="content-section error-page pattern-layer">
+        <div class="container">
+            <i class="bi bi-cone-striped"></i>
+            <span class="section-kicker">Coming soon</span>
+            <h1>{{ label }} is on the way.</h1>
+            <p>This part of VJ Car Rental is added in a later step of the project.</p>
+            <div class="d-flex flex-wrap justify-content-center gap-2">
+                <a class="btn btn-primary" href="{{ path('app_home') }}">Return Home</a>
+                <a class="btn btn-outline" href="{{ page_url('vehicles') }}">Browse Vehicles</a>
+            </div>
+        </div>
+    </section>
+{% endblock %}

@@ -1,0 +1,48 @@
+{% extends 'staff/base.html.twig' %}
+
+{% block title %}{{ record ? 'Edit' : 'New' }} Maintenance Record | Staff | VJ Car Rental{% endblock %}
+
+{% block staff_heading %}{{ record ? 'Edit maintenance record' : 'Schedule maintenance' }}{% endblock %}
+
+{% block staff_body %}
+{# every invalid field shares one v15 message, so show each message once #}
+{% set error_messages = [] %}
+{% for error in form.vars.errors.form.getErrors(true) %}
+    {% if error.message not in error_messages %}
+        {% set error_messages = error_messages|merge([error.message]) %}
+    {% endif %}
+{% endfor %}
+{% for message in error_messages %}
+    <div class="alert alert-danger">{{ message }}</div>
+{% endfor %}
+
+<article class="admin-editor mb-4">
+    {{ form_start(form, {attr: {class: 'row g-3', novalidate: 'novalidate'}}) }}
+        <div class="col-md-4">
+            {{ form_label(form.vehicle, null, {label_attr: {class: 'form-label'}}) }}
+            {{ form_widget(form.vehicle) }}
+        </div>
+        <div class="col-md-4">
+            {{ form_label(form.title, null, {label_attr: {class: 'form-label'}}) }}
+            {{ form_widget(form.title) }}
+        </div>
+        <div class="col-md-4">
+            {{ form_label(form.startsAt, null, {label_attr: {class: 'form-label'}}) }}
+            {{ form_widget(form.startsAt) }}
+        </div>
+        <div class="col-md-8">
+            {{ form_label(form.description, null, {label_attr: {class: 'form-label'}}) }}
+            {{ form_widget(form.description) }}
+        </div>
+        <div class="col-md-4">
+            {{ form_label(form.cost, null, {label_attr: {class: 'form-label'}}) }}
+            {{ form_widget(form.cost) }}
+        </div>
+        {{ form_rest(form) }}
+        <div class="col-12 d-flex flex-wrap gap-2">
+            <button class="btn btn-primary" type="submit">{{ record ? 'Save Changes' : 'Create Record' }}</button>
+            <a class="btn btn-outline" href="{{ record ? path('app_staff_maintenance_show', {id: record.id}) : path('app_staff_maintenance') }}">Cancel</a>
+        </div>
+    {{ form_end(form) }}
+</article>
+{% endblock %}

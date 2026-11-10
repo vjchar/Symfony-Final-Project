@@ -1,0 +1,303 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ vehicle.name }} Details | VJ Car Rental{% endblock %}
+{% block description %}{{ vehicle.description }}{% endblock %}
+
+{% block body %}
+<section class="page-hero page-hero--compact pattern-layer">
+    <div class="container">
+        <nav aria-label="Breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item">
+                    <a href="{{ path('app_home') }}">Home</a>
+                </li>
+                <li class="breadcrumb-item">
+                    <a href="{{ path('app_vehicle_index') }}">Vehicles</a>
+                </li>
+                <li class="breadcrumb-item active" aria-current="page">{{ vehicle.name }}</li>
+            </ol>
+        </nav>
+        <span class="section-kicker">Vehicle profile</span>
+        <h1>{{ vehicle.name }}</h1>
+        <div class="page-hero-meta">
+            {% set rating = vehicle_rating(vehicle) %}
+            {% if rating %}
+                <span>
+                    <i class="bi bi-star-fill"></i> {{ rating.rating|number_format(1) }} from {{ rating.count }} verified review{{ rating.count == 1 ? '' : 's' }}</span>
+            {% else %}
+                <span>
+                    <i class="bi bi-stars"></i> New vehicle - no reviews yet</span>
+            {% endif %}
+            <span>
+                <i class="bi bi-calendar-check"></i> Availability checked by rental dates</span>
+        </div>
+    </div>
+</section>
+<section class="content-section vehicle-detail-section">
+    <div class="container">
+        <div class="row g-4 g-xl-5 align-items-start">
+            <div class="col-lg-7">
+                <div class="detail-visual pattern-layer">
+                    {% if app.user and app.user.customer %}
+                        {% set favorite = is_favorite(vehicle) %}
+                        <form class="favorite-form favorite-form--detail" method="post" action="{{ path('app_favorite_toggle', {slug: vehicle.slug}) }}">
+                            <input type="hidden" name="_token" value="{{ csrf_token('favorite') }}">
+                            <input type="hidden" name="return_to" value="{{ path('app_vehicle_show', {slug: vehicle.slug}) }}">
+                            <button
+                                class="favorite-button favorite-button--large{{ favorite ? ' is-active' }}"
+                                type="submit"
+                                aria-label="{{ favorite ? 'Remove' : 'Save' }} {{ vehicle.name }} {{ favorite ? 'from' : 'to' }} favorites">
+                                <i class="bi {{ favorite ? 'bi-heart-fill' : 'bi-heart' }}" aria-hidden="true"></i>
+                            </button>
+                        </form>
+                    {% elseif not app.user %}
+                        <a
+                            class="favorite-button favorite-button--large"
+                            href="{{ path('app_login', {return_to: path('app_vehicle_show', {slug: vehicle.slug})}) }}"
+                            aria-label="Sign in to save {{ vehicle.name }} to favorites">
+                            <i class="bi bi-heart" aria-hidden="true"></i>
+                        </a>
+                    {% endif %}
+                    <div class="detail-gallery-frame">
+                        <img
+                            src="{{ vehicle_image(vehicle.image) }}"
+                            alt="{{ vehicle.name }} exterior">
+                    </div>
+                </div>
+                <div class="detail-highlights detail-highlights--six">
+                    <article>
+                        <i class="bi bi-people"></i>
+                        <span>
+                            <strong>{{ vehicle.seats }} seats</strong>
+                            <small>Passenger capacity</small>
+                        </span>
+                    </article>
+                    <article>
+                        <i class="bi bi-door-open"></i>
+                        <span>
+                            <strong>{{ vehicle.doors }} doors</strong>
+                            <small>Vehicle access</small>
+                        </span>
+                    </article>
+                    <article>
+                        <i class="bi bi-gear"></i>
+                        <span>
+                            <strong>{{ vehicle.transmission }}</strong>
+                            <small>Transmission</small>
+                        </span>
+                    </article>
+                    <article>
+                        <i class="bi bi-fuel-pump"></i>
+                        <span>
+                            <strong>{{ vehicle.fuel }}</strong>
+                            <small>Power source</small>
+                        </span>
+                    </article>
+                    <article>
+                        <i class="bi bi-suitcase-lg"></i>
+                        <span>
+                            <strong>{{ vehicle.luggage }}</strong>
+                            <small>Luggage guide</small>
+                        </span>
+                    </article>
+                    <article>
+                        <i class="bi bi-speedometer2"></i>
+                        <span>
+                            <strong>{{ vehicle.dailyKm }} km/day</strong>
+                            <small>Mileage allowance</small>
+                        </span>
+                    </article>
+                </div>
+            </div>
+            <div class="col-lg-5">
+                <aside class="detail-booking-card">
+                    <div class="detail-rating-row">
+                        <span>
+                            <i class="bi bi-stars"></i> New</span>
+                        <small>Be the first verified reviewer</small>
+                    </div>
+                    <span class="section-kicker">{{ vehicle.category }} rental</span>
+                    <h2>{{ vehicle.name }}</h2>
+                    <p>{{ vehicle.description }}</p>
+                    <div class="detail-price">
+                        <span>Starting from</span>
+                        <strong>{{ vehicle.price|money }}<small>/ day</small>
+                        </strong>
+                    </div>
+                    <div class="booking-facts">
+                        <span>
+                            <small>Refundable deposit</small>
+                            <strong>{{ vehicle.deposit|money }}</strong>
+                        </span>
+                        <span>
+                            <small>Availability</small>
+                            <strong>Checked by dates</strong>
+                        </span>
+                    </div>
+                    <ul class="check-list">
+                        {% for inclusion in vehicle.inclusions|slice(0, 4) %}
+                            <li>
+                                <i class="bi bi-check2-circle"></i> {{ inclusion }}
+                            </li>
+                        {% endfor %}
+                    </ul>
+                    <a class="btn btn-primary w-100" href="{{ page_url('booking', {vehicle: vehicle.slug}) }}">Book This Vehicle</a>
+                    <a class="btn btn-outline w-100 mt-2" href="{{ path('app_compare', {vehicles: vehicle.slug}) }}">Compare This Vehicle</a>
+                    <small class="display-note">
+                        <i class="bi bi-shield-check"></i> Pricing and availability are verified before the booking is saved.</small>
+                </aside>
+            </div>
+        </div>
+        <div class="detail-copy-grid detail-copy-grid--v2">
+            <article>
+                <span class="section-kicker">Vehicle overview</span>
+                <h2>{{ vehicle.overviewTitle }}</h2>
+                <p>{{ vehicle.overview }}</p>
+            </article>
+            <article>
+                <span class="section-kicker">Detailed description</span>
+                <h2>Why choose this {{ vehicle.category|lower }}?</h2>
+                <p>{{ vehicle.description }}</p>
+            </article>
+        </div>
+        <div class="row g-4 detail-information-row">
+            <div class="col-lg-6">
+                <article class="included-card included-card--expanded">
+                    <span class="section-kicker">Rental package</span>
+                    <h2>What is included</h2>
+                    <div>
+                        {% for inclusion in vehicle.inclusions %}
+                            <span>
+                                <i class="bi bi-check-circle-fill"></i> {{ inclusion }}</span>
+                        {% endfor %}
+                    </div>
+                </article>
+            </div>
+            <div class="col-lg-6">
+                <article class="included-card included-card--expanded">
+                    <span class="section-kicker">Equipment guide</span>
+                    <h2>Vehicle features</h2>
+                    <div>
+                        {% for feature in vehicle.features %}
+                            <span>
+                                <i class="bi bi-stars"></i> {{ feature }}</span>
+                        {% endfor %}
+                    </div>
+                </article>
+            </div>
+        </div>
+        <section class="reviews-section">
+            <div class="section-heading heading-with-action">
+                <div>
+                    <span class="section-kicker">Verified customer feedback</span>
+                    <h2>Trip ratings and reviews</h2>
+                </div>
+                <a class="btn btn-outline" href="{{ page_url('rate-trip') }}">Rate a Completed Trip</a>
+            </div>
+            {% set rating = vehicle_rating(vehicle) %}
+            {% if approved_reviews is empty or not rating %}
+                <div class="empty-state empty-state--compact">
+                    <i class="bi bi-chat-square-heart"></i>
+                    <h3>No approved reviews yet</h3>
+                    <p>Only customers with completed bookings can submit a verified review.</p>
+                </div>
+            {% else %}
+                <div class="rating-summary-grid">
+                    <article class="rating-score-card">
+                        <strong>{{ rating.rating|number_format(1) }}</strong>
+                        <div class="stars" aria-label="{{ rating.rating|number_format(1) }} out of 5 stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+                        <span>Based on {{ rating.count }} verified review{{ rating.count == 1 ? '' : 's' }}</span>
+                    </article>
+                    <div class="rating-bars">
+                        {% for key, label in constant('App\\Entity\\Review::CATEGORIES') %}
+                            {% set score = rating_averages[key] ?? 0 %}
+                            <div>
+                                <span>{{ label }}</span>
+                                <progress value="{{ (score * 20)|round }}" max="100">{{ (score * 20)|round }}%</progress>
+                                <strong>{{ score|number_format(1) }}</strong>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="row g-3 mt-2">
+                    {% for review in approved_reviews %}
+                        <div class="col-md-6">
+                            <article class="review-card">
+                                <div class="stars" aria-label="{{ review.overall }} out of 5 stars">{% for star in 1..5 %}{{ star <= review.overall ? '★' : '☆' }}{% endfor %}</div>
+                                <h3>{{ review.title }}</h3>
+                                <p>{{ review.body }}</p>
+                                <span><i class="bi bi-patch-check-fill"></i> Verified rental &bull; {{ review.user.name }} &bull; {{ review.createdAt|date('M Y') }}</span>
+                            </article>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        </section>
+        <section class="rental-policy-grid">
+            <article>
+                <i class="bi bi-speedometer2"></i>
+                <h3>Mileage policy</h3>
+                <p>{{ vehicle.dailyKm }} km is included per rental day. Excess mileage is confirmed before payment.</p>
+            </article>
+            <article>
+                <i class="bi bi-shield-check"></i>
+                <h3>Protection</h3>
+                <p>Standard rental protection is included, subject to the signed agreement.</p>
+            </article>
+            <article>
+                <i class="bi bi-fuel-pump"></i>
+                <h3>Return condition</h3>
+                <p>Return the vehicle with the agreed fuel or charge level and documented condition.</p>
+            </article>
+            <article>
+                <i class="bi bi-headset"></i>
+                <h3>Roadside support</h3>
+                <p>Assistance instructions and emergency contacts are supplied with every rental.</p>
+            </article>
+        </section>
+        <section class="related-vehicles-section">
+            <div class="section-heading heading-with-action">
+                <div>
+                    <span class="section-kicker">You may also like</span>
+                    <h2>Similar {{ vehicle.category }} options</h2>
+                </div>
+                <a href="{{ path('app_vehicle_index', {category: vehicle.category}) }}">View category</a>
+            </div>
+            <div class="row g-4">
+                {% for other in related %}
+                    <div class="col-lg-4 col-md-6">
+                        {{ include('components/_vehicle_card.html.twig', {vehicle: other}) }}
+                    </div>
+                {% endfor %}
+            </div>
+        </section>
+        <section class="recently-viewed-section">
+            <div class="section-heading">
+                <span class="section-kicker">Session browsing history</span>
+                <h2>Recently viewed vehicles</h2>
+            </div>
+
+            <div class="recently-viewed-grid">
+                {% for recent in recently_viewed %}
+                    <a
+                        class="recent-vehicle-card"
+                        href="{{ path('app_vehicle_show', {slug: recent.slug}) }}">
+                        <img
+                            src="{{ vehicle_image(recent.image) }}"
+                            alt="{{ recent.name }}"
+                            loading="lazy">
+                        <span>
+                            <strong>{{ recent.name }}</strong>
+                            <small>{{ recent.price|money }} / day</small>
+                        </span>
+                    </a>
+                {% else %}
+                    <p class="display-note">
+                        Open another vehicle to build your recently viewed list.
+                    </p>
+                {% endfor %}
+            </div>
+        </section>
+    </div>
+</section>
+{% endblock %}

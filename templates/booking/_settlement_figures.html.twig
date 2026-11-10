@@ -1,0 +1,10 @@
+{# v15 return settlement figures, shared by the rental desk and the customer's booking page #}
+<div class="payment-overview">
+    <article><span>Deposit held</span><strong>{{ settlement.depositPaid|money }}</strong></article>
+    <article><span>Damage</span><strong>−{{ settlement.damageCharges|money }}</strong></article>
+    <article><span>Fuel</span><strong>−{{ settlement.fuelCharges|money }}</strong></article>
+    <article><span>Late</span><strong>−{{ settlement.lateCharges|money }}</strong></article>
+    <article><span>Other deductions</span><strong>−{{ settlement.otherCharges|money }}</strong></article>
+    <article><span>Deposit refund</span><strong>{{ settlement.depositRefundAmount|money }}</strong></article>
+    <article><span>Outstanding balance</span><strong>{{ settlement.outstandingBalance|money }}</strong></article>
+</div>

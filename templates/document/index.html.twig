@@ -1,0 +1,75 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Rental Documents | VJ Car Rental{% endblock %}
+{% block description %}Upload and track the documents required to confirm a VJ Car Rental booking.{% endblock %}
+
+{% block body %}
+<section class="page-hero page-hero--compact pattern-layer">
+    <div class="container">
+        <span class="section-kicker">Step 3 · Secure verification</span>
+        <h1>Rental documents</h1>
+        <p>Upload your driver’s license and government-issued ID. You can submit these while your payment is still awaiting verification.</p>
+    </div>
+</section>
+<section class="content-section operations-page">
+    <div class="container">
+        {% for error in errors %}<div class="alert alert-danger">{{ error }}</div>{% endfor %}
+        {% if payment_submitted %}
+            <div class="alert alert-success"><strong>Payment submitted.</strong> This page is shown only because at least one required document still needs your attention.</div>
+        {% endif %}
+        {% if uploaded %}
+            <div class="alert alert-success">Document saved. Continue with the next missing document, or wait for verification when both are submitted.</div>
+        {% endif %}
+
+        {% if journey %}
+            {{ include('booking/_journey_progress.html.twig') }}
+            {{ include('booking/_journey_next.html.twig', {kicker: 'Booking ' ~ booking.reference ~ ' · Current step'}) }}
+        {% endif %}
+
+        <div class="operations-grid">
+            {% for type, details in constant('App\\Entity\\CustomerDocument::TYPES') %}
+                {% set label = details[0] %}
+                {% set document = documents[type] ?? null %}
+                {% set status = document ? document.effectiveStatus : 'missing' %}
+                {% set needs_replacement = status in ['rejected', 'expired'] %}
+                <article class="operation-card">
+                    <div class="operation-card__heading">
+                        <i class="bi {{ details[1] }}"></i>
+                        <div><h2>{{ label }}</h2><p>{{ details[2] }}</p></div>
+                        <span class="status-badge status-badge--{{ status|status_class }}">{{ status|humanize_label }}</span>
+                    </div>
+                    {% if document %}
+                        <dl class="operation-meta">
+                            <div><dt>Document number</dt><dd>{{ document.maskedNumber }}</dd></div>
+                            <div><dt>Expiry</dt><dd>{{ document.expiryDate ? document.expiryDate|date('M j, Y') : 'Not supplied' }}</dd></div>
+                            <div><dt>Submitted</dt><dd>{{ document.updatedAt|date('M j, Y g:i A') }}</dd></div>
+                        </dl>
+                        {% if document.adminNotes %}
+                            <div class="review-note"><strong>Reviewer note</strong><p>{{ document.adminNotes|nl2br }}</p></div>
+                        {% endif %}
+                        <a class="btn btn-outline btn-sm" href="{{ path('app_file_document', {id: document.id}) }}"><i class="bi bi-eye"></i> View current file</a>
+                    {% endif %}
+                    <details class="operation-upload"{{ not document or needs_replacement ? ' open' }}>
+                        <summary>{{ document ? (needs_replacement ? 'Replace ' ~ status ~ ' document' : 'Replace document') : 'Upload document' }}</summary>
+                        <form method="post" enctype="multipart/form-data" class="row g-3" action="{{ path('app_documents') }}">
+                            <input type="hidden" name="_token" value="{{ csrf_token(constant('App\\Form\\CustomerDocumentType::CSRF_TOKEN_ID')) }}">
+                            {% if reference %}<input type="hidden" name="booking_reference" value="{{ reference }}">{% endif %}
+                            <input type="hidden" name="document_type" value="{{ type }}">
+                            <div class="col-md-{{ type == 'drivers_license' ? '6' : '12' }}">
+                                <label class="form-label" for="number-{{ type }}">Document number</label>
+                                <input class="form-control" id="number-{{ type }}" name="document_number" maxlength="120" required autocomplete="off">
+                            </div>
+                            {% if type == 'drivers_license' %}
+                                <div class="col-md-6"><label class="form-label" for="expiryDate">Expiry date</label><input class="form-control" id="expiryDate" name="expiry_date" type="date" required></div>
+                            {% endif %}
+                            <div class="col-12"><label class="form-label" for="file-{{ type }}">JPG, PNG, or PDF (maximum 5 MB)</label><input class="form-control" id="file-{{ type }}" name="document_file" type="file" accept=".jpg,.jpeg,.png,.pdf" required></div>
+                            <div class="col-12"><button class="btn btn-primary" type="submit">{{ document and needs_replacement ? 'Replace Document' : 'Submit for Verification' }}</button></div>
+                        </form>
+                    </details>
+                </article>
+            {% endfor %}
+        </div>
+        <div class="privacy-callout"><i class="bi bi-shield-lock"></i><div><strong>Your documents are private.</strong><p>Only your account and authenticated administrators can retrieve these files. The public cannot open the storage directory.</p></div></div>
+    </div>
+</section>
+{% endblock %}

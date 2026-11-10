@@ -1,0 +1,74 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}My Profile | VJ Car Rental{% endblock %}
+
+{% block body %}
+    <section class="page-hero page-hero--compact pattern-layer">
+        <div class="container">
+            <span class="section-kicker">Account settings</span>
+            <h1>My profile</h1>
+            <p>Keep your contact information current and protect your account with a strong password.</p>
+        </div>
+    </section>
+    <section class="content-section">
+        <div class="container">
+            <div class="row g-4 justify-content-center">
+                <div class="col-lg-8">
+                    {{ form_start(form, {attr: {class: 'form', novalidate: 'novalidate'}}) }}
+                        <div class="form-heading">
+                            <span class="section-kicker">Personal information</span>
+                            <h2>Contact details</h2>
+                        </div>
+                        {{ include('registration/_errors.html.twig') }}
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                {{ form_label(form.name, null, {label_attr: {class: 'form-label'}}) }}
+                                {{ form_widget(form.name) }}
+                            </div>
+                            <div class="col-md-6">
+                                {{ form_label(form.email, null, {label_attr: {class: 'form-label'}}) }}
+                                {{ form_widget(form.email) }}
+                            </div>
+                            <div class="col-md-6">
+                                {{ form_label(form.phone, null, {label_attr: {class: 'form-label'}}) }}
+                                {{ form_widget(form.phone) }}
+                            </div>
+                        </div>
+                        <hr>
+                        <div class="form-heading form-heading--section">
+                            <span class="section-kicker">Account security</span>
+                            <h2>Email and password changes</h2>
+                            <p>Enter your current password when changing your email or password. Leave the new password fields blank to keep it.</p>
+                        </div>
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                {{ form_label(form.currentPassword, null, {label_attr: {class: 'form-label'}}) }}
+                                {{ form_widget(form.currentPassword) }}
+                            </div>
+                            <div class="col-md-4">
+                                {{ form_label(form.newPassword.new_password, null, {label_attr: {class: 'form-label'}}) }}
+                                {{ form_widget(form.newPassword.new_password) }}
+                            </div>
+                            <div class="col-md-4">
+                                {{ form_label(form.newPassword.new_password_confirmation, null, {label_attr: {class: 'form-label'}}) }}
+                                {{ form_widget(form.newPassword.new_password_confirmation) }}
+                            </div>
+                        </div>
+                        {{ form_rest(form) }}
+                        <div class="d-flex flex-wrap gap-2 mt-4">
+                            <button class="btn btn-primary" type="submit">Save Profile</button>
+                            {# admins and staff have no customer dashboard to go back to #}
+                            {% if app.user.admin %}
+                                <a class="btn btn-outline" href="{{ page_url('admin') }}">Back to Admin Dashboard</a>
+                            {% elseif app.user.staff %}
+                                <a class="btn btn-outline" href="{{ page_url('staff') }}">Back to Staff Workspace</a>
+                            {% else %}
+                                <a class="btn btn-outline" href="{{ path('app_account') }}">Back to Account</a>
+                            {% endif %}
+                        </div>
+                    {{ form_end(form) }}
+                </div>
+            </div>
+        </div>
+    </section>
+{% endblock %}

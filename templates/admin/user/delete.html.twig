@@ -1,0 +1,36 @@
+{% extends 'admin/base.html.twig' %}
+
+{% block title %}Delete User | VJ Car Rental{% endblock %}
+
+{% block admin_body %}
+<section class="admin-page-heading">
+    <div class="container">
+        <div>
+            <span class="section-kicker">Account administration</span>
+            <h1>{{ blocked ? 'This account cannot be deleted' : 'Delete this account?' }}</h1>
+        </div>
+    </div>
+</section>
+<section class="content-section admin-section">
+    <div class="container">
+        <article class="admin-editor mb-4">
+            <p>
+                <strong>{{ user.name }}</strong> ({{ user.email }}) &middot; {{ user.role|humanize_label }} &middot;
+                created {{ user.createdAt|date('M j, Y') }}
+            </p>
+
+            {% if blocked %}
+                <div class="alert alert-warning">{{ blocked }}</div>
+                <a class="btn btn-outline" href="{{ path('app_admin_users') }}">Back to users</a>
+            {% else %}
+                <p>This permanently removes the account with its notifications, favorites, saved bookings and documents. This cannot be undone.</p>
+                <form method="post" action="{{ path('app_admin_users_delete', {id: user.id}) }}" class="d-flex flex-wrap gap-2">
+                    <input type="hidden" name="_token" value="{{ csrf_token('user-delete-' ~ user.id) }}">
+                    <button class="btn btn-danger" type="submit">Yes, Delete Account</button>
+                    <a class="btn btn-outline" href="{{ path('app_admin_users') }}">Keep Account</a>
+                </form>
+            {% endif %}
+        </article>
+    </div>
+</section>
+{% endblock %}

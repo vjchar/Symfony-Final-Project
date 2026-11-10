@@ -1,0 +1,23 @@
+<!--
+  FILE: assets/images/placeholders/vehicle-placeholder.svg
+  PURPOSE: Fallback vehicle image used when a vehicle-specific image is unavailable.
+  USAGE: Displayed by fleet/card/detail UI so broken or missing vehicle images have a consistent visual replacement.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 450" role="img" aria-labelledby="title description">
+  <title id="title">Vehicle image placeholder</title>
+  <desc id="description">A simple branded vehicle silhouette used while a vehicle photo is unavailable.</desc>
+  <defs>
+    <linearGradient id="background" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f7fbff"/>
+      <stop offset="1" stop-color="#e5f3fd"/>
+    </linearGradient>
+  </defs>
+  <rect width="800" height="450" rx="28" fill="url(#background)"/>
+  <path d="M176 286h38l31-79c11-28 38-47 68-47h185c35 0 67 18 86 47l50 79h22c25 0 45 20 45 45v20H99v-20c0-25 20-45 45-45h32Z" fill="#12366d" opacity=".94"/>
+  <path d="m280 211-27 69h309l-42-69a42 42 0 0 0-36-20H319c-17 0-32 8-39 20Z" fill="#8fc9ef"/>
+  <circle cx="224" cy="341" r="48" fill="#0f2d5c"/>
+  <circle cx="224" cy="341" r="22" fill="#d8e8f4"/>
+  <circle cx="591" cy="341" r="48" fill="#0f2d5c"/>
+  <circle cx="591" cy="341" r="22" fill="#d8e8f4"/>
+  <text x="400" y="410" text-anchor="middle" font-family="Arial, sans-serif" font-size="22" font-weight="700" fill="#2f8ed0">VEHICLE PHOTO COMING SOON</text>
+</svg>

@@ -1,0 +1,128 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Saved Bookings | VJ Car Rental{% endblock %}
+{% block description %}Resume, review, or discard booking drafts without reserving a vehicle until final confirmation.{% endblock %}
+
+{% macro discard_form(draft, label, confirm, button_class) %}
+    <form method="post" action="{{ path('app_saved_bookings_discard', {id: draft.id}) }}" data-confirm="{{ confirm }}">
+        <input type="hidden" name="_token" value="{{ csrf_token('discard-draft-' ~ draft.id) }}">
+        <button class="btn {{ button_class }}" type="submit">{{ label|raw }}</button>
+    </form>
+{% endmacro %}
+
+{% block body %}
+{% import _self as f %}
+<section class="page-hero page-hero--compact pattern-layer">
+    <div class="container">
+        <span class="section-kicker">Save for later</span>
+        <h1>Saved bookings</h1>
+        <p>Plan a rental now and decide later. A saved booking is a draft only—the vehicle and price are rechecked when you continue.</p>
+    </div>
+</section>
+<section class="content-section operations-page">
+    <div class="container">
+        {% if just_saved %}
+            <div class="alert alert-success"><strong>Booking saved.</strong> The vehicle is not reserved yet. Availability and pricing will be checked again before you proceed.</div>
+        {% endif %}
+        <div class="draft-rule-callout">
+            <i class="bi bi-info-circle"></i>
+            <div>
+                <strong>A saved booking is not a reservation.</strong>
+                <p>Other customers may still book the vehicle. Current availability, maintenance, pricing, add-ons, and promotions are revalidated before conversion.</p>
+            </div>
+        </div>
+
+        {% if selected %}
+            <article class="draft-detail-card">
+                <div class="draft-detail-card__visual">
+                    <img src="{{ vehicle_image(selected.vehicle.image) }}" alt="{{ selected.vehicle.name }}">
+                </div>
+                <div class="draft-detail-card__body">
+                    <div class="draft-detail-card__heading">
+                        <div>
+                            <span class="section-kicker">Saved booking {{ selected.reference }}</span>
+                            <h2>{{ selected.vehicle.name }}</h2>
+                        </div>
+                        <span class="status-badge status-badge--{{ selected.status|status_class }}">{{ selected.status|humanize_label }}</span>
+                    </div>
+                    <div class="draft-detail-grid">
+                        <div><span>Pickup</span><strong>{{ selected.pickupAt|date('M j, Y · g:i A') }}</strong></div>
+                        <div><span>Return</span><strong>{{ selected.returnAt|date('M j, Y · g:i A') }}</strong></div>
+                        <div><span>Fulfillment</span><strong>{{ selected.pickupMethod }}</strong></div>
+                        <div><span>Saved estimate</span><strong>{{ selected.estimatedTotal|money }}</strong></div>
+                        <div><span>Last saved</span><strong>{{ selected.lastSavedAt|date('M j, Y · g:i A') }}</strong></div>
+                        <div><span>Draft expires</span><strong>{{ selected.expiresAt|date('M j, Y · g:i A') }}</strong></div>
+                    </div>
+                    {% if preview.promoWarning != '' %}
+                        <div class="alert alert-warning mt-3">{{ preview.promoWarning }}</div>
+                    {% endif %}
+                    {% if preview.quote %}
+                        <div class="draft-current-check {{ preview.available ? 'is-available' : 'is-unavailable' }}">
+                            <div>
+                                <span>Current availability</span>
+                                <strong>{{ preview.available ? 'Vehicle Available' : 'Vehicle Unavailable' }}</strong>
+                            </div>
+                            <div>
+                                <span>Current total</span>
+                                <strong>{{ preview.currentTotal|money }}</strong>
+                            </div>
+                            <div>
+                                <span>Price difference</span>
+                                <strong>{{ preview.difference == 0 ? 'No change' : (preview.difference > 0 ? '+' : '−') ~ preview.difference|abs|money }}</strong>
+                            </div>
+                        </div>
+                    {% else %}
+                        <div class="alert alert-warning mt-3">{{ preview.error ?: 'This draft needs updated booking details before it can continue.' }}</div>
+                    {% endif %}
+                    <div class="draft-actions">
+                        {% if selected.active %}
+                            <a class="btn btn-primary" href="{{ path('app_booking', {draft: selected.id}) }}"><i class="bi bi-arrow-right-circle"></i> Continue Booking</a>
+                            <a class="btn btn-outline" href="{{ path('app_booking', {draft: selected.id}) }}"><i class="bi bi-pencil"></i> Edit Draft</a>
+                            {{ f.discard_form(selected, '<i class="bi bi-trash"></i> Discard Draft', 'Discard this saved booking? The vehicle was never reserved by this draft.', 'btn-outline-danger') }}
+                        {% else %}
+                            <a class="btn btn-primary" href="{{ path('app_booking', {source_draft: selected.id}) }}"><i class="bi bi-arrow-repeat"></i> Use These Details Again</a>
+                            <a class="btn btn-outline" href="{{ path('app_booking', {vehicle: selected.vehicle.slug}) }}"><i class="bi bi-plus-circle"></i> Start a New Booking</a>
+                        {% endif %}
+                    </div>
+                </div>
+            </article>
+        {% endif %}
+
+        <div class="section-heading section-heading--split mt-5">
+            <div><span class="section-kicker">Your plans</span><h2>Active saved bookings</h2></div>
+            <a class="btn btn-primary" href="{{ path('app_booking') }}"><i class="bi bi-plus-circle"></i> Plan Another Rental</a>
+        </div>
+        {% if drafts is empty %}
+            <div class="empty-state">
+                <i class="bi bi-bookmark"></i>
+                <h2>No saved bookings yet</h2>
+                <p>Build a rental and choose <strong>Save for Later</strong> when you want time to decide before creating a reservation.</p>
+                <a class="btn btn-primary" href="{{ path('app_booking') }}">Build a Rental</a>
+            </div>
+        {% else %}
+            <div class="saved-drafts-grid">
+                {% for draft in drafts %}
+                    <article class="saved-draft-card">
+                        <img src="{{ vehicle_image(draft.vehicle.image) }}" alt="{{ draft.vehicle.name }}" loading="lazy">
+                        <div class="saved-draft-card__body">
+                            <span class="section-kicker">{{ draft.reference }}</span>
+                            <h3>{{ draft.vehicle.name }}</h3>
+                            <dl>
+                                <div><dt>Dates</dt><dd>{{ draft.pickupAt|date('M j') }} – {{ draft.returnAt|date('M j, Y') }}</dd></div>
+                                <div><dt>Fulfillment</dt><dd>{{ draft.pickupMethod }}</dd></div>
+                                <div><dt>Estimated total</dt><dd>{{ draft.estimatedTotal|money }}</dd></div>
+                                <div><dt>Last saved</dt><dd>{{ draft.lastSavedAt|date('M j · g:i A') }}</dd></div>
+                            </dl>
+                            <div class="saved-draft-card__actions">
+                                <a class="btn btn-primary btn-sm" href="{{ path('app_booking', {draft: draft.id}) }}">Continue Booking</a>
+                                <a class="btn btn-outline btn-sm" href="{{ path('app_saved_bookings', {draft: draft.id}) }}">View Details</a>
+                                {{ f.discard_form(draft, 'Discard', 'Discard this saved booking?', 'btn-outline btn-sm') }}
+                            </div>
+                        </div>
+                    </article>
+                {% endfor %}
+            </div>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}

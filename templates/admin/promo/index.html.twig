@@ -1,0 +1,113 @@
+{% extends 'admin/base.html.twig' %}
+
+{% block title %}Promotions | VJ Car Rental{% endblock %}
+
+{% block admin_body %}
+<section class="admin-page-heading">
+    <div class="container">
+        <div>
+            <span class="section-kicker">Pricing controls</span>
+            <h1>Promotion codes</h1>
+            <p>Create, review, update, or safely delete discount codes.</p>
+        </div>
+        <a class="btn btn-primary" href="{{ path('app_admin_promos') }}">
+            <i class="bi bi-plus-lg" aria-hidden="true"></i>
+            New Code
+        </a>
+    </div>
+</section>
+
+<section class="content-section admin-section">
+    <div class="container">
+        {% for error in form.vars.errors.form.getErrors(true) %}
+            <div class="alert alert-danger">{{ error.message }}</div>
+        {% endfor %}
+
+        <div class="admin-split">
+            <div class="admin-table-wrap">
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>Code</th>
+                            <th>Discount</th>
+                            <th>Usage</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for promo in promos %}
+                            <tr>
+                                <td>
+                                    <strong>{{ promo.code }}</strong>
+                                    <small>{{ promo.description }}</small>
+                                </td>
+                                <td>{{ promo.percent ? promo.discountValue ~ '%' : promo.discountValue|money }}</td>
+                                <td>{{ promo.usedCount }}{{ promo.maxUses is not null ? ' / ' ~ promo.maxUses }}</td>
+                                <td>
+                                    <span class="status-badge status-badge--{{ promo.active ? 'success' : 'danger' }}">{{ promo.active ? 'Active' : 'Inactive' }}</span>
+                                </td>
+                                <td>
+                                    <div class="admin-row-actions">
+                                        <a class="btn btn-outline btn-sm" href="{{ path('app_admin_promos', {edit: promo.id}) }}">Edit</a>
+                                        {% if promo.deletable %}
+                                            <form
+                                                method="post"
+                                                action="{{ path('app_admin_promos_delete', {id: promo.id}) }}"
+                                                data-confirm="Delete this unused promotion? This action cannot be undone.">
+                                                <input type="hidden" name="_token" value="{{ csrf_token('delete-promo-' ~ promo.id) }}">
+                                                <button class="btn btn-outline-danger btn-sm" type="submit">Delete</button>
+                                            </form>
+                                        {% else %}
+                                            <small>Deactivate to retain usage history</small>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            {{ form_start(form, {attr: {class: 'form admin-editor', novalidate: 'novalidate'}}) }}
+                <span class="section-kicker">{{ editing ? 'Edit promotion' : 'New promotion' }}</span>
+                <h2>{{ editing ? editing.code : 'Create a code' }}</h2>
+
+                {{ form_label(form.code, null, {label_attr: {class: 'form-label'}}) }}
+                {{ form_widget(form.code) }}
+
+                {{ form_label(form.description, null, {label_attr: {class: 'form-label mt-3'}}) }}
+                {{ form_widget(form.description) }}
+
+                <div class="row g-3 mt-0">
+                    <div class="col-6">
+                        {{ form_label(form.discountType, null, {label_attr: {class: 'form-label'}}) }}
+                        {{ form_widget(form.discountType) }}
+                    </div>
+                    <div class="col-6">
+                        {{ form_label(form.discountValue, null, {label_attr: {class: 'form-label'}}) }}
+                        {{ form_widget(form.discountValue) }}
+                    </div>
+                    <div class="col-6">
+                        {{ form_label(form.startsAt, null, {label_attr: {class: 'form-label'}}) }}
+                        {{ form_widget(form.startsAt) }}
+                    </div>
+                    <div class="col-6">
+                        {{ form_label(form.endsAt, null, {label_attr: {class: 'form-label'}}) }}
+                        {{ form_widget(form.endsAt) }}
+                    </div>
+                </div>
+
+                {{ form_label(form.maxUses, null, {label_attr: {class: 'form-label mt-3'}}) }}
+                {{ form_widget(form.maxUses) }}
+
+                <div class="mt-3">
+                    {{ form_widget(form.isActive, {label_attr: {class: 'checkbox-switch'}}) }}
+                </div>
+                {{ form_rest(form) }}
+                <button class="btn btn-primary w-100 mt-4" type="submit">Save Promotion</button>
+            {{ form_end(form) }}
+        </div>
+    </div>
+</section>
+{% endblock %}

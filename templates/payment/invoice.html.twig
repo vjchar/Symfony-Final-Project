@@ -1,0 +1,92 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Invoice {{ booking.reference }} | VJ Car Rental{% endblock %}
+
+{% block body %}
+<section class="content-section invoice-page">
+    <div class="container">
+        <article class="invoice-card">
+            <header class="invoice-header">
+                <img src="{{ asset('images/logo/Logo.png') }}" alt="VJ Car Rental">
+                <div>
+                    <span>Rental statement</span>
+                    <h1>{{ booking.reference }}</h1>
+                    <p>Issued {{ 'now'|date('F j, Y') }}</p>
+                </div>
+            </header>
+            <div class="invoice-parties">
+                <div>
+                    <small>Billed to</small>
+                    <strong>{{ booking.user.name }}</strong>
+                    <span>{{ booking.user.email }}</span>
+                    <span>{{ booking.user.phone ?: 'No phone provided' }}</span>
+                </div>
+                <div>
+                    <small>Rental</small>
+                    <strong>{{ booking.vehicle.name }}</strong>
+                    <span>{{ booking.pickupAt|date('M j, Y g:i A') }}</span>
+                    <span>to {{ booking.returnAt|date('M j, Y g:i A') }}</span>
+                </div>
+            </div>
+            <table class="invoice-table">
+                <thead>
+                    <tr><th>Description</th><th>Amount</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td>Vehicle rental subtotal</td><td>{{ booking.subtotal|money }}</td></tr>
+                    {% for line in booking.addons %}
+                        <tr>
+                            <td>{{ line.addonName }}{{ line.quantity > 1 ? ' × ' ~ line.quantity }}</td>
+                            <td>{{ line.lineTotal|money }}</td>
+                        </tr>
+                    {% endfor %}
+                    <tr><td>Delivery</td><td>{{ booking.deliveryFee|money }}</td></tr>
+                    {% if booking.discount %}
+                        <tr><td>Promotion discount</td><td>−{{ booking.discount|money }}</td></tr>
+                    {% endif %}
+                    {% if extension_total > 0 %}
+                        <tr><td>Approved extension adjustments <small>(included in current rental total)</small></td><td>{{ extension_total|money }}</td></tr>
+                    {% endif %}
+                    <tr class="invoice-total"><td>Current rental total</td><td>{{ booking.total|money }}</td></tr>
+                    <tr><td>Refundable security deposit</td><td>{{ booking.deposit|money }}</td></tr>
+                    {% if settlement %}
+                        <tr><td>Deposit deductions</td><td>−{{ settlement.totalDeductions|money }}</td></tr>
+                        <tr><td>Security deposit refund</td><td>{{ settlement.depositRefundAmount|money }}</td></tr>
+                        {% if settlement.outstandingBalance > 0 %}<tr><td>Outstanding return balance</td><td>{{ settlement.outstandingBalance|money }}</td></tr>{% endif %}
+                    {% endif %}
+                    <tr><td>Verified payments (gross)</td><td>−{{ summary.grossPaid|money }}</td></tr>
+                    {% if refunds.refunded > 0 %}
+                        <tr><td>Processed refunds</td><td>+{{ refunds.refunded|money }}</td></tr>
+                        <tr><td>Net verified payments</td><td>−{{ max(0, summary.grossPaid - refunds.refunded)|money }}</td></tr>
+                    {% endif %}
+                    {% if refunds.pending > 0 %}
+                        <tr><td>Refund pending / processing</td><td>{{ refunds.pending|money }}</td></tr>
+                    {% endif %}
+                    <tr class="invoice-balance"><td>Current amount due</td><td>{{ amount_due|money }}</td></tr>
+                </tbody>
+            </table>
+            {% if refunds.refunds %}
+                <div class="invoice-refunds">
+                    <h2>Refund history</h2>
+                    <table class="invoice-table"><thead><tr><th>Refund type</th><th>Amount</th><th>Status</th></tr></thead><tbody>
+                    {% for refund in refunds.refunds %}
+                        <tr><td>{{ refund.refundTypeLabel }}<small>{{ refund.reason }}</small></td><td>{{ refund.amount|money }}<small>{{ refund.processedAt ? ' · ' ~ refund.processedAt|date('M j, Y') }}{{ refund.referenceNumber ? ' · ' ~ refund.referenceNumber }}</small></td><td>{{ refund.status|humanize_label }}</td></tr>
+                    {% endfor %}
+                    </tbody></table>
+                </div>
+            {% endif %}
+            <div class="invoice-footer">
+                <p><strong>Status:</strong> {{ booking.status|humanize_label }}</p>
+                <p>This statement reflects records in the VJ Car Rental system. Pending payments are excluded until verified.</p>
+            </div>
+            <div class="invoice-actions">
+                <p class="print-instruction">
+                    <i class="bi bi-printer"></i>
+                    Use <strong>Ctrl + P</strong> to print or save this invoice as a PDF.
+                </p>
+                <a class="btn btn-outline" href="{{ path('app_booking_show', {reference: booking.reference}) }}">Back to Booking</a>
+            </div>
+        </article>
+    </div>
+</section>
+{% endblock %}

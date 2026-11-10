@@ -1,0 +1,56 @@
+<?php
+
+namespace App\Repository;
+
+use App\Entity\MaintenanceRecord;
+use App\Entity\Vehicle;
+use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
+use Doctrine\Persistence\ManagerRegistry;
+
+/**
+ * @extends ServiceEntityRepository<MaintenanceRecord>
+ */
+class MaintenanceRecordRepository extends ServiceEntityRepository
+{
+    public function __construct(ManagerRegistry $registry)
+    {
+        parent::__construct($registry, MaintenanceRecord::class);
+    }
+
+    /**
+     * v15 maintenance_records(): newest first, with the vehicle and creator loaded.
+     *
+     * @return list<MaintenanceRecord>
+     */
+    public function findAllForAdmin(): array
+    {
+        return $this->createQueryBuilder('m')
+            ->addSelect('v', 'u')
+            ->join('m.vehicle', 'v')
+            ->join('m.createdBy', 'u')
+            ->orderBy('m.createdAt', 'DESC')
+            ->addOrderBy('m.id', 'DESC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * v15 booking_modification_maintenance_conflict(): scheduled or ongoing
+     * work overlaps the period. Work with no end date blocks everything after it.
+     */
+    public function hasConflict(Vehicle $vehicle, \DateTimeImmutable $from, \DateTimeImmutable $to): bool
+    {
+        return (int) $this->createQueryBuilder('m')
+            ->select('COUNT(m.id)')
+            ->where('m.vehicle = :vehicle')
+            ->andWhere('m.status IN (:statuses)')
+            ->andWhere('m.startsAt < :to')
+            ->andWhere('m.endsAt IS NULL OR m.endsAt > :from')
+            ->setParameter('vehicle', $vehicle)
+            ->setParameter('statuses', [MaintenanceRecord::STATUS_SCHEDULED, MaintenanceRecord::STATUS_IN_PROGRESS])
+            ->setParameter('to', $to)
+            ->setParameter('from', $from)
+            ->getQuery()
+            ->getSingleScalarResult() > 0;
+    }
+}

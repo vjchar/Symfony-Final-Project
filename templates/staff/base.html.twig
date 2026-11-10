@@ -1,0 +1,21 @@
+{% extends 'base.html.twig' %}
+
+{# Staff pages use the operations layout (no booking call-to-action band). #}
+{% block admin_context %}1{% endblock %}
+
+{% block body %}
+<section class="admin-page-heading">
+    <div class="container">
+        <div>
+            <span class="section-kicker">Staff workspace</span>
+            <h1>{% block staff_heading %}{% endblock %}</h1>
+            {% block staff_intro %}{% endblock %}
+        </div>
+    </div>
+</section>
+<section class="content-section admin-section">
+    <div class="container">
+        {% block staff_body %}{% endblock %}
+    </div>
+</section>
+{% endblock %}

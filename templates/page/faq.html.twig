@@ -1,0 +1,61 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Rental FAQs | VJ Car Rental{% endblock %}
+{% block description %}Review renter requirements, policies, pickup guidance, add-ons, booking changes, and roadside information.{% endblock %}
+
+{% block body %}
+<section class="page-hero page-hero--compact pattern-layer">
+    <div class="container">
+        <span class="section-kicker">Rental help center</span>
+        <h1>Questions before you drive</h1>
+        <p>Clear guidance for requirements, pricing, availability, pickup, booking changes, ratings, and roadside support.</p>
+    </div>
+</section>
+<section class="content-section faq-page">
+    <div class="container">
+        <div class="row g-4 g-xl-5">
+            <div class="col-lg-8">
+                <div class="faq-accordion">
+                    {% for faq in faqs %}
+                        <details
+                            class="faq-item"
+                            id="{{ faq.id }}"
+                            {{ loop.first ? 'open' }}
+                        >
+                            <summary>{{ faq.question }}</summary>
+                            <div class="faq-item__answer">
+                                <p>{{ faq.answer }}</p>
+                            </div>
+                        </details>
+                    {% endfor %}
+                </div>
+            </div>
+            <div class="col-lg-4">
+                <aside class="support-sidebar">
+                    <article>
+                        <i class="bi bi-headset"></i>
+                        <h2>Need rental help?</h2>
+                        <p>Contact the VJ team for vehicle guidance, accessibility needs, or policy clarification.</p>
+                        <a class="btn btn-primary w-100" href="{{ page_url('contact') }}">Contact Support</a>
+                    </article>
+                    <article class="support-sidebar__emergency">
+                        <i class="bi bi-cone-striped"></i>
+                        <h3>Roadside support</h3>
+                        <p>Support instructions and the assigned vehicle details are provided with every confirmed rental.</p>
+                    </article>
+                    <article>
+                        <i class="bi bi-person-vcard"></i>
+                        <h3>Renter checklist</h3>
+                        <ul>
+                            <li>Driver’s license</li>
+                            <li>Government ID</li>
+                            <li>Security deposit</li>
+                            <li>Rental agreement</li>
+                        </ul>
+                    </article>
+                </aside>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

@@ -1,0 +1,73 @@
+{# Shared administrator navigation, ported from v15 includes/admin-nav.php. #}
+{% set admin_links = {
+    'admin': ['Dashboard', 'bi-speedometer2'],
+    'admin-bookings': ['Bookings', 'bi-calendar2-check'],
+    'admin-calendar': ['Calendar', 'bi-calendar3'],
+    'admin-rentals': ['Rental Desk', 'bi-key'],
+    'admin-payments': ['Payments', 'bi-credit-card'],
+    'admin-documents': ['Documents', 'bi-person-vcard'],
+    'admin-vehicles': ['Vehicles', 'bi-car-front'],
+    'admin-maintenance': ['Maintenance', 'bi-tools'],
+    'admin-users': ['Users', 'bi-people'],
+    'admin-reviews': ['Reviews', 'bi-star'],
+    'admin-messages': ['Messages', 'bi-envelope'],
+    'admin-promos': ['Promotions', 'bi-ticket-perforated'],
+    'admin-addons': ['Add-ons', 'bi-plus-circle'],
+    'admin-reports': ['Reports', 'bi-bar-chart-line'],
+    'notifications': ['Notifications', 'bi-bell'],
+    'profile': ['My Profile', 'bi-person-gear'],
+    'health': ['System', 'bi-heart-pulse'],
+} %}
+{% set current_admin_url = app.request.pathInfo %}
+<input
+    class="admin-nav-control"
+    id="adminNavigationControl"
+    type="checkbox"
+    aria-controls="adminSidebar"
+    aria-expanded="false"
+    aria-label="Open or close the administration menu">
+
+<label class="admin-nav-toggle" for="adminNavigationControl">
+    <i class="bi bi-list"></i>
+    <span>Admin menu</span>
+</label>
+
+<aside class="admin-nav" id="adminSidebar" aria-label="Administration sections">
+    <div class="admin-nav__brand">
+        <a href="{{ page_url('admin') }}">
+            <img src="{{ asset('images/logo/Logo.png') }}" alt="VJ Car Rental">
+            <span>Operations Center</span>
+        </a>
+    </div>
+
+    <nav class="admin-nav__links">
+        {% for page, link in admin_links %}
+            {% set link_url = page_url(page) %}
+            <a
+                class="{{ link_url == current_admin_url ? 'active' }}"
+                href="{{ link_url }}">
+                <i class="bi {{ link[1] }}" aria-hidden="true"></i>
+                <span>{{ link[0] }}</span>
+            </a>
+        {% endfor %}
+    </nav>
+
+    <div class="admin-nav__footer">
+        <a href="{{ path('app_home') }}">
+            <i class="bi bi-box-arrow-up-right"></i>
+            <span>View customer site</span>
+        </a>
+        <form method="post" action="{{ path('app_logout') }}">
+            <input type="hidden" name="_csrf_token" value="{{ csrf_token('logout') }}">
+            <button type="submit">
+                <i class="bi bi-box-arrow-right"></i>
+                <span>Sign out</span>
+            </button>
+        </form>
+    </div>
+</aside>
+
+<label
+    class="admin-nav-backdrop"
+    for="adminNavigationControl"
+    aria-label="Close administration menu"></label>

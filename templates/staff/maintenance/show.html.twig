@@ -1,0 +1,34 @@
+{% extends 'staff/base.html.twig' %}
+
+{% block title %}{{ record.title }} | Staff | VJ Car Rental{% endblock %}
+
+{% block staff_heading %}{{ record.title }}{% endblock %}
+
+{% block staff_body %}
+<article class="admin-editor mb-4">
+    <dl class="operation-meta">
+        <dt>Vehicle</dt>
+        <dd>{{ record.vehicle.name }}</dd>
+        <dt>Status</dt>
+        <dd><span class="status-badge status-badge--{{ record.status|status_class }}">{{ record.status|humanize_label }}</span></dd>
+        <dt>Starts</dt>
+        <dd>{{ record.startsAt|date('M j, Y g:i A') }}</dd>
+        <dt>Estimated cost</dt>
+        <dd>{{ record.cost|money }}</dd>
+        <dt>Created by</dt>
+        <dd>{{ record.createdBy.name }}</dd>
+        <dt>Description</dt>
+        <dd>{{ record.description }}</dd>
+    </dl>
+
+    <div class="d-flex flex-wrap gap-2">
+        <a class="btn btn-outline" href="{{ path('app_staff_maintenance') }}">Back to records</a>
+        {% if is_granted('MAINTENANCE_EDIT', record) %}
+            <a class="btn btn-primary" href="{{ path('app_staff_maintenance_edit', {id: record.id}) }}">Edit</a>
+        {% endif %}
+        {% if is_granted('MAINTENANCE_DELETE', record) %}
+            <a class="btn btn-outline" href="{{ path('app_staff_maintenance_delete', {id: record.id}) }}">Delete</a>
+        {% endif %}
+    </div>
+</article>
+{% endblock %}

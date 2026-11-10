@@ -1,0 +1,133 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Compare Vehicles | VJ Car Rental{% endblock %}
+{% block description %}Compare VJ Car Rental vehicles by price, capacity, verified ratings, deposits, mileage, and inclusions.{% endblock %}
+
+{% block body %}
+<section class="page-hero page-hero--compact pattern-layer">
+    <div class="container">
+        <span class="section-kicker">Vehicle comparison</span>
+        <h1>Compare your best options</h1>
+        <p>Review up to three cars side by side before choosing the right vehicle for your trip.</p>
+    </div>
+</section>
+<section class="content-section compare-page">
+    <div class="container">
+        <form class="compare-picker" method="get" action="{{ path('app_compare') }}">
+            <div>
+                <span class="section-kicker">Change selection</span>
+                <h2>Choose up to three vehicles</h2>
+            </div>
+            <div class="compare-picker__fields">
+                {% for slot in 0..2 %}
+                    <label>
+                        Vehicle {{ slot + 1 }}
+                        <select class="form-select" name="compare[]">
+                            <option value="">None</option>
+                            {% for option in fleet %}
+                                <option value="{{ option.slug }}" {{ selected[slot] is defined and selected[slot].slug == option.slug ? 'selected' }}>{{ option.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </label>
+                {% endfor %}
+                <button class="btn btn-primary" type="submit">Update Comparison</button>
+            </div>
+        </form>
+        <div class="compare-table-wrap">
+            <table class="compare-table">
+                <thead>
+                    <tr>
+                        <th scope="col">Feature</th>
+                        {% for item in selected %}
+                            <th scope="col">
+                                <img src="{{ vehicle_image(item.image) }}" alt="{{ item.name }}" loading="lazy">
+                                <strong>{{ item.name }}</strong>
+                                <span>{{ item.category }}</span>
+                            </th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <th scope="row">Daily rate</th>
+                        {% for item in selected %}
+                            <td class="{{ item.price == lowest_rate ? 'is-best' }}">
+                                <strong class="compare-price">{{ item.price|money }}</strong> / day
+                                {% if item.price == lowest_rate %}<small class="best-label">Lowest rate</small>{% endif %}
+                            </td>
+                        {% endfor %}
+                    </tr>
+                    <tr>
+                        <th scope="row">Verified rating</th>
+                        {% for item in selected %}
+                            {% set rating = ratings[item.id] ?? null %}
+                            <td class="{{ rating and best_rating > 0 and rating.rating == best_rating ? 'is-best' }}">
+                                {% if rating %}
+                                    <span class="summary-rating"><i class="bi bi-star-fill"></i> {{ rating.rating|number_format(1) }} ({{ rating.count }})</span>
+                                {% else %}
+                                    New—no reviews yet
+                                {% endif %}
+                            </td>
+                        {% endfor %}
+                    </tr>
+                    <tr>
+                        <th scope="row">Availability</th>
+                        {% for item in selected %}
+                            <td>
+                                <span class="status-badge status-badge--{{ item.availabilityStatus|status_class }}">{{ item.availabilityStatus|humanize_label }}</span>
+                                <br>
+                                <a href="{{ path('app_vehicle_show', {slug: item.slug}) }}">Check rental dates</a>
+                            </td>
+                        {% endfor %}
+                    </tr>
+                    <tr>
+                        <th scope="row">Seats / doors</th>
+                        {% for item in selected %}
+                            <td class="{{ item.seats == most_seats ? 'is-best' }}">
+                                {{ item.seats }} seats • {{ item.doors }} doors
+                                {% if item.seats == most_seats %}<small class="best-label">Most seats</small>{% endif %}
+                            </td>
+                        {% endfor %}
+                    </tr>
+                    <tr>
+                        <th scope="row">Transmission</th>
+                        {% for item in selected %}<td>{{ item.transmission }}</td>{% endfor %}
+                    </tr>
+                    <tr>
+                        <th scope="row">Fuel / power</th>
+                        {% for item in selected %}<td>{{ item.fuel }}</td>{% endfor %}
+                    </tr>
+                    <tr>
+                        <th scope="row">Luggage guide</th>
+                        {% for item in selected %}<td>{{ item.luggage }}</td>{% endfor %}
+                    </tr>
+                    <tr>
+                        <th scope="row">Mileage</th>
+                        {% for item in selected %}<td>{{ item.dailyKm }} km / day</td>{% endfor %}
+                    </tr>
+                    <tr>
+                        <th scope="row">Refundable deposit</th>
+                        {% for item in selected %}<td>{{ item.deposit|money }}</td>{% endfor %}
+                    </tr>
+                    <tr>
+                        <th scope="row">Best suited for</th>
+                        {% for item in selected %}<td>{{ item.overviewTitle }}</td>{% endfor %}
+                    </tr>
+                    <tr>
+                        <th scope="row">Actions</th>
+                        {% for item in selected %}
+                            <td>
+                                <a class="btn btn-primary btn-sm" href="{{ page_url('booking', {vehicle: item.slug}) }}">Book</a>
+                                <a class="btn btn-outline btn-sm mt-2" href="{{ path('app_vehicle_show', {slug: item.slug}) }}">Details</a>
+                            </td>
+                        {% endfor %}
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <p class="display-note">
+            <i class="bi bi-info-circle"></i> Prices and vehicle details are kept current. Availability is confirmed against existing reservations after you select your rental dates.
+        </p>
+    </div>
+</section>
+{% endblock %}

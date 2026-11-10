@@ -1,0 +1,72 @@
+{% extends 'admin/base.html.twig' %}
+
+{% block title %}Review Moderation | VJ Car Rental{% endblock %}
+
+{% block admin_body %}
+<section class="admin-page-heading">
+    <div class="container">
+        <div>
+            <span class="section-kicker">Verified trip feedback</span>
+            <h1>Moderate reviews</h1>
+            <p>Approve useful customer feedback and reject content that is unsafe, irrelevant, or abusive.</p>
+        </div>
+    </div>
+</section>
+<section class="content-section admin-section">
+    <div class="container">
+        <div class="admin-filter-tabs">
+            {% for status in filters %}
+                <a class="{{ filter == status ? 'active' }}" href="{{ path('app_admin_reviews', {status: status}) }}">{{ status|humanize_label }}</a>
+            {% endfor %}
+        </div>
+        <div class="admin-review-list">
+            {% for review in reviews %}
+                <article class="admin-review-card">
+                    <header>
+                        <div>
+                            <span class="status-badge status-badge--{{ review.status|status_class }}">{{ review.status|humanize_label }}</span>
+                            <h2>{{ review.title }}</h2>
+                            <small>{{ review.vehicle.name }} • {{ review.booking.reference }} • {{ review.createdAt|date('M j, Y') }}</small>
+                        </div>
+                        <strong class="admin-review-score"><i class="bi bi-star-fill"></i> {{ review.overall }}/5</strong>
+                    </header>
+                    <p>{{ review.body|nl2br }}</p>
+                    <div class="review-score-grid">
+                        {% for label, score in {Cleanliness: review.cleanliness, Comfort: review.comfort, Condition: review.vehicleCondition, Pickup: review.pickupExperience, Support: review.customerSupport} %}
+                            <span><small>{{ label }}</small><strong>{{ score }}/5</strong></span>
+                        {% endfor %}
+                    </div>
+                    {% if review.photos is not empty %}
+                        <div class="admin-review-photos">
+                            {% for photo in review.photos %}
+                                <img src="{{ path('app_file_review_photo', {id: review.id, index: loop.index0}) }}" alt="Customer review upload">
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                    <footer>
+                        <span>
+                            <strong>{{ review.user.name }}</strong>
+                            <small>{{ review.user.email }}</small>
+                        </span>
+                        <form method="post" class="admin-inline-form" action="{{ path('app_admin_review_moderate', {id: review.id, status: filter}) }}">
+                            <input type="hidden" name="_token" value="{{ csrf_token('moderate-review-' ~ review.id) }}">
+                            <select class="form-select" name="status" aria-label="Review decision">
+                                {% for status in statuses %}
+                                    <option value="{{ status }}" {{ review.status == status ? 'selected' }}>{{ status|humanize_label }}</option>
+                                {% endfor %}
+                            </select>
+                            <button class="btn btn-primary" type="submit">Save Decision</button>
+                        </form>
+                    </footer>
+                </article>
+            {% else %}
+                <div class="empty-state">
+                    <i class="bi bi-chat-square-heart"></i>
+                    <h3>No {{ filter == 'all' ? '' : filter }} reviews</h3>
+                    <p>Reviews in this queue will appear here.</p>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endblock %}

@@ -1,0 +1,63 @@
+{% extends 'admin/base.html.twig' %}
+
+{% block title %}Contact Enquiries | VJ Car Rental{% endblock %}
+
+{% block admin_body %}
+<section class="admin-page-heading">
+    <div class="container">
+        <div>
+            <span class="section-kicker">Customer care inbox</span>
+            <h1>Contact enquiries</h1>
+            <p>Track new messages, active follow-ups, and resolved requests.</p>
+        </div>
+    </div>
+</section>
+<section class="content-section admin-section">
+    <div class="container">
+        <div class="admin-filter-tabs">
+            {% for status in filters %}
+                <a class="{{ filter == status ? 'active' }}" href="{{ path('app_admin_messages', {status: status}) }}">{{ status|humanize_label }}</a>
+            {% endfor %}
+        </div>
+        <div class="admin-message-list">
+            {% for message in messages %}
+                <article class="admin-message-card">
+                    <header>
+                        <div>
+                            <span class="status-badge status-badge--{{ message.status|status_class }}">{{ message.status|humanize_label }}</span>
+                            <h2>{{ message.subject }}</h2>
+                            <small>{{ message.createdAt|date('M j, Y g:i A') }}</small>
+                        </div>
+                        <a href="mailto:{{ message.email }}?subject={{ ('Re: ' ~ message.subject)|url_encode }}" class="btn btn-outline btn-sm">
+                            <i class="bi bi-reply"></i> Reply by email</a>
+                    </header>
+                    <p>{{ message.message|nl2br }}</p>
+                    <footer>
+                        <span>
+                            <strong>{{ message.name }}</strong>
+                            <small>
+                                <a href="mailto:{{ message.email }}">{{ message.email }}</a>{{ message.phone ? ' • ' ~ message.phone }}</small>
+                        </span>
+                        <form method="post" class="admin-inline-form" action="{{ path('app_admin_messages_update', {status: filter}) }}">
+                            <input type="hidden" name="_token" value="{{ csrf_token('contact-message-' ~ message.id) }}">
+                            <input type="hidden" name="message_id" value="{{ message.id }}">
+                            <select class="form-select" name="status" aria-label="Message status">
+                                {% for status in statuses %}
+                                    <option value="{{ status }}" {{ message.status == status ? 'selected' }}>{{ status|humanize_label }}</option>
+                                {% endfor %}
+                            </select>
+                            <button class="btn btn-primary" type="submit">Save</button>
+                        </form>
+                    </footer>
+                </article>
+            {% else %}
+                <div class="empty-state">
+                    <i class="bi bi-inbox"></i>
+                    <h3>No messages here</h3>
+                    <p>The selected enquiry queue is currently clear.</p>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endblock %}

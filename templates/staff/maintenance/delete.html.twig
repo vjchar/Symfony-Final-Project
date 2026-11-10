@@ -1,0 +1,21 @@
+{% extends 'staff/base.html.twig' %}
+
+{% block title %}Delete Maintenance Record | Staff | VJ Car Rental{% endblock %}
+
+{% block staff_heading %}Delete this maintenance record?{% endblock %}
+
+{% block staff_body %}
+<article class="admin-editor mb-4">
+    <p>
+        <strong>{{ record.title }}</strong> for {{ record.vehicle.name }},
+        starting {{ record.startsAt|date('M j, Y g:i A') }}.
+    </p>
+    <p>This cannot be undone.{% if record.status == 'in_progress' %} The vehicle will be returned to availability.{% endif %}</p>
+
+    <form method="post" action="{{ path('app_staff_maintenance_delete', {id: record.id}) }}" class="d-flex flex-wrap gap-2">
+        <input type="hidden" name="_token" value="{{ csrf_token('maintenance-delete-' ~ record.id) }}">
+        <button class="btn btn-danger" type="submit">Yes, Delete Record</button>
+        <a class="btn btn-outline" href="{{ path('app_staff_maintenance_show', {id: record.id}) }}">Keep Record</a>
+    </form>
+</article>
+{% endblock %}

@@ -20,14 +20,13 @@ use Symfony\Component\Security\Http\Attribute\CurrentUser;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 /**
- * v15 account.php (the customer dashboard) and profile.php. The dashboard is
- * customers only, like v15 require_customer(); every signed-in account,
- * administrators and staff included, can edit its own profile and password.
+ * v15 account.php (the customer dashboard) and profile.php. Administrators get
+ * 403, like v15 require_customer().
  */
+#[IsGranted('ROLE_CUSTOMER')]
 final class AccountController extends AbstractController
 {
     #[Route('/account', name: 'app_account', methods: ['GET'])]
-    #[IsGranted('ROLE_CUSTOMER')]
     public function index(
         #[CurrentUser] User $user,
         BookingRepository $bookingRepository,
@@ -53,7 +52,6 @@ final class AccountController extends AbstractController
     }
 
     #[Route('/account/profile', name: 'app_profile', methods: ['GET', 'POST'])]
-    #[IsGranted('IS_AUTHENTICATED')]
     public function profile(
         Request $request,
         #[CurrentUser] User $user,

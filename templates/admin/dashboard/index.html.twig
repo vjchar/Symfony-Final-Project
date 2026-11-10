@@ -36,9 +36,6 @@
     <div class="container">
         <div class="admin-stats admin-dashboard-stats" aria-label="Operations summary">
             {% for stat in [
-                {mod: 'customer', icon: 'bi-person-lines-fill', label: 'Total users', value: counts.users, text: 'All accounts, every role'},
-                {mod: 'booking', icon: 'bi-person-badge', label: 'Total staff', value: counts.staff, text: counts.active_staff ~ ' active staff ' ~ (counts.active_staff == 1 ? 'account' : 'accounts')},
-                {mod: 'fleet', icon: 'bi-journal-text', label: 'Total records', value: counts.records, text: counts.open_records ~ ' maintenance ' ~ (counts.open_records == 1 ? 'record' : 'records') ~ ' open'},
                 {mod: 'fleet', icon: 'bi-car-front', label: 'Active vehicles', value: counts.vehicles, text: 'Bookable fleet records'},
                 {mod: 'customer', icon: 'bi-people', label: 'Active customers', value: counts.customers, text: 'Enabled customer accounts'},
                 {mod: 'clear', icon: 'bi-check2-circle', label: 'Ready to rent', value: counts.available, text: 'Available right now'},
@@ -46,7 +43,7 @@
                 {mod: 'booking', icon: 'bi-plus-circle', label: 'Active add-ons', value: counts.addons, text: 'Offered during booking'},
                 {mod: counts.new_messages > 0 ? 'attention' : 'clear', icon: 'bi-envelope', label: 'New messages', value: counts.new_messages, text: counts.new_messages > 0 ? 'Needs a reply' : 'Inbox is clear'},
             ] %}
-                <article class="dashboard-stat dashboard-stat--{{ stat.mod }}" data-stat="{{ stat.label|lower|replace({' ': '-'}) }}">
+                <article class="dashboard-stat dashboard-stat--{{ stat.mod }}">
                     <span class="dashboard-stat__icon" aria-hidden="true">
                         <i class="bi {{ stat.icon }}"></i>
                     </span>

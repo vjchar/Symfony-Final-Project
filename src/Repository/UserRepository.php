@@ -74,31 +74,4 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
     {
         return $this->count(['role' => User::ROLE_CUSTOMER, 'status' => User::STATUS_ACTIVE]);
     }
-
-    /**
-     * Every account of every role and status, keyed by role (all roles present,
-     * zero when there are none).
-     *
-     * @return array<string, int>
-     */
-    public function countByRole(): array
-    {
-        $counts = array_fill_keys(User::ROLES, 0);
-        $rows = $this->createQueryBuilder('u')
-            ->select('u.role AS role', 'COUNT(u.id) AS total')
-            ->groupBy('u.role')
-            ->getQuery()
-            ->getArrayResult();
-
-        foreach ($rows as $row) {
-            $counts[$row['role']] = (int) $row['total'];
-        }
-
-        return $counts;
-    }
-
-    public function countActiveStaff(): int
-    {
-        return $this->count(['role' => User::ROLE_STAFF, 'status' => User::STATUS_ACTIVE]);
-    }
 }

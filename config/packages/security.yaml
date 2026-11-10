@@ -41,7 +41,6 @@ security:
         # /admin and /admin/..., but not the public /admin-login redirect
         - { path: ^/admin(/|$), roles: ROLE_ADMIN }
         - { path: ^/coming-soon/(admin|health), roles: ROLE_ADMIN }
-        - { path: ^/staff(/|$), roles: ROLE_STAFF }
 
 when@test:
     security:

@@ -23,9 +23,8 @@ use Symfony\Component\Validator\Constraints as Assert;
 class User implements UserInterface, PasswordAuthenticatedUserInterface, EquatableInterface
 {
     public const ROLE_CUSTOMER = 'customer';
-    public const ROLE_STAFF = 'staff';
     public const ROLE_ADMIN = 'admin';
-    public const ROLES = [self::ROLE_CUSTOMER, self::ROLE_STAFF, self::ROLE_ADMIN];
+    public const ROLES = [self::ROLE_CUSTOMER, self::ROLE_ADMIN];
 
     public const STATUS_ACTIVE = 'active';
     public const STATUS_INACTIVE = 'inactive';
@@ -36,7 +35,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface, Equatab
     #[ORM\Column]
     private ?int $id = null;
 
-    // v15 enum('customer','admin') plus 'staff'; mapped to Symfony roles in getRoles().
+    // v15 enum('customer','admin'); mapped to Symfony roles in getRoles().
     #[ORM\Column(length: 20, options: ['default' => self::ROLE_CUSTOMER])]
     private string $role = self::ROLE_CUSTOMER;
 
@@ -118,16 +117,6 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface, Equatab
         return self::ROLE_ADMIN === $this->role;
     }
 
-    public function isStaff(): bool
-    {
-        return self::ROLE_STAFF === $this->role;
-    }
-
-    public function isCustomer(): bool
-    {
-        return self::ROLE_CUSTOMER === $this->role;
-    }
-
     public function getName(): ?string
     {
         return $this->name;
@@ -179,11 +168,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface, Equatab
      */
     public function getRoles(): array
     {
-        return match ($this->role) {
-            self::ROLE_ADMIN => ['ROLE_USER', 'ROLE_ADMIN'],
-            self::ROLE_STAFF => ['ROLE_USER', 'ROLE_STAFF'],
-            default => ['ROLE_USER', 'ROLE_CUSTOMER'],
-        };
+        return $this->isAdmin() ? ['ROLE_USER', 'ROLE_ADMIN'] : ['ROLE_USER', 'ROLE_CUSTOMER'];
     }
 
     public function getPassword(): ?string

@@ -105,7 +105,7 @@
                         {% endif %}
                     </a>
 
-                    <a class="account-link" href="{{ page_url(current_user.admin ? 'admin' : (current_user.staff ? 'staff' : 'account')) }}">
+                    <a class="account-link" href="{{ page_url(current_user.admin ? 'admin' : 'account') }}">
                         <i class="bi bi-person-circle" aria-hidden="true"></i>
                         <span>{{ current_user.firstName }}</span>
                     </a>
@@ -116,7 +116,7 @@
                     </a>
                 {% endif %}
 
-                {% if not current_user or current_user.customer %}
+                {% if not current_user or not current_user.admin %}
                     <a class="mockup-book-button" href="{{ page_url('booking') }}">
                         Book a Car
                     </a>

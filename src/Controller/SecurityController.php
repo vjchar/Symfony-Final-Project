@@ -21,11 +21,9 @@ final class SecurityController extends AbstractController
         $returnTo = ReturnTo::sanitize($returnTo);
 
         if ($this->getUser()) {
-            return match (true) {
-                $this->isGranted('ROLE_ADMIN') => $this->redirectToRoute('app_admin'),
-                $this->isGranted('ROLE_STAFF') => $this->redirectToRoute('app_staff_maintenance'),
-                default => $this->redirect($returnTo ?? $this->generateUrl('app_account')),
-            };
+            return $this->isGranted('ROLE_ADMIN')
+                ? $this->redirectToRoute('app_admin')
+                : $this->redirect($returnTo ?? $this->generateUrl('app_account'));
         }
 
         return $this->render('security/login.html.twig', [
@@ -44,7 +42,6 @@ final class SecurityController extends AbstractController
     {
         return match (true) {
             $this->isGranted('ROLE_ADMIN') => $this->redirectToRoute('app_admin'),
-            $this->isGranted('ROLE_STAFF') => $this->redirectToRoute('app_staff_maintenance'),
             null !== $this->getUser() => $this->redirectToRoute('app_account'),
             default => $this->redirectToRoute('app_login'),
         };

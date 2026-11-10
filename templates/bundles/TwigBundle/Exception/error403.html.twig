@@ -4,7 +4,6 @@
 
 {% block body %}
 {% set is_admin = is_granted('ROLE_ADMIN') %}
-{% set is_staff = is_granted('ROLE_STAFF') %}
 <section class="content-section error-page pattern-layer">
     <div class="container">
         <i class="bi bi-shield-lock"></i>
@@ -12,13 +11,7 @@
         <h1>You do not have permission to open this page.</h1>
         <p>Return to your account or contact an administrator if you believe this is incorrect.</p>
         <div class="d-flex flex-wrap justify-content-center gap-2">
-            {% if is_admin %}
-                <a class="btn btn-primary" href="{{ page_url('admin') }}">Go to Admin Dashboard</a>
-            {% elseif is_staff %}
-                <a class="btn btn-primary" href="{{ page_url('staff') }}">Go to Staff Workspace</a>
-            {% else %}
-                <a class="btn btn-primary" href="{{ page_url('account') }}">Go to My Account</a>
-            {% endif %}
+            <a class="btn btn-primary" href="{{ page_url(is_admin ? 'admin' : 'account') }}">{{ is_admin ? 'Go to Admin Dashboard' : 'Go to My Account' }}</a>
         </div>
     </div>
 </section>

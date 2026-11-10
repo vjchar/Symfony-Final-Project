@@ -38,7 +38,7 @@
         <div class="row g-4 g-xl-5 align-items-start">
             <div class="col-lg-7">
                 <div class="detail-visual pattern-layer">
-                    {% if app.user and app.user.customer %}
+                    {% if app.user and not app.user.admin %}
                         {% set favorite = is_favorite(vehicle) %}
                         <form class="favorite-form favorite-form--detail" method="post" action="{{ path('app_favorite_toggle', {slug: vehicle.slug}) }}">
                             <input type="hidden" name="_token" value="{{ csrf_token('favorite') }}">

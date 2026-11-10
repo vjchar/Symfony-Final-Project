@@ -22,8 +22,6 @@
             {% if query != '' %}
                 <a class="btn btn-outline" href="{{ path('app_admin_users') }}">Clear</a>
             {% endif %}
-            <a class="btn btn-primary ms-auto" href="{{ path('app_admin_users_new') }}">
-                <i class="bi bi-person-plus" aria-hidden="true"></i> New User</a>
         </form>
         <div class="admin-table-wrap">
             <table class="admin-table">
@@ -31,21 +29,20 @@
                     <tr>
                         <th>User</th>
                         <th>Phone</th>
-                        <th>Date created</th>
+                        <th>Joined</th>
                         <th>Access</th>
                         <th>Update</th>
-                        <th>Manage</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for user in users %}
-                        <tr data-user="{{ user.id }}">
+                        <tr>
                             <td>
                                 <strong>{{ user.name }}</strong>
                                 <small>{{ user.email }}{{ user is same as(app.user) ? ' • You' }}</small>
                             </td>
                             <td>{{ user.phone ?: 'Not provided' }}</td>
-                            <td data-label="Date created"><time datetime="{{ user.createdAt|date('Y-m-d') }}">{{ user.createdAt|date('M j, Y') }}</time></td>
+                            <td>{{ user.createdAt|date('M j, Y') }}</td>
                             <td>
                                 <span class="status-badge status-badge--{{ user.status|status_class }}">{{ user.status|humanize_label }}</span>
                                 <small>{{ user.role|humanize_label }}</small>
@@ -56,7 +53,6 @@
                                     <input type="hidden" name="user_id" value="{{ user.id }}">
                                     <select class="form-select form-select-sm" name="role" aria-label="Role for {{ user.name }}">
                                         <option value="customer" {{ user.role == 'customer' ? 'selected' }}>Customer</option>
-                                        <option value="staff" {{ user.role == 'staff' ? 'selected' }}>Staff</option>
                                         <option value="admin" {{ user.role == 'admin' ? 'selected' }}>Admin</option>
                                     </select>
                                     <select class="form-select form-select-sm" name="status" aria-label="Status for {{ user.name }}">
@@ -66,19 +62,10 @@
                                     <button class="btn btn-outline btn-sm" type="submit">Save</button>
                                 </form>
                             </td>
-                            <td>
-                                <div class="d-flex flex-wrap gap-1">
-                                    <a class="btn btn-outline btn-sm" href="{{ path('app_admin_users_edit', {id: user.id}) }}" aria-label="Edit {{ user.name }}">Edit</a>
-                                    <a class="btn btn-outline btn-sm" href="{{ path('app_admin_users_password', {id: user.id}) }}" aria-label="Reset password for {{ user.name }}">Reset Password</a>
-                                    {% if user is not same as(app.user) %}
-                                        <a class="btn btn-outline btn-sm" href="{{ path('app_admin_users_delete', {id: user.id}) }}" aria-label="Delete {{ user.name }}">Delete</a>
-                                    {% endif %}
-                                </div>
-                            </td>
                         </tr>
                     {% else %}
                         <tr>
-                            <td colspan="6">
+                            <td colspan="5">
                                 <div class="empty-state empty-state--compact">
                                     <i class="bi bi-people"></i>
                                     <h3>No accounts found</h3>

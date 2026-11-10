@@ -58,13 +58,6 @@ class LoginAuthenticator extends AbstractLoginFormAuthenticator
             return new RedirectResponse($this->urlGenerator->generate('app_admin'), Response::HTTP_SEE_OTHER);
         }
 
-        // staff have no customer pages, so a customer return_to would only end in a 403
-        if ($user instanceof User && $user->isStaff()) {
-            $this->flash($request, 'success', 'Welcome back.');
-
-            return new RedirectResponse($this->urlGenerator->generate('app_staff_maintenance'), Response::HTTP_SEE_OTHER);
-        }
-
         $this->flash($request, 'success', 'Welcome back.');
 
         return new RedirectResponse(

@@ -38,7 +38,7 @@ final class CustomerExtension
     {
         if (null === $this->favoriteSlugs) {
             $user = $this->security->getUser();
-            $this->favoriteSlugs = $user instanceof User && $user->isCustomer() ? $this->favorites->findSlugsFor($user) : [];
+            $this->favoriteSlugs = $user instanceof User && !$user->isAdmin() ? $this->favorites->findSlugsFor($user) : [];
         }
 
         return \in_array($vehicle->getSlug(), $this->favoriteSlugs, true);

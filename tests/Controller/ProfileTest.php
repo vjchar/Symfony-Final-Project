@@ -51,16 +51,15 @@ final class ProfileTest extends WebTestCase
         self::assertSelectorExists('.account-hero__actions a[href="/account/profile"]');
     }
 
-    public function testGuestsSignInFirstAndAdministratorsHaveAProfileToo(): void
+    public function testGuestsSignInFirstAndAdministratorsAreDenied(): void
     {
         $this->client->restart();
         $this->client->request('GET', '/account/profile');
         self::assertResponseRedirects('/login?return_to=/account/profile');
 
-        // administrators edit their own profile and password here (see OwnProfileTest)
         $this->client->loginUser($this->createUser(self::ADMIN_EMAIL, User::ROLE_ADMIN));
         $this->client->request('GET', '/account/profile');
-        self::assertResponseIsSuccessful();
+        self::assertResponseStatusCodeSame(403);
     }
 
     public function testUpdatesContactDetailsWithoutThePassword(): void

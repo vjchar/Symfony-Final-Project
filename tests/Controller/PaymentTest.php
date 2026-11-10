@@ -47,7 +47,7 @@ final class PaymentTest extends WebTestCase
         self::assertSelectorTextContains('.journey-next h2', 'Complete Payment');
         self::assertSelectorTextContains('.payment-overview', '₱5,000');
         self::assertSelectorExists('#paymentType option[value="deposit"]');
-        self::assertSelectorTextContains('[data-payment-details="gcash"]', '0994 894 5174');
+        self::assertSelectorTextContains('[data-payment-details="gcash"]', '0917 000 1234');
 
         $this->pay($booking, ['method' => 'cash', 'amount' => '5000']);
 

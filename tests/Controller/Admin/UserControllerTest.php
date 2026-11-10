@@ -45,6 +45,19 @@ final class UserControllerTest extends WebTestCase
         self::assertSelectorTextContains('.empty-state h3', 'No accounts found');
     }
 
+    public function testPromoteCustomerToStaff(): void
+    {
+        $this->submitAccessForm('juan@test.vj', 'staff', 'active');
+
+        self::assertResponseRedirects('/admin/users');
+        $juan = $this->users()->findOneBy(['email' => 'juan@test.vj']);
+        self::assertSame(User::ROLE_STAFF, $juan->getRole());
+        self::assertSame(['ROLE_USER', 'ROLE_STAFF'], $juan->getRoles());
+
+        $this->client->followRedirect();
+        self::assertSelectorExists('select[name="role"] option[value="staff"][selected]');
+    }
+
     public function testDeactivateCustomer(): void
     {
         $this->submitAccessForm('juan@test.vj', 'customer', 'inactive');

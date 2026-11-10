@@ -2,8 +2,11 @@
 
 namespace App\Controller\Admin;
 
+use App\Entity\MaintenanceRecord;
+use App\Entity\User;
 use App\Repository\AddonRepository;
 use App\Repository\ContactMessageRepository;
+use App\Repository\MaintenanceRecordRepository;
 use App\Repository\UserRepository;
 use App\Repository\VehicleRepository;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -20,9 +23,11 @@ final class DashboardController extends AbstractController
         AddonRepository $addonRepository,
         ContactMessageRepository $contactMessageRepository,
         UserRepository $userRepository,
+        MaintenanceRecordRepository $maintenanceRecordRepository,
     ): Response {
         $hour = (int) (new \DateTimeImmutable())->format('G');
         $categoryCounts = $vehicleRepository->countActiveByCategory();
+        $roleCounts = $userRepository->countByRole();
 
         return $this->render('admin/dashboard/index.html.twig', [
             'greeting' => match (true) {
@@ -31,6 +36,13 @@ final class DashboardController extends AbstractController
                 default => 'Good evening',
             },
             'counts' => [
+                // all accounts of every role, active or not
+                'users' => array_sum($roleCounts),
+                'staff' => $roleCounts[User::ROLE_STAFF],
+                'active_staff' => $userRepository->countActiveStaff(),
+                // the records staff create and manage (/staff/maintenance)
+                'records' => $maintenanceRecordRepository->count([]),
+                'open_records' => $maintenanceRecordRepository->count(['status' => [MaintenanceRecord::STATUS_SCHEDULED, MaintenanceRecord::STATUS_IN_PROGRESS]]),
                 'vehicles' => array_sum($categoryCounts),
                 'customers' => $userRepository->countActiveCustomers(),
                 'available' => $vehicleRepository->countActiveByStatus('available'),

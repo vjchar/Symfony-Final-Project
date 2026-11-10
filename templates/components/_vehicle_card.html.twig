@@ -6,7 +6,7 @@
 {% set detail_url = path('app_vehicle_show', {slug: vehicle.slug}) %}
 {% set rating = compact ? null : vehicle_rating(vehicle) %}
 <article class="vehicle-card{{ compact ? ' vehicle-card--compact' }}">
-    {% if app.user and not app.user.admin %}
+    {% if app.user and app.user.customer %}
         {% set favorite = is_favorite(vehicle) %}
         <form class="favorite-form" method="post" action="{{ path('app_favorite_toggle', {slug: vehicle.slug}) }}">
             <input type="hidden" name="_token" value="{{ csrf_token('favorite') }}">

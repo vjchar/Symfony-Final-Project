@@ -6,6 +6,7 @@ use App\Entity\Vehicle;
 use App\Form\VehicleType;
 use App\Repository\VehicleRepository;
 use App\Service\AuditLogger;
+use App\Service\ReferenceGuard;
 use App\Service\VehicleImageStorage;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -68,5 +69,34 @@ final class VehicleController extends AbstractController
             'editing' => $editing,
             'form' => $form,
         ]);
+    }
+
+    /**
+     * The list's Delete button asks for confirmation (data-confirm) before
+     * posting here. A vehicle with bookings, saved bookings, reviews or
+     * maintenance history is kept, and should be deactivated instead.
+     */
+    #[Route('/admin/vehicles/{id}/delete', name: 'app_admin_vehicles_delete', requirements: ['id' => '\d+'], methods: ['POST'])]
+    public function delete(
+        Request $request,
+        Vehicle $vehicle,
+        EntityManagerInterface $entityManager,
+        ReferenceGuard $references,
+        AuditLogger $auditLogger,
+    ): Response {
+        if (!$this->isCsrfTokenValid('delete-vehicle-'.$vehicle->getId(), $request->getPayload()->getString('_token'))) {
+            $this->addFlash('danger', 'Your session expired. Refresh the page and try again.');
+        } elseif ($references->isReferenced($vehicle)) {
+            $this->addFlash('danger', $vehicle->getName().' has bookings, saved bookings, reviews or maintenance records, so it cannot be deleted. Mark it inactive instead.');
+        } else {
+            $id = $vehicle->getId();
+            $name = $vehicle->getName();
+            $entityManager->remove($vehicle);
+            $entityManager->flush();
+            $auditLogger->log('vehicle_deleted', 'vehicle', $id, ['name' => $name]);
+            $this->addFlash('success', 'Vehicle '.$name.' was deleted.');
+        }
+
+        return $this->redirectToRoute('app_admin_vehicles', [], Response::HTTP_SEE_OTHER);
     }
 }

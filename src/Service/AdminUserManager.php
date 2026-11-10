@@ -5,7 +5,6 @@ namespace App\Service;
 use App\Entity\User;
 use App\Repository\UserRepository;
 use Doctrine\ORM\EntityManagerInterface;
-use Doctrine\ORM\Mapping\ClassMetadata;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 
 /**
@@ -20,6 +19,7 @@ final class AdminUserManager
         private readonly UserRepository $userRepository,
         private readonly UserPasswordHasherInterface $passwordHasher,
         private readonly AuditLogger $auditLogger,
+        private readonly ReferenceGuard $references,
     ) {
     }
 
@@ -82,45 +82,9 @@ final class AdminUserManager
             throw new \DomainException('At least one active administrator must remain.');
         }
 
-        if ($this->hasHistory($target)) {
+        // bookings, payments, reviews, inspections and maintenance keep their author
+        if ($this->references->isReferenced($target)) {
             throw new \DomainException('This account has bookings, payments, reviews or service records, so it cannot be deleted. Set it to inactive instead.');
         }
-    }
-
-    /**
-     * Rows that point at the account without ON DELETE CASCADE / SET NULL are
-     * business records (bookings, payments, reviews, inspections, maintenance)
-     * that must keep their author, so they block deletion. Read from the
-     * mappings so a new relation is covered without changing this class.
-     */
-    private function hasHistory(User $user): bool
-    {
-        /** @var ClassMetadata<object> $metadata */
-        foreach ($this->entityManager->getMetadataFactory()->getAllMetadata() as $metadata) {
-            foreach ($metadata->getAssociationMappings() as $field => $mapping) {
-                if (User::class !== $mapping->targetEntity || !$mapping->isToOneOwningSide()) {
-                    continue;
-                }
-
-                $onDelete = strtoupper((string) ($mapping->joinColumns[0]->onDelete ?? ''));
-                if (\in_array($onDelete, ['CASCADE', 'SET NULL'], true)) {
-                    continue;
-                }
-
-                $count = (int) $this->entityManager->createQueryBuilder()
-                    ->select('COUNT(e)')
-                    ->from($metadata->getName(), 'e')
-                    ->where(\sprintf('e.%s = :user', $field))
-                    ->setParameter('user', $user)
-                    ->getQuery()
-                    ->getSingleScalarResult();
-
-                if ($count > 0) {
-                    return true;
-                }
-            }
-        }
-
-        return false;
     }
 }

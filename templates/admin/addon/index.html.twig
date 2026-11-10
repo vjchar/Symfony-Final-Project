@@ -47,7 +47,16 @@
                                     <span class="status-badge status-badge--{{ addon.active ? 'success' : 'danger' }}">{{ addon.active ? 'Active' : 'Inactive' }}</span>
                                 </td>
                                 <td>
-                                    <a class="btn btn-outline btn-sm" href="{{ path('app_admin_addons', {edit: addon.id}) }}">Edit</a>
+                                    <div class="admin-row-actions">
+                                        <a class="btn btn-outline btn-sm" href="{{ path('app_admin_addons', {edit: addon.id}) }}">Edit</a>
+                                        <form
+                                            method="post"
+                                            action="{{ path('app_admin_addons_delete', {id: addon.id}) }}"
+                                            data-confirm="Delete the {{ addon.name }} add-on? This action cannot be undone.">
+                                            <input type="hidden" name="_token" value="{{ csrf_token('delete-addon-' ~ addon.id) }}">
+                                            <button class="btn btn-outline-danger btn-sm" type="submit" aria-label="Delete {{ addon.name }}">Delete</button>
+                                        </form>
+                                    </div>
                                 </td>
                             </tr>
                         {% endfor %}

@@ -6,6 +6,7 @@ use App\Entity\Addon;
 use App\Form\AddonType;
 use App\Repository\AddonRepository;
 use App\Service\AuditLogger;
+use App\Service\ReferenceGuard;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -50,5 +51,34 @@ final class AddonController extends AbstractController
             'editing' => $editing,
             'form' => $form,
         ]);
+    }
+
+    /**
+     * The list's Delete button asks for confirmation (data-confirm) before
+     * posting here. An add-on already on a booking or saved booking is kept
+     * so that booking's price breakdown survives; deactivate it instead.
+     */
+    #[Route('/admin/addons/{id}/delete', name: 'app_admin_addons_delete', requirements: ['id' => '\d+'], methods: ['POST'])]
+    public function delete(
+        Request $request,
+        Addon $addon,
+        EntityManagerInterface $entityManager,
+        ReferenceGuard $references,
+        AuditLogger $auditLogger,
+    ): Response {
+        if (!$this->isCsrfTokenValid('delete-addon-'.$addon->getId(), $request->getPayload()->getString('_token'))) {
+            $this->addFlash('danger', 'Your session expired. Refresh the page and try again.');
+        } elseif ($references->isReferenced($addon)) {
+            $this->addFlash('danger', $addon->getName().' is on existing bookings, so it cannot be deleted. Mark it inactive instead.');
+        } else {
+            $id = $addon->getId();
+            $name = $addon->getName();
+            $entityManager->remove($addon);
+            $entityManager->flush();
+            $auditLogger->log('addon_deleted', 'addon', $id, ['key' => $addon->getAddonKey()]);
+            $this->addFlash('success', 'Rental add-on '.$name.' was deleted.');
+        }
+
+        return $this->redirectToRoute('app_admin_addons', [], Response::HTTP_SEE_OTHER);
     }
 }

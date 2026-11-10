@@ -57,11 +57,20 @@
                                         </span>
                                     </td>
                                     <td>
-                                        <a
-                                            class="btn btn-outline btn-sm"
-                                            href="{{ path('app_admin_vehicles', {edit: item.id, page: page}) }}">
-                                            Edit
-                                        </a>
+                                        <div class="admin-row-actions">
+                                            <a
+                                                class="btn btn-outline btn-sm"
+                                                href="{{ path('app_admin_vehicles', {edit: item.id, page: page}) }}">
+                                                Edit
+                                            </a>
+                                            <form
+                                                method="post"
+                                                action="{{ path('app_admin_vehicles_delete', {id: item.id}) }}"
+                                                data-confirm="Delete {{ item.name }}? This action cannot be undone.">
+                                                <input type="hidden" name="_token" value="{{ csrf_token('delete-vehicle-' ~ item.id) }}">
+                                                <button class="btn btn-outline-danger btn-sm" type="submit" aria-label="Delete {{ item.name }}">Delete</button>
+                                            </form>
+                                        </div>
                                     </td>
                                 </tr>
                             {% endfor %}

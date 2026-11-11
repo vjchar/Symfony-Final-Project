@@ -11,6 +11,7 @@ final readonly class SweepResult
         public int $expiredBookings,
         public int $overdueRentals,
         public int $missedPickups,
+        public int $documentsPurged = 0,
     ) {
     }
 }

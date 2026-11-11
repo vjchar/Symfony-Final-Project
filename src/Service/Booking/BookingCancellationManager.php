@@ -9,6 +9,7 @@ use App\Entity\User;
 use App\Repository\BookingCancellationRequestRepository;
 use App\Repository\BookingModificationRequestRepository;
 use App\Repository\PaymentRefundRepository;
+use App\Repository\PromoRepository;
 use App\Service\AuditLogger;
 use App\Service\NotificationCenter;
 use App\Service\Payment\PaymentLedger;
@@ -41,6 +42,7 @@ final class BookingCancellationManager
         private readonly RefundManager $refundManager,
         private readonly NotificationCenter $notifications,
         private readonly VehicleStatusSync $vehicles,
+        private readonly PromoRepository $promos,
     ) {
     }
 
@@ -118,6 +120,7 @@ final class BookingCancellationManager
             $reference = $booking->getReference();
             if (BookingCancellationRequest::STATUS_APPROVED === $decision) {
                 $booking->cancel();
+                $this->promos->releaseUse($booking->getPromoCode());
                 $this->entityManager->flush();
                 $this->vehicles->sync($booking->getVehicle());
                 $this->refundManager->allocate($booking, $estimate->refundable, PaymentRefund::TYPE_CANCELLATION, 'Approved cancellation for booking '.$reference, $admin, cancellation: $cancellation);

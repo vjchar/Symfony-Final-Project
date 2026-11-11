@@ -250,8 +250,11 @@ final class RentalAdjustmentManager
      */
     public function applyPendingEarlyReturnAtCheckIn(Booking $booking, User $admin): void
     {
-        $adjustment = $this->adjustments->findUnresolvedFor($booking);
-        if (null === $adjustment || $adjustment->isExtension() || !$adjustment->isPending()) {
+        $adjustment = $this->adjustments->findOneBy(
+            ['booking' => $booking, 'requestType' => RentalAdjustmentRequest::TYPE_EARLY_RETURN, 'status' => RentalAdjustmentRequest::STATUS_PENDING],
+            ['createdAt' => 'DESC', 'id' => 'DESC'],
+        );
+        if (null === $adjustment) {
             return;
         }
         // billed from pickup, so a vehicle back before pickup still costs one day

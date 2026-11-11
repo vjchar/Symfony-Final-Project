@@ -51,6 +51,17 @@ class ContactMessage
     #[ORM\Column(length: 20, options: ['default' => 'new'])]
     private string $status = 'new';
 
+    // the last reply the rental team emailed from the inbox
+    #[ORM\Column(type: Types::TEXT, nullable: true)]
+    private ?string $reply = null;
+
+    #[ORM\Column(nullable: true)]
+    private ?\DateTimeImmutable $repliedAt = null;
+
+    #[ORM\ManyToOne]
+    #[ORM\JoinColumn(name: 'replied_by', onDelete: 'SET NULL')]
+    private ?User $repliedBy = null;
+
     #[ORM\Column]
     private \DateTimeImmutable $createdAt;
 
@@ -67,6 +78,34 @@ class ContactMessage
     public function touch(): void
     {
         $this->updatedAt = new \DateTimeImmutable();
+    }
+
+    /**
+     * The reply was emailed: a new enquiry counts as read from now on.
+     */
+    public function recordReply(string $reply, User $admin): void
+    {
+        $this->reply = $reply;
+        $this->repliedAt = new \DateTimeImmutable();
+        $this->repliedBy = $admin;
+        if ('new' === $this->status) {
+            $this->status = 'read';
+        }
+    }
+
+    public function getReply(): ?string
+    {
+        return $this->reply;
+    }
+
+    public function getRepliedAt(): ?\DateTimeImmutable
+    {
+        return $this->repliedAt;
+    }
+
+    public function getRepliedBy(): ?User
+    {
+        return $this->repliedBy;
     }
 
     public function getId(): ?int

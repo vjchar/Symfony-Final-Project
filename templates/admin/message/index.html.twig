@@ -29,9 +29,18 @@
                             <small>{{ message.createdAt|date('M j, Y g:i A') }}</small>
                         </div>
                         <a href="mailto:{{ message.email }}?subject={{ ('Re: ' ~ message.subject)|url_encode }}" class="btn btn-outline btn-sm">
-                            <i class="bi bi-reply"></i> Reply by email</a>
+                            <i class="bi bi-envelope"></i> Open in email app</a>
                     </header>
                     <p>{{ message.message|nl2br }}</p>
+                    {% if message.repliedAt %}
+                        <div class="review-note mb-3"><strong>Replied {{ message.repliedAt|date('M j, Y g:i A') }}{{ message.repliedBy ? ' by ' ~ message.repliedBy.name }}</strong><p>{{ message.reply|nl2br }}</p></div>
+                    {% endif %}
+                    <form method="post" class="mb-3 contact-reply-form" action="{{ path('app_admin_message_reply', {id: message.id, status: filter}) }}">
+                        <input type="hidden" name="_token" value="{{ csrf_token('contact-reply-' ~ message.id) }}">
+                        <label class="form-label" for="reply-{{ message.id }}">{{ message.repliedAt ? 'Send another reply' : 'Reply to ' ~ message.name }}</label>
+                        <textarea class="form-control mb-2" id="reply-{{ message.id }}" name="reply" rows="3" minlength="5" maxlength="5000" required></textarea>
+                        <button class="btn btn-outline btn-sm" type="submit"><i class="bi bi-reply" aria-hidden="true"></i> Email Reply</button>
+                    </form>
                     <footer>
                         <span>
                             <strong>{{ message.name }}</strong>
@@ -57,6 +66,7 @@
                     <p>The selected enquiry queue is currently clear.</p>
                 </div>
             {% endfor %}
+            {{ include('admin/_pagination.html.twig', {page: messages}) }}
         </div>
     </div>
 </section>

@@ -5,6 +5,11 @@ framework:
     # Note that the session will be started ONLY if you read or write from it.
     session: true
 
+    # Behind a load balancer or reverse proxy, set SYMFONY_TRUSTED_PROXIES (see .env)
+    # so the client IP, HTTPS and host are read from its forwarded headers.
+    trusted_proxies: '%env(default::SYMFONY_TRUSTED_PROXIES)%'
+    trusted_headers: ['x-forwarded-for', 'x-forwarded-host', 'x-forwarded-proto', 'x-forwarded-port', 'x-forwarded-prefix']
+
     #esi: true
     #fragments: true
 

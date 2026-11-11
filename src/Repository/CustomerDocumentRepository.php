@@ -4,6 +4,7 @@ namespace App\Repository;
 
 use App\Entity\CustomerDocument;
 use App\Entity\User;
+use App\Pagination\Page;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -20,9 +21,9 @@ class CustomerDocumentRepository extends ServiceEntityRepository
     /**
      * v15 admin_documents(): pending first, then the most recently updated.
      *
-     * @return list<CustomerDocument>
+     * @return Page<CustomerDocument>
      */
-    public function findForAdmin(string $status = 'all'): array
+    public function findForAdmin(string $status = 'all', int $page = 1): Page
     {
         $qb = $this->createQueryBuilder('d')
             ->addSelect('u')
@@ -35,7 +36,7 @@ class CustomerDocumentRepository extends ServiceEntityRepository
             $qb->where('d.status = :status')->setParameter('status', $status);
         }
 
-        return $qb->getQuery()->getResult();
+        return Page::of($qb, $page);
     }
 
     /**

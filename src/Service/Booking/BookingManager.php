@@ -89,8 +89,9 @@ final class BookingManager
         $this->entityManager->persist($booking);
         $this->entityManager->flush();
 
-        if (null !== $quote->promo) {
-            $this->promos->recordUse($quote->promo);
+        // claimed in the same transaction: if the last use went to someone else, the booking is not saved
+        if (null !== $quote->promo && !$this->promos->recordUse($quote->promo)) {
+            throw new \DomainException('The promotion code is invalid, inactive, expired, or fully used.');
         }
 
         return $booking;

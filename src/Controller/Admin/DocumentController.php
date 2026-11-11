@@ -23,12 +23,12 @@ final class DocumentController extends AbstractController
     public const FILTERS = ['all', CustomerDocument::STATUS_PENDING, CustomerDocument::STATUS_APPROVED, CustomerDocument::STATUS_REJECTED];
 
     #[Route('/admin/documents', name: 'app_admin_documents', methods: ['GET'])]
-    public function index(CustomerDocumentRepository $documents, #[MapQueryParameter] string $status = 'all'): Response
+    public function index(CustomerDocumentRepository $documents, #[MapQueryParameter] string $status = 'all', #[MapQueryParameter] int $page = 1): Response
     {
         $filter = \in_array($status, self::FILTERS, true) ? $status : 'all';
 
         return $this->render('admin/document/index.html.twig', [
-            'documents' => $documents->findForAdmin($filter),
+            'documents' => $documents->findForAdmin($filter, $page),
             'filter' => $filter,
             'filters' => self::FILTERS,
         ]);

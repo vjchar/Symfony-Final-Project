@@ -68,6 +68,7 @@
                     {% endfor %}
                 </tbody>
             </table>
+            {{ include('admin/_pagination.html.twig', {page: documents}) }}
         </div>
     </div>
 </section>

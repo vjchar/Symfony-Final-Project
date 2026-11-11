@@ -35,17 +35,41 @@ class PromoRepository extends ServiceEntityRepository
     }
 
     /**
-     * Counts one redemption in the database, so concurrent bookings can't lose an update.
+     * Counts one redemption in the database, only while uses are left, so
+     * concurrent bookings can neither lose an update nor go past the limit.
+     *
+     * @return bool false when the last use was already taken
      */
-    public function recordUse(Promo $promo): void
+    public function recordUse(Promo $promo): bool
     {
-        $this->createQueryBuilder('p')
+        return 1 === $this->createQueryBuilder('p')
             ->update()
             ->set('p.usedCount', 'p.usedCount + 1')
             ->set('p.updatedAt', ':now')
             ->where('p = :promo')
+            ->andWhere('p.maxUses IS NULL OR p.usedCount < p.maxUses')
             ->setParameter('now', new \DateTimeImmutable())
             ->setParameter('promo', $promo)
+            ->getQuery()
+            ->execute();
+    }
+
+    /**
+     * Gives back the use of a booking that was cancelled, rejected or expired before pickup.
+     */
+    public function releaseUse(string $code): void
+    {
+        if ('' === trim($code)) {
+            return;
+        }
+        $this->createQueryBuilder('p')
+            ->update()
+            ->set('p.usedCount', 'p.usedCount - 1')
+            ->set('p.updatedAt', ':now')
+            ->where('UPPER(p.code) = UPPER(:code)')
+            ->andWhere('p.usedCount > 0')
+            ->setParameter('now', new \DateTimeImmutable())
+            ->setParameter('code', trim($code))
             ->getQuery()
             ->execute();
     }

@@ -96,6 +96,7 @@
                     {% endfor %}
                 </tbody>
             </table>
+            {{ include('admin/_pagination.html.twig', {page: payments}) }}
         </div>
     </div>
     <div class="container">
@@ -170,6 +171,7 @@
                     {% endfor %}
                     </tbody>
                 </table>
+                {{ include('admin/_pagination.html.twig', {page: refunds, param: 'refund_page', fragment: '#refund-history'}) }}
             </div>
         </article>
     </div>

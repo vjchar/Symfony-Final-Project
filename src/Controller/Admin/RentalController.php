@@ -12,6 +12,7 @@ use App\Service\Booking\RentalAdjustmentManager;
 use App\Service\Payment\PaymentLedger;
 use App\Service\Rental\InspectionReading;
 use App\Service\Rental\LateReturnPolicy;
+use App\Service\Rental\ReturnChargeCalculator;
 use App\Service\Rental\RentalDesk;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\InputBag;
@@ -45,6 +46,7 @@ final class RentalController extends AbstractController
         PaymentRefundRepository $refunds,
         PaymentLedger $ledger,
         LateReturnPolicy $lateReturns,
+        ReturnChargeCalculator $returnCharges,
         #[MapQueryParameter] string $reference = '',
     ): Response {
         $selected = '' !== $reference ? $this->bookings->findOneBy(['reference' => $reference]) : null;
@@ -57,12 +59,24 @@ final class RentalController extends AbstractController
             'returned' => $selected->getReturnedAt(),
             default => null,
         };
+        $selectedInspections = null === $selected ? [] : $inspections->findForBooking($selected);
+        // at settlement: the mileage and fuel charges the two inspections show
+        $out = $selectedInspections['checkout'] ?? null;
+        $in = $selectedInspections['checkin'] ?? null;
+        $mileageFee = null !== $out && null !== $in ? $returnCharges->mileageFee($selected, $out->getOdometer(), $in->getOdometer()) : 0;
+        $fuelFee = null !== $out && null !== $in ? $returnCharges->fuelFee($out->getFuelPercent(), $in->getFuelPercent()) : 0;
 
         return $this->render('admin/rental/index.html.twig', [
             'adjustments' => $adjustments->findOpen(),
             'rentals' => $this->bookings->findForRentalDesk(),
             'selected' => $selected,
-            'inspections' => null === $selected ? [] : $inspections->findForBooking($selected),
+            'inspections' => $selectedInspections,
+            'km_allowance' => null === $selected ? 0 : $returnCharges->kmAllowance($selected),
+            'excess_km_rate' => $returnCharges->excessKmRate,
+            'refuel_rate' => $returnCharges->refuelRate,
+            'excess_km' => null !== $out && null !== $in ? $returnCharges->excessKm($selected, $out->getOdometer(), $in->getOdometer()) : 0,
+            'mileage_fee' => $mileageFee,
+            'fuel_fee' => $fuelFee,
             'selected_adjustments' => null === $selected ? [] : $adjustments->findForBooking($selected),
             'settlement' => $selected?->getSettlement(),
             'preview' => null === $selected ? null : $this->desk->preview($selected),

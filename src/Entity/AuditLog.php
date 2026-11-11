@@ -85,4 +85,9 @@ class AuditLog
     {
         return $this->metadata ?? [];
     }
+
+    public function getCreatedAt(): \DateTimeImmutable
+    {
+        return $this->createdAt;
+    }
 }

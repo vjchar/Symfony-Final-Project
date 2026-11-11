@@ -37,17 +37,19 @@ final class PaymentController extends AbstractController
         #[MapQueryParameter(name: 'refund_status')] string $refundStatus = 'all',
         #[MapQueryParameter(name: 'refund_type')] string $refundType = 'all',
         #[MapQueryParameter(name: 'refund_q')] string $refundQuery = '',
+        #[MapQueryParameter] int $page = 1,
+        #[MapQueryParameter(name: 'refund_page')] int $refundPage = 1,
     ): Response {
         $filter = \in_array($status, self::FILTERS, true) ? $status : 'all';
         $refundStatus = \in_array($refundStatus, PaymentRefund::STATUSES, true) ? $refundStatus : 'all';
         $refundType = \array_key_exists($refundType, PaymentRefund::TYPE_LABELS) ? $refundType : 'all';
         $refundQuery = trim($refundQuery);
 
-        $list = $payments->findForAdmin($filter);
-        $refundList = $refunds->findForAdmin($refundStatus, $refundType, $refundQuery);
+        $list = $payments->findForAdmin($filter, $page);
+        $refundList = $refunds->findForAdmin($refundStatus, $refundType, $refundQuery, $refundPage);
         // v15 refundable_balance_for_payment(), for the payments and refunds on the page
         $refundable = [];
-        foreach ([...$list, ...array_map(static fn (PaymentRefund $refund): Payment => $refund->getPayment(), $refundList)] as $payment) {
+        foreach ([...$list->items, ...array_map(static fn (PaymentRefund $refund): Payment => $refund->getPayment(), $refundList->items)] as $payment) {
             $refundable[$payment->getId()] ??= $refunds->refundableBalance($payment);
         }
 

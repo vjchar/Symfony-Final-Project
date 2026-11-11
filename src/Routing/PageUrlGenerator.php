@@ -60,6 +60,7 @@ final class PageUrlGenerator
         'admin-reviews' => 'app_admin_reviews',
         'admin-calendar' => 'app_admin_calendar',
         'admin-reports' => 'app_admin_reports',
+        'admin-audit' => 'app_admin_audit',
         'health' => 'app_admin_health',
         'admin-login' => 'app_admin_login',
         'staff' => 'app_staff_maintenance',

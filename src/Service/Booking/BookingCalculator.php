@@ -6,6 +6,7 @@ use App\Form\Model\BookingRequest;
 use App\Repository\AddonRepository;
 use App\Repository\PromoRepository;
 use App\Repository\VehicleRepository;
+use Symfony\Component\DependencyInjection\Attribute\Autowire;
 
 /**
  * v15 parse_booking_input(): validates raw booking input and prices it on the
@@ -27,6 +28,8 @@ final class BookingCalculator
         private readonly VehicleRepository $vehicles,
         private readonly AddonRepository $addons,
         private readonly PromoRepository $promos,
+        // how far ahead a rental may start (BOOKING_MAX_ADVANCE_MONTHS)
+        #[Autowire('%env(int:BOOKING_MAX_ADVANCE_MONTHS)%')] private readonly int $maxAdvanceMonths = 12,
     ) {
     }
 
@@ -47,6 +50,9 @@ final class BookingCalculator
         }
         if ($pickupAt <= new \DateTimeImmutable('+1 hour')) {
             throw new \InvalidArgumentException('Pick-up must be at least one hour from now.');
+        }
+        if ($pickupAt > new \DateTimeImmutable(sprintf('+%d months', $this->maxAdvanceMonths))) {
+            throw new \InvalidArgumentException(sprintf('Bookings can start up to %d months ahead. Contact support for reservations further out.', $this->maxAdvanceMonths));
         }
         if ($returnAt <= $pickupAt) {
             throw new \InvalidArgumentException('Return must be later than pick-up.');

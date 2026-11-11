@@ -7,7 +7,7 @@ use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Style\SymfonyStyle;
 
-#[AsCommand(name: 'app:rentals:sweep', description: 'Expire unpaid bookings and flag overdue rentals and uncollected pickups')]
+#[AsCommand(name: 'app:rentals:sweep', description: 'Expire unpaid bookings, flag overdue rentals and uncollected pickups, and delete expired ID documents')]
 final class SweepRentalsCommand
 {
     public function __construct(
@@ -25,10 +25,11 @@ final class SweepRentalsCommand
         }
 
         $io->success(sprintf(
-            '%d unpaid booking(s) expired, %d rental(s) flagged overdue, %d uncollected pickup(s) flagged.',
+            '%d unpaid booking(s) expired, %d rental(s) flagged overdue, %d uncollected pickup(s) flagged, %d expired ID document(s) deleted.',
             $result->expiredBookings,
             $result->overdueRentals,
             $result->missedPickups,
+            $result->documentsPurged,
         ));
 
         return Command::SUCCESS;

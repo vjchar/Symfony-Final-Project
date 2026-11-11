@@ -46,6 +46,24 @@ final class VehicleFilter
     public string $status = 'All';
     public int $maxPrice = 0;
     public string $sort = 'featured';
+    // rental dates: only vehicles free for the whole period are listed
+    public ?\DateTimeImmutable $from = null;
+    public ?\DateTimeImmutable $to = null;
+
+    /**
+     * The searched period, from the start of the first day to the end of the
+     * last, or null unless both dates are set in order.
+     *
+     * @return array{\DateTimeImmutable, \DateTimeImmutable}|null
+     */
+    public function period(): ?array
+    {
+        if (null === $this->from || null === $this->to || $this->to < $this->from) {
+            return null;
+        }
+
+        return [$this->from->setTime(0, 0), $this->to->setTime(23, 59, 59)];
+    }
 
     /**
      * Active filters as query parameters, without defaults (v15 $activeFilterParameters).
@@ -64,6 +82,8 @@ final class VehicleFilter
             'status' => $this->status,
             'max_price' => $this->maxPrice,
             'sort' => $this->sort,
+            'from' => null === $this->period() ? '' : $this->from->format('Y-m-d'),
+            'to' => null === $this->period() ? '' : $this->to->format('Y-m-d'),
         ], static fn (string|int $value): bool => !\in_array($value, ['', 'All', 0, 'featured'], true));
     }
 }

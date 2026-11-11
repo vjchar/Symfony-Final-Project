@@ -6,6 +6,7 @@ use App\Entity\Vehicle;
 use App\Form\Model\VehicleFilter;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
+use Symfony\Component\Form\Extension\Core\Type\DateType;
 use Symfony\Component\Form\Extension\Core\Type\SearchType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
@@ -68,6 +69,20 @@ class VehicleFilterType extends AbstractType
                 'label' => 'Sort results',
                 'choices' => VehicleFilter::SORT_OPTIONS,
                 'empty_data' => 'featured',
+            ])
+            ->add('from', DateType::class, [
+                'label' => 'Pick-up date',
+                'widget' => 'single_text',
+                'input' => 'datetime_immutable',
+                'required' => false,
+                'attr' => ['min' => (new \DateTimeImmutable('today'))->format('Y-m-d')],
+            ])
+            ->add('to', DateType::class, [
+                'label' => 'Return date',
+                'widget' => 'single_text',
+                'input' => 'datetime_immutable',
+                'required' => false,
+                'attr' => ['min' => (new \DateTimeImmutable('today'))->format('Y-m-d')],
             ])
         ;
     }

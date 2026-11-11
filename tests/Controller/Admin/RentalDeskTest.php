@@ -193,7 +193,8 @@ final class RentalDeskTest extends WebTestCase
             $statuses[$adjustment->getRequestType()] = $adjustment->getStatus();
         }
         ksort($statuses);
-        self::assertSame([RentalAdjustmentRequest::TYPE_EARLY_RETURN => 'completed', RentalAdjustmentRequest::TYPE_EXTENSION => 'cancelled'], $statuses);
+        // the vehicle is back before the early return was reviewed, so it is applied; the extension no longer applies
+        self::assertSame([RentalAdjustmentRequest::TYPE_EARLY_RETURN => 'activated', RentalAdjustmentRequest::TYPE_EXTENSION => 'cancelled'], $statuses);
     }
 
     public function testDeskActionsFollowTheBookingStatus(): void

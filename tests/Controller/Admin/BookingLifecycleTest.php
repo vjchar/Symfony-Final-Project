@@ -173,15 +173,20 @@ final class BookingLifecycleTest extends WebTestCase
         $this->client->request('GET', '/bookings/'.$booking->getReference());
         self::assertSelectorTextContains('main', 'Rental Overdue');
 
-        // check-in and settlement start from the late fee
+        // check-in and settlement start from the late fee, excess mileage and refuelling
         $this->client->loginUser($this->admin);
         $this->client->request('GET', '/admin/rentals?reference='.$booking->getReference());
         self::assertSelectorTextContains('#rental-queue', 'Overdue');
         self::assertInputValueSame('extra_charges', '12400');
-        $this->deskAction($booking, 'checkin', ['odometer' => '900', 'fuel_percent' => '90', 'body_condition' => 'good', 'extra_charges' => '13000']);
+        self::assertSelectorExists('form[data-controller="return-charges"][data-return-charges-km-allowance-value="600"][data-return-charges-km-rate-value="15"]');
+        // 700 km on a 600 km allowance (200 a day for 3 days), 15% less fuel
+        $this->deskAction($booking, 'checkin', ['odometer' => '1200', 'fuel_percent' => '85', 'body_condition' => 'good', 'extra_charges' => '16000']);
         $this->client->request('GET', '/admin/rentals?reference='.$booking->getReference());
         self::assertInputValueSame('late_charges', '12400');
-        self::assertInputValueSame('other_charges', '600');
+        self::assertInputValueSame('fuel_charges', '1000');
+        // what is left of the recorded ₱16,000: the ₱1,500 mileage and ₱1,100 of damage
+        self::assertInputValueSame('other_charges', '2600');
+        self::assertSelectorTextContains('.rental-settlement-form', '100 excess km: ₱1,500');
     }
 
     public function testMaintenanceAndDeactivationCannotStrandABooking(): void

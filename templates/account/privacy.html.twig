@@ -1,0 +1,53 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Privacy & My Data | VJ Car Rental{% endblock %}
+
+{% block body %}
+    <section class="page-hero page-hero--compact pattern-layer">
+        <div class="container">
+            <span class="section-kicker">Account settings</span>
+            <h1>Privacy &amp; my data</h1>
+            <p>Download what we keep about you, or close your account.</p>
+        </div>
+    </section>
+    <section class="content-section">
+        <div class="container">
+            <div class="row g-4 justify-content-center">
+                <div class="col-lg-8">
+                    <article class="form mb-4" id="data-export">
+                        <div class="form-heading">
+                            <span class="section-kicker">Your data</span>
+                            <h2>Download a copy</h2>
+                            <p>A JSON file with your profile, documents on file, bookings, payments, refunds and reviews. Uploaded ID scans are not included.</p>
+                        </div>
+                        <a class="btn btn-outline" href="{{ path('app_account_privacy_export') }}"><i class="bi bi-download" aria-hidden="true"></i> Download My Data</a>
+                        <p class="display-note mt-3">ID documents are deleted automatically {{ retention }} after your last rental ends. You can upload them again before your next booking.</p>
+                    </article>
+
+                    {{ form_start(form, {attr: {class: 'form', id: 'close-account', novalidate: 'novalidate'}}) }}
+                        <div class="form-heading">
+                            <span class="section-kicker">Close account</span>
+                            <h2>Close my account</h2>
+                            <p>Your ID documents, favorites, saved bookings and notifications are deleted. Completed bookings and payments are kept for our business records, without your name or contact details.</p>
+                        </div>
+                        {% if blocked %}
+                            <div class="alert alert-warning">{{ blocked }}</div>
+                        {% else %}
+                            {{ include('registration/_errors.html.twig') }}
+                            <div class="mb-3">
+                                {{ form_label(form.password, null, {label_attr: {class: 'form-label'}}) }}
+                                {{ form_widget(form.password) }}
+                            </div>
+                            <div class="form-check mb-3">
+                                {{ form_widget(form.confirm) }}
+                                {{ form_label(form.confirm) }}
+                            </div>
+                            {{ form_rest(form) }}
+                            <button class="btn btn-danger" type="submit">Close My Account</button>
+                        {% endif %}
+                    {{ form_end(form, {render_rest: not blocked}) }}
+                </div>
+            </div>
+        </div>
+    </section>
+{% endblock %}

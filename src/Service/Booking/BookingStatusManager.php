@@ -9,6 +9,7 @@ use App\Repository\BookingCancellationRequestRepository;
 use App\Repository\BookingModificationRequestRepository;
 use App\Repository\PaymentRefundRepository;
 use App\Repository\PaymentRepository;
+use App\Repository\PromoRepository;
 use App\Service\AuditLogger;
 use App\Service\NotificationCenter;
 use App\Service\Payment\PaymentLedger;
@@ -40,6 +41,7 @@ final class BookingStatusManager
         private readonly RefundManager $refundManager,
         private readonly BookingModificationRequestRepository $modifications,
         private readonly BookingCancellationRequestRepository $cancellations,
+        private readonly PromoRepository $promos,
         private readonly VehicleStatusSync $vehicles,
         private readonly NotificationCenter $notifications,
         private readonly AuditLogger $auditLogger,
@@ -128,6 +130,7 @@ final class BookingStatusManager
 
             $booking->cancel('Expired: no payment within the booking hold.');
             $this->closeOpenRequests($booking, 'Booking expired before payment.', null);
+            $this->promos->releaseUse($booking->getPromoCode());
             $this->entityManager->flush();
             $this->vehicles->sync($booking->getVehicle());
             $this->notifications->notifyUser($booking->getUser(), 'Booking Expired', sprintf(
@@ -161,6 +164,7 @@ final class BookingStatusManager
     private function close(Booking $booking, User $admin, string $requestNote, string $title, string $message): int
     {
         $this->closeOpenRequests($booking, $requestNote, $admin);
+        $this->promos->releaseUse($booking->getPromoCode());
         $this->entityManager->flush();
         $this->vehicles->sync($booking->getVehicle());
 

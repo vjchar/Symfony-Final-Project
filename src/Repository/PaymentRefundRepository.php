@@ -6,6 +6,7 @@ use App\Entity\Booking;
 use App\Entity\Payment;
 use App\Entity\PaymentRefund;
 use App\Entity\User;
+use App\Pagination\Page;
 use App\Service\Payment\RefundSummary;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
@@ -124,9 +125,9 @@ class PaymentRefundRepository extends ServiceEntityRepository
      * v15 admin_refunds(): open refunds first, then newest, filtered by status,
      * type and a search over booking, customer, vehicle and refund reference.
      *
-     * @return list<PaymentRefund>
+     * @return Page<PaymentRefund>
      */
-    public function findForAdmin(string $status = 'all', string $type = 'all', string $query = ''): array
+    public function findForAdmin(string $status = 'all', string $type = 'all', string $query = '', int $page = 1): Page
     {
         $qb = $this->createQueryBuilder('r')
             ->addSelect('p', 'b', 'u', 'v')
@@ -149,7 +150,7 @@ class PaymentRefundRepository extends ServiceEntityRepository
                 ->setParameter('term', '%'.addcslashes($query, '%_').'%');
         }
 
-        return $qb->getQuery()->getResult();
+        return Page::of($qb, $page);
     }
 
     /**

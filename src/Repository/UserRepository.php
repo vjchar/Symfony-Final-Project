@@ -3,6 +3,7 @@
 namespace App\Repository;
 
 use App\Entity\User;
+use App\Pagination\Page;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 use Symfony\Component\Security\Core\Exception\UnsupportedUserException;
@@ -35,9 +36,9 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
     /**
      * v15 admin_users(): newest first, optionally matching name or email.
      *
-     * @return User[]
+     * @return Page<User>
      */
-    public function search(string $query = ''): array
+    public function search(string $query = '', int $page = 1): Page
     {
         $qb = $this->createQueryBuilder('u')->orderBy('u.createdAt', 'DESC')->addOrderBy('u.id', 'DESC');
 
@@ -46,7 +47,7 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
                 ->setParameter('query', '%'.addcslashes(mb_strtolower($query), '%_').'%');
         }
 
-        return $qb->getQuery()->getResult();
+        return Page::of($qb, $page);
     }
 
     /**

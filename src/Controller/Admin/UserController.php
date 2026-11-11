@@ -127,10 +127,10 @@ final class UserController extends AbstractController
     }
 
     #[Route('/admin/users', name: 'app_admin_users', methods: ['GET'])]
-    public function index(UserRepository $userRepository, #[MapQueryParameter] string $q = ''): Response
+    public function index(UserRepository $userRepository, #[MapQueryParameter] string $q = '', #[MapQueryParameter] int $page = 1): Response
     {
         return $this->render('admin/user/index.html.twig', [
-            'users' => $userRepository->search($q),
+            'users' => $userRepository->search($q, $page),
             'query' => trim($q),
         ]);
     }

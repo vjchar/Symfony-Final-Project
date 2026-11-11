@@ -176,6 +176,10 @@ final class PaymentManager
         if ($electronic && null === $proof) {
             throw new \InvalidArgumentException('Upload your payment proof before submitting the payment.');
         }
+        // one bank or e-wallet transfer pays for one submission only (failed ones may be resubmitted)
+        if ($electronic && $this->payments->referenceInUse($method, $reference)) {
+            throw new \InvalidArgumentException('That transaction/reference number was already submitted. Enter the reference of a new payment, or contact us if this is a mistake.');
+        }
 
         $proofFilename = null === $proof
             ? ''

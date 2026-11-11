@@ -1,0 +1,18 @@
+{#
+    Pager for an App\Pagination\Page.
+    Variables: page (the Page), param (query parameter name, default "page"),
+    fragment (optional #anchor to return to).
+#}
+{% set param = param ?? 'page' %}
+{% if page.pageCount > 1 %}
+    {% set query = app.request.query.all %}
+    <nav class="d-flex flex-wrap align-items-center gap-2 mt-3 admin-pagination" aria-label="Pages">
+        <small>Page {{ page.page }} of {{ page.pageCount }} · {{ page.total|number_format }} total</small>
+        {% if page.page > 1 %}
+            <a class="btn btn-outline btn-sm" rel="prev" href="{{ path(app.request.attributes.get('_route'), query|merge({(param): page.page - 1})) }}{{ fragment ?? '' }}">← Previous</a>
+        {% endif %}
+        {% if page.page < page.pageCount %}
+            <a class="btn btn-outline btn-sm" rel="next" href="{{ path(app.request.attributes.get('_route'), query|merge({(param): page.page + 1})) }}{{ fragment ?? '' }}">Next →</a>
+        {% endif %}
+    </nav>
+{% endif %}

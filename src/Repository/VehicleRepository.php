@@ -2,6 +2,8 @@
 
 namespace App\Repository;
 
+use App\Entity\Booking;
+use App\Entity\MaintenanceRecord;
 use App\Entity\Vehicle;
 use App\Form\Model\VehicleFilter;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
@@ -45,6 +47,18 @@ class VehicleRepository extends ServiceEntityRepository
 
         if ($filter->maxPrice > 0) {
             $qb->andWhere('v.price <= :maxPrice')->setParameter('maxPrice', $filter->maxPrice);
+        }
+
+        // free for the whole period: bookable, no overlapping booking or maintenance (as BookingRepository::isVehicleAvailable)
+        if (null !== $period = $filter->period()) {
+            $qb->andWhere('v.availabilityStatus NOT IN (:offline)')
+                ->andWhere(sprintf('NOT EXISTS (SELECT b.id FROM %s b WHERE b.vehicle = v AND b.status IN (:blocking) AND b.pickupAt < :periodEnd AND b.returnAt > :periodStart)', Booking::class))
+                ->andWhere(sprintf('NOT EXISTS (SELECT m.id FROM %s m WHERE m.vehicle = v AND m.status IN (:servicing) AND m.startsAt < :periodEnd AND (m.endsAt IS NULL OR m.endsAt > :periodStart))', MaintenanceRecord::class))
+                ->setParameter('offline', ['maintenance', 'unavailable'])
+                ->setParameter('blocking', Booking::BLOCKING_STATUSES)
+                ->setParameter('servicing', [MaintenanceRecord::STATUS_SCHEDULED, MaintenanceRecord::STATUS_IN_PROGRESS])
+                ->setParameter('periodStart', $period[0])
+                ->setParameter('periodEnd', $period[1]);
         }
 
         match ($filter->sort) {

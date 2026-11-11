@@ -3,6 +3,7 @@
 namespace App\Service\Rental;
 
 use App\Repository\BookingRepository;
+use App\Service\AccountPrivacyManager;
 use App\Service\Booking\BookingStatusManager;
 use App\Service\NotificationCenter;
 use Doctrine\ORM\EntityManagerInterface;
@@ -15,7 +16,8 @@ use Symfony\Component\Lock\LockFactory;
  * - active rentals past their return (plus the grace period) are flagged
  *   overdue once, to the customer and the rental desk;
  * - confirmed or ready bookings still not collected an hour after pickup are
- *   flagged once to the rental desk, who decide whether to mark a no-show.
+ *   flagged once to the rental desk, who decide whether to mark a no-show;
+ * - ID documents past their retention period are deleted.
  * Only one sweep runs at a time.
  */
 final class RentalSweeper
@@ -29,6 +31,7 @@ final class RentalSweeper
         private readonly NotificationCenter $notifications,
         private readonly LateReturnPolicy $lateReturns,
         private readonly LockFactory $locks,
+        private readonly AccountPrivacyManager $privacy,
     ) {
     }
 
@@ -43,7 +46,7 @@ final class RentalSweeper
         }
 
         try {
-            return new SweepResult($this->expireUnpaid($now), $this->flagOverdue($now), $this->flagMissedPickups($now));
+            return new SweepResult($this->expireUnpaid($now), $this->flagOverdue($now), $this->flagMissedPickups($now), $this->privacy->purgeExpiredDocuments($now));
         } finally {
             $lock->release();
         }

@@ -89,6 +89,7 @@
                     {% endfor %}
                 </tbody>
             </table>
+            {{ include('admin/_pagination.html.twig', {page: users}) }}
         </div>
     </div>
 </section>

@@ -6,6 +6,7 @@ use App\Entity\Booking;
 use App\Entity\BookingModificationRequest;
 use App\Entity\Payment;
 use App\Entity\RentalAdjustmentRequest;
+use App\Pagination\Page;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -63,9 +64,9 @@ class PaymentRepository extends ServiceEntityRepository
     /**
      * v15 admin_payments(): pending first, then newest, optionally one status only.
      *
-     * @return list<Payment>
+     * @return Page<Payment>
      */
-    public function findForAdmin(string $status = 'all'): array
+    public function findForAdmin(string $status = 'all', int $page = 1): Page
     {
         $qb = $this->createQueryBuilder('p')
             ->addSelect('b', 'u', 'v')
@@ -80,7 +81,27 @@ class PaymentRepository extends ServiceEntityRepository
             $qb->where('p.status = :status')->setParameter('status', $status);
         }
 
-        return $qb->getQuery()->getResult();
+        return Page::of($qb, $page);
+    }
+
+    /**
+     * A transaction reference already used by a payment of the same method
+     * that is awaiting verification or verified (failed ones don't count).
+     */
+    public function referenceInUse(string $method, string $reference): bool
+    {
+        $reference = mb_strtoupper(preg_replace('/\s+/', '', $reference) ?? '');
+        if ('' === $reference) {
+            return false;
+        }
+
+        // DQL has no REPLACE(); compare without spaces and case in SQL
+        $table = $this->getClassMetadata()->getTableName();
+
+        return false !== $this->getEntityManager()->getConnection()->fetchOne(
+            sprintf("SELECT 1 FROM %s WHERE method = ? AND status IN (?, ?) AND UPPER(REPLACE(transaction_reference, ' ', '')) = ? LIMIT 1", $table),
+            [$method, Payment::STATUS_PENDING, Payment::STATUS_PAID, $reference],
+        );
     }
 
     public function sumPendingOfType(Booking $booking, string $type): int

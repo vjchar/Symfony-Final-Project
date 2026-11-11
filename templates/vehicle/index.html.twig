@@ -56,7 +56,7 @@
                     </div>
                 </label>
 
-                {% for field in ['category', 'brand', 'fuel', 'seats', 'transmission', 'status', 'max_price', 'sort'] %}
+                {% for field in ['from', 'to', 'category', 'brand', 'fuel', 'seats', 'transmission', 'status', 'max_price', 'sort'] %}
                     <label>
                         <span>{{ filter_form[field].vars.label }}</span>
                         {{ form_widget(filter_form[field]) }}

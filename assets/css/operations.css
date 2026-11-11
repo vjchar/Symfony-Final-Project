@@ -870,6 +870,9 @@
 .journey-next--secondary {
   border-left-color: var(--gray);
 }
+.journey-next--danger {
+  border-left-color: #dc3545;
+}
 .journey-next__icon {
   display: grid;
   width: 52px;

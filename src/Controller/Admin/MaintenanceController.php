@@ -7,6 +7,7 @@ use App\Entity\User;
 use App\Form\MaintenanceRecordType;
 use App\Repository\MaintenanceRecordRepository;
 use App\Service\AuditLogger;
+use App\Validator\NoBookingConflict;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -14,6 +15,7 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\CurrentUser;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
+use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 /**
  * v15 admin-maintenance.php: schedule service events and move them through
@@ -53,7 +55,7 @@ final class MaintenanceController extends AbstractController
     }
 
     #[Route('/admin/maintenance/{id}/status', name: 'app_admin_maintenance_status', methods: ['POST'])]
-    public function status(Request $request, MaintenanceRecord $record): Response
+    public function status(Request $request, MaintenanceRecord $record, ValidatorInterface $validator): Response
     {
         $payload = $request->getPayload();
 
@@ -66,6 +68,13 @@ final class MaintenanceController extends AbstractController
         try {
             $status = $payload->getString('status');
             $record->changeStatus($status);
+            // starting the work takes the vehicle offline now, so no booking may still need it
+            $violations = $validator->validate($record, new NoBookingConflict());
+            if (\count($violations) > 0) {
+                $this->entityManager->refresh($record);
+                $this->entityManager->refresh($record->getVehicle());
+                throw new \DomainException((string) $violations[0]->getMessage());
+            }
             $this->entityManager->flush();
             $this->auditLogger->log('maintenance_status_updated', 'maintenance_record', $record->getId(), ['status' => $status]);
             $this->addFlash('success', 'Maintenance record saved.');

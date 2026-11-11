@@ -74,7 +74,8 @@ final class RegistrationController extends AbstractController
     #[Route('/setup', name: 'app_setup', methods: ['GET', 'POST'])]
     public function setup(Request $request, UserRepository $userRepository): Response
     {
-        if ($userRepository->countActiveAdmins() > 0) {
+        // first-run only: once any administrator account exists (even an inactive one) setup stays closed
+        if ($userRepository->count(['role' => User::ROLE_ADMIN]) > 0) {
             return $this->redirectToRoute($this->isGranted('ROLE_ADMIN') ? 'app_admin' : 'app_login');
         }
 

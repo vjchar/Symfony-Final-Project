@@ -134,6 +134,17 @@ class BookingModificationRequest
         $this->review(self::STATUS_REJECTED, $admin, $note, $priceDifference);
     }
 
+    /**
+     * The booking itself was closed (expired, rejected, cancelled), so an
+     * open request no longer applies.
+     */
+    public function closeWithBooking(): void
+    {
+        if (\in_array($this->status, self::UNRESOLVED_STATUSES, true)) {
+            $this->status = self::STATUS_CANCELLED;
+        }
+    }
+
     public function markActivated(): void
     {
         $this->status = self::STATUS_ACTIVATED;

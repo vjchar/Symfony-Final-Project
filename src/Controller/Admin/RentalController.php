@@ -11,6 +11,7 @@ use App\Repository\RentalInspectionRepository;
 use App\Service\Booking\RentalAdjustmentManager;
 use App\Service\Payment\PaymentLedger;
 use App\Service\Rental\InspectionReading;
+use App\Service\Rental\LateReturnPolicy;
 use App\Service\Rental\RentalDesk;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\InputBag;
@@ -43,12 +44,19 @@ final class RentalController extends AbstractController
         RentalInspectionRepository $inspections,
         PaymentRefundRepository $refunds,
         PaymentLedger $ledger,
+        LateReturnPolicy $lateReturns,
         #[MapQueryParameter] string $reference = '',
     ): Response {
         $selected = '' !== $reference ? $this->bookings->findOneBy(['reference' => $reference]) : null;
         if (null !== $selected && !\in_array($selected->getStatus(), ['ready', 'active', 'returned'], true)) {
             $selected = null;
         }
+        // pre-filled for the desk: late now at check-in, late as it was returned at settlement
+        $lateAt = match ($selected?->getStatus()) {
+            'active' => new \DateTimeImmutable(),
+            'returned' => $selected->getReturnedAt(),
+            default => null,
+        };
 
         return $this->render('admin/rental/index.html.twig', [
             'adjustments' => $adjustments->findOpen(),
@@ -60,6 +68,9 @@ final class RentalController extends AbstractController
             'preview' => null === $selected ? null : $this->desk->preview($selected),
             'payment_summary' => null === $selected ? null : $ledger->summary($selected),
             'refunds' => null === $selected ? [] : $refunds->findForBooking($selected),
+            'late_days' => null === $lateAt ? 0 : $lateReturns->lateDays($selected, $lateAt),
+            'late_fee' => null === $lateAt ? 0 : $lateReturns->lateFee($selected, $lateAt),
+            'now' => new \DateTimeImmutable(),
         ]);
     }
 

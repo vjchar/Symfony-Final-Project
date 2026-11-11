@@ -11,6 +11,14 @@
     </form>
 {% endmacro %}
 
+{% macro status_form(route, token, booking, label, placeholder) %}
+    <form class="admin-inline-form mb-1" method="post" action="{{ path(route, {id: booking.id}) }}" data-confirm="{{ label }} booking {{ booking.reference }}? The customer is notified.">
+        <input type="hidden" name="_token" value="{{ csrf_token(token ~ booking.id) }}">
+        <input class="form-control form-control-sm" name="admin_note" maxlength="2000" placeholder="{{ placeholder }}" aria-label="{{ placeholder }} for {{ booking.reference }}">
+        <button class="btn btn-outline btn-sm" type="submit">{{ label }}</button>
+    </form>
+{% endmacro %}
+
 {% block admin_body %}
 {% import _self as f %}
 <section class="admin-page-heading">
@@ -75,6 +83,28 @@
                     </tr>
                 {% else %}
                     <tr><td colspan="5">No confirmed bookings are waiting for vehicle preparation.</td></tr>
+                {% endfor %}
+                </tbody></table></div>
+            </article>
+
+            <article class="admin-editor mt-4" id="status-controls">
+                <div class="admin-editor__heading"><div><span class="section-kicker">Status controls</span><h2>Bookings before checkout</h2><p>Reject a pending booking or cancel one before pickup; everything verified as paid is refunded in full. Mark a booking as a no-show once its pickup time has passed without checkout (no automatic refund). Unpaid pending bookings are released automatically after {{ constant('App\\Service\\Booking\\BookingStatusManager::UNPAID_HOLD') }} or at pickup.</p></div><span class="dashboard-queue__count">{{ controls|length }}</span></div>
+                <div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Booking</th><th>Customer</th><th>Pickup</th><th>Status</th><th>Action</th></tr></thead><tbody>
+                {% for booking in controls %}
+                    {% set missed = booking.status in ['confirmed', 'ready'] and booking.pickupAt < now %}
+                    <tr>
+                        <td><strong>{{ booking.reference }}</strong><small>{{ booking.vehicle.name }}</small></td>
+                        <td>{{ booking.user.name }}<small>{{ booking.user.email }}</small></td>
+                        <td>{{ booking.pickupAt|date('M j, Y g:i A') }}{% if missed %}<small><span class="status-badge status-badge--warning">Not collected</span></small>{% endif %}</td>
+                        <td><span class="status-badge status-badge--{{ booking.status|status_class }}">{{ booking.status|humanize_label }}</span></td>
+                        <td>
+                            {% if booking.status == 'pending' %}{{ f.status_form('app_admin_booking_reject', 'booking-reject-', booking, 'Reject', 'Reason (sent to the customer)') }}{% endif %}
+                            {% if missed %}{{ f.status_form('app_admin_booking_no_show', 'booking-no-show-', booking, 'Mark No-show', 'Note (optional)') }}{% endif %}
+                            {{ f.status_form('app_admin_booking_cancel', 'booking-cancel-', booking, 'Cancel Booking', 'Reason (sent to the customer)') }}
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr><td colspan="5">No bookings are waiting for pickup.</td></tr>
                 {% endfor %}
                 </tbody></table></div>
             </article>

@@ -40,6 +40,7 @@ final readonly class BookingJourney
             'ready_pickup' => 'bi-key',
             'ready_delivery' => 'bi-truck',
             'active', 'early_return_pending', 'extension_pending' => 'bi-car-front',
+            'overdue' => 'bi-alarm',
             'extension_payment', 'return_payment', 'return_payment_verification' => 'bi-credit-card',
             'settlement_pending', 'returned' => 'bi-clipboard-check',
             'deposit_refund_pending', 'refund_pending', 'refund_processed' => 'bi-arrow-counterclockwise',
@@ -56,6 +57,7 @@ final readonly class BookingJourney
     public function priority(): int
     {
         return match ($this->stage) {
+            'overdue' => 125,
             'extension_payment' => 120,
             'payment' => 115,
             'documents' => 110,

@@ -2,6 +2,7 @@
 
 namespace App\Twig;
 
+use App\Entity\User;
 use App\Repository\UserRepository;
 use App\Routing\PageUrlGenerator;
 use App\Service\VehicleImageStorage;
@@ -22,12 +23,13 @@ final class AppExtension
     }
 
     /**
-     * v15 admin_exists(): drives the "Administrator setup is required" notice.
+     * v15 admin_exists(): drives the "Administrator setup is required" notice,
+     * shown only while /setup is open (no administrator account at all).
      */
     #[AsTwigFunction('admin_exists')]
     public function adminExists(): bool
     {
-        return $this->userRepository->countActiveAdmins() > 0;
+        return $this->userRepository->count(['role' => User::ROLE_ADMIN]) > 0;
     }
 
     /**

@@ -140,6 +140,25 @@ final class RentalAdjustmentTest extends WebTestCase
         self::assertSame($this->day(5), $this->reload($booking)->getReturnAt()->format('Y-m-d'));
     }
 
+    public function testAPendingEarlyReturnIsAppliedWhenTheVehicleComesBackBeforeReview(): void
+    {
+        $booking = $this->activeRental();
+        $this->payRentalBalance($booking);
+        $this->requestEarlyReturn($booking, $this->day(3), '09:00');
+
+        // the desk checks the vehicle in without reviewing the request first
+        $this->deskAction($booking, 'checkin', ['odometer' => '600', 'fuel_percent' => '100', 'body_condition' => 'good', 'extra_charges' => '0']);
+
+        $adjustment = $this->adjustment();
+        self::assertSame(RentalAdjustmentRequest::STATUS_ACTIVATED, $adjustment->getStatus());
+        $booking = $this->reload($booking);
+        self::assertSame('returned', $booking->getStatus());
+        // back before pickup: one billed day, the other two refunded
+        self::assertSame(6200, $booking->getTotal());
+        $refund = $this->em()->getRepository(PaymentRefund::class)->findOneBy(['refundType' => PaymentRefund::TYPE_EARLY_RETURN]);
+        self::assertSame(12400, $refund?->getAmount());
+    }
+
     /**
      * Confirmed, prepared and checked out from the admin pages.
      */

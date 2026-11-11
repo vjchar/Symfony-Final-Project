@@ -127,6 +127,96 @@ class BookingRepository extends ServiceEntityRepository
     }
 
     /**
+     * Bookings the administrator can still reject, cancel or mark as a
+     * no-show: everything before checkout, soonest pickup first.
+     *
+     * @return list<Booking>
+     */
+    public function findForStatusControls(): array
+    {
+        return $this->createQueryBuilder('b')
+            ->addSelect('v', 'u')
+            ->join('b.vehicle', 'v')
+            ->join('b.user', 'u')
+            ->where('b.status IN (:statuses)')
+            ->setParameter('statuses', Booking::PRE_PICKUP_STATUSES)
+            ->orderBy('b.pickupAt', 'ASC')
+            ->addOrderBy('b.id', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * Pending bookings older than the hold, or whose pickup has come.
+     *
+     * @return list<Booking>
+     */
+    public function findPendingHoldExpired(\DateTimeImmutable $createdBefore, \DateTimeImmutable $now): array
+    {
+        return $this->createQueryBuilder('b')
+            ->where('b.status = :pending')
+            ->andWhere('b.createdAt <= :createdBefore OR b.pickupAt <= :now')
+            ->setParameter('pending', 'pending')
+            ->setParameter('createdBefore', $createdBefore)
+            ->setParameter('now', $now)
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * Active rentals whose return passed before the given time and that were not flagged yet.
+     *
+     * @return list<Booking>
+     */
+    public function findOverdueNotYetNotified(\DateTimeImmutable $returnBefore): array
+    {
+        return $this->createQueryBuilder('b')
+            ->where('b.status = :active')
+            ->andWhere('b.returnAt < :returnBefore')
+            ->andWhere('b.overdueNotifiedAt IS NULL')
+            ->setParameter('active', 'active')
+            ->setParameter('returnBefore', $returnBefore)
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * Confirmed or ready bookings whose pickup passed before the given time without checkout, not flagged yet.
+     *
+     * @return list<Booking>
+     */
+    public function findMissedPickupsNotYetNotified(\DateTimeImmutable $pickupBefore): array
+    {
+        return $this->createQueryBuilder('b')
+            ->where('b.status IN (:statuses)')
+            ->andWhere('b.pickupAt < :pickupBefore')
+            ->andWhere('b.missedPickupNotifiedAt IS NULL')
+            ->setParameter('statuses', ['confirmed', 'ready'])
+            ->setParameter('pickupBefore', $pickupBefore)
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * Bookings still holding the vehicle that end after the given time.
+     *
+     * @return list<Booking>
+     */
+    public function findBlockingEndingAfter(Vehicle $vehicle, \DateTimeImmutable $after): array
+    {
+        return $this->createQueryBuilder('b')
+            ->where('b.vehicle = :vehicle')
+            ->andWhere('b.status IN (:blocking)')
+            ->andWhere('b.returnAt > :after')
+            ->setParameter('vehicle', $vehicle)
+            ->setParameter('blocking', Booking::BLOCKING_STATUSES)
+            ->setParameter('after', $after)
+            ->orderBy('b.pickupAt', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
      * v15 sync_vehicle_status(): a confirmed or ready booking not yet over.
      */
     public function hasUpcomingReservation(Vehicle $vehicle): bool

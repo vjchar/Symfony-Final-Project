@@ -34,6 +34,7 @@ final class BookingJourneyResolver
         private readonly PaymentRefundRepository $refunds,
         private readonly RentalAdjustmentRequestRepository $adjustments,
         private readonly PaymentRepository $payments,
+        private readonly BookingConfirmer $confirmer,
     ) {
     }
 
@@ -49,9 +50,9 @@ final class BookingJourneyResolver
         );
 
         return match ($booking->getStatus()) {
-            'pending' => $this->pending($journey, $payments, $documents, $reference, $bookingUrl),
+            'pending' => $this->pending($journey, $booking, $payments, $documents, $reference, $bookingUrl),
             // v15 resolve_confirmed_booking_journey(): the same checks from current records, in case a payment or document changed since
-            'confirmed' => $this->pending($journey, $payments, $documents, $reference, $bookingUrl, sprintf(
+            'confirmed' => $this->pending($journey, $booking, $payments, $documents, $reference, $bookingUrl, sprintf(
                 'Your payment and required documents have been verified. We’ll notify you when the vehicle is ready for %s.',
                 'Vehicle delivery' === $booking->getPickupMethod() ? 'delivery' : 'pickup',
             )),
@@ -63,7 +64,8 @@ final class BookingJourneyResolver
             'returned' => $this->returned($journey, $booking, $payments, $bookingUrl),
             'completed' => $this->completed($journey, $booking, $payments, $reference, $bookingUrl),
             'cancelled' => $this->cancelled($journey, $booking, $bookingUrl),
-            'rejected', 'no_show' => $journey('closed', null, 'Booking Closed', 'This booking has no remaining customer action.', 'View Booking', $bookingUrl, 'secondary', noAction: true),
+            'rejected' => $this->closedWithRefunds($journey, $booking, $bookingUrl, 'Booking Rejected', 'This booking was not approved by the rental team.'),
+            'no_show' => $journey('closed', null, 'Booking Closed — Not Collected', 'The vehicle was not collected at the scheduled pickup time, so this booking was closed. Contact the rental team about any payment questions.', 'View Booking', $bookingUrl, 'secondary', noAction: true),
             default => $journey('booking', 1, 'Booking Created', 'Your reservation has been saved.', 'View Booking', $bookingUrl, 'info'),
         };
     }
@@ -153,6 +155,15 @@ final class BookingJourneyResolver
     {
         $paymentUrl = $this->pageUrls->generate('payments', $reference);
         $adjustmentUrl = $this->pageUrls->generate('rental-adjustment', $reference);
+        // bringing the vehicle back comes before any balance
+        if ($booking->isOverdue()) {
+            return $journey('overdue', null, 'Rental Overdue', sprintf(
+                'This rental was due back on %s. Please return the vehicle or contact the rental desk; late returns are charged the daily rate of ₱%s for each started day.',
+                $booking->getReturnAt()->format('M j, Y g:i A'),
+                number_format($booking->getDailyRate()),
+            ), 'View Active Rental', $bookingUrl, 'danger', actionRequired: true);
+        }
+
         $owed = $payments->depositDue + $payments->rentalDue;
         if ($owed > 0) {
             return $journey('payment', null, 'Payment Balance Required', sprintf('A payment correction or remaining obligation requires ₱%s before the account is fully settled.', number_format($owed)), 'Review Payments', $paymentUrl, 'warning', actionRequired: true);
@@ -241,12 +252,22 @@ final class BookingJourneyResolver
      */
     private function cancelled(callable $journey, Booking $booking, string $bookingUrl): BookingJourney
     {
+        return $this->closedWithRefunds($journey, $booking, $bookingUrl, 'Booking Cancelled', 'This booking is cancelled.');
+    }
+
+    /**
+     * A cancelled or rejected booking: its refund, if any, is the only thing left.
+     *
+     * @param callable(string, ?int, string, string, string, string, string, bool=, bool=): BookingJourney $journey
+     */
+    private function closedWithRefunds(callable $journey, Booking $booking, string $bookingUrl, string $title, string $sentence): BookingJourney
+    {
         $refunds = $this->refunds->summaryForBooking($booking);
 
         return match (true) {
-            $refunds->pending > 0 => $journey('refund_pending', null, 'Refund Pending', sprintf('Your booking is cancelled and a refund of ₱%s is awaiting processing.', number_format($refunds->pending)), 'View Refund Details', $bookingUrl.'#refunds', 'info', noAction: true),
-            $refunds->refunded > 0 => $journey('refund_processed', null, 'Refund Processed', sprintf('This booking is cancelled. Recorded refunds total ₱%s.', number_format($refunds->refunded)), 'View Refund History', $bookingUrl.'#refunds', 'success', noAction: true),
-            default => $journey('closed', null, 'Booking Cancelled', 'This booking is cancelled and has no remaining customer action.', 'View Booking', $bookingUrl, 'secondary', noAction: true),
+            $refunds->pending > 0 => $journey('refund_pending', null, 'Refund Pending', sprintf('%s A refund of ₱%s is awaiting processing.', $sentence, number_format($refunds->pending)), 'View Refund Details', $bookingUrl.'#refunds', 'info', noAction: true),
+            $refunds->refunded > 0 => $journey('refund_processed', null, 'Refund Processed', sprintf('%s Recorded refunds total ₱%s.', $sentence, number_format($refunds->refunded)), 'View Refund History', $bookingUrl.'#refunds', 'success', noAction: true),
+            default => $journey('closed', null, $title, $sentence.' It has no remaining customer action.', 'View Booking', $bookingUrl, 'secondary', noAction: true),
         };
     }
 
@@ -256,7 +277,7 @@ final class BookingJourneyResolver
      * @param callable(string, ?int, string, string, string, string, string, bool=, bool=): BookingJourney $journey
      * @param array{reference: string}                                                                       $reference
      */
-    private function pending(callable $journey, PaymentSummary $payments, DocumentChecklist $documents, array $reference, string $bookingUrl, ?string $preparingMessage = null): BookingJourney
+    private function pending(callable $journey, Booking $booking, PaymentSummary $payments, DocumentChecklist $documents, array $reference, string $bookingUrl, ?string $preparingMessage = null): BookingJourney
     {
         if (!$payments->depositSubmitted()) {
             $failed = $payments->depositFailed();
@@ -286,6 +307,9 @@ final class BookingJourneyResolver
                 sprintf('Next required document: %s. Upload the required documents while your payment is being verified.', $documents->labels('missing')[0]),
                 'Upload Documents', $documentUrl, 'primary', actionRequired: true,
             );
+        }
+        if (!$this->confirmer->licenseCovers($booking, $booking->getReturnAt())) {
+            return $journey('documents', 3, 'Renew Your Driver’s License', BookingConfirmer::LICENSE_TOO_SHORT, 'Replace Document', $documentUrl, 'warning', actionRequired: true);
         }
         if (!$payments->depositVerified() || !$documents->allApproved()) {
             return $journey(

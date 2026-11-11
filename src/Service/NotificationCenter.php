@@ -10,19 +10,23 @@ use Doctrine\ORM\EntityManagerInterface;
 
 /**
  * v15 notify_user() and notify_admins(). The notifications are persisted
- * here and saved with the caller's next flush.
+ * here and saved with the caller's next flush; NotificationMailer also emails
+ * each one once the request or command is over and it was really saved.
  */
 final class NotificationCenter
 {
     public function __construct(
         private readonly EntityManagerInterface $entityManager,
         private readonly UserRepository $users,
+        private readonly NotificationMailer $mailer,
     ) {
     }
 
     public function notifyUser(User $user, string $title, string $message, string $type = 'system', ?Booking $booking = null): void
     {
-        $this->entityManager->persist(new Notification($user, $title, $message, $type, $booking));
+        $notification = new Notification($user, $title, $message, $type, $booking);
+        $this->entityManager->persist($notification);
+        $this->mailer->queue($notification);
     }
 
     /**

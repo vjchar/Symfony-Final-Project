@@ -8,6 +8,7 @@ use App\Repository\BookingModificationRequestRepository;
 use App\Repository\BookingRepository;
 use App\Service\Booking\BookingCancellationManager;
 use App\Service\Booking\BookingModificationManager;
+use App\Service\Booking\BookingStatusManager;
 use App\Service\Rental\RentalDesk;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -18,9 +19,9 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 /**
  * v15 admin-bookings.php: its pending modification and cancellation queues,
- * and marking a confirmed booking's vehicle ready for the rental desk.
- * (The full booking list and the other status transitions, such as reject
- * and no-show, arrive with the admin bookings step.)
+ * marking a confirmed booking's vehicle ready for the rental desk, and the
+ * status controls for every booking before checkout: reject a pending one,
+ * cancel one, or mark an uncollected one as a no-show.
  */
 #[IsGranted('ROLE_ADMIN')]
 final class BookingController extends AbstractController
@@ -32,7 +33,42 @@ final class BookingController extends AbstractController
             'modifications' => $modifications->findPending(),
             'cancellations' => $cancellations->findPending(),
             'preparing' => $bookings->findAwaitingPreparation(),
+            'controls' => $bookings->findForStatusControls(),
+            'now' => new \DateTimeImmutable(),
         ]);
+    }
+
+    #[Route('/admin/bookings/{id}/reject', name: 'app_admin_booking_reject', requirements: ['id' => '\d+'], methods: ['POST'])]
+    public function reject(int $id, Request $request, #[CurrentUser] User $admin, BookingRepository $bookings, BookingStatusManager $statuses): Response
+    {
+        $booking = $bookings->find($id);
+        $this->review($request, 'booking-reject-'.$id, 'Booking rejected.', static function (string $decision, string $note) use ($booking, $statuses, $admin): void {
+            $statuses->reject($booking ?? throw new \DomainException('Only a pending booking can be rejected.'), $admin, $note);
+        });
+
+        return $this->redirect($this->generateUrl('app_admin_bookings').'#status-controls', Response::HTTP_SEE_OTHER);
+    }
+
+    #[Route('/admin/bookings/{id}/cancel', name: 'app_admin_booking_cancel', requirements: ['id' => '\d+'], methods: ['POST'])]
+    public function cancel(int $id, Request $request, #[CurrentUser] User $admin, BookingRepository $bookings, BookingStatusManager $statuses): Response
+    {
+        $booking = $bookings->find($id);
+        $this->review($request, 'booking-cancel-'.$id, 'Booking cancelled.', static function (string $decision, string $note) use ($booking, $statuses, $admin): void {
+            $statuses->cancel($booking ?? throw new \DomainException('Only a booking that has not been picked up yet can be cancelled.'), $admin, $note);
+        });
+
+        return $this->redirect($this->generateUrl('app_admin_bookings').'#status-controls', Response::HTTP_SEE_OTHER);
+    }
+
+    #[Route('/admin/bookings/{id}/no-show', name: 'app_admin_booking_no_show', requirements: ['id' => '\d+'], methods: ['POST'])]
+    public function noShow(int $id, Request $request, #[CurrentUser] User $admin, BookingRepository $bookings, BookingStatusManager $statuses): Response
+    {
+        $booking = $bookings->find($id);
+        $this->review($request, 'booking-no-show-'.$id, 'Booking marked as a no-show.', static function (string $decision, string $note) use ($booking, $statuses, $admin): void {
+            $statuses->markNoShow($booking ?? throw new \DomainException('Only a confirmed or ready booking can be marked as a no-show.'), $admin, $note);
+        });
+
+        return $this->redirect($this->generateUrl('app_admin_bookings').'#status-controls', Response::HTTP_SEE_OTHER);
     }
 
     #[Route('/admin/bookings/{id}/ready', name: 'app_admin_booking_ready', requirements: ['id' => '\d+'], methods: ['POST'])]

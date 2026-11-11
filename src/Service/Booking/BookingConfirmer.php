@@ -14,7 +14,8 @@ use Doctrine\ORM\EntityManagerInterface;
 /**
  * v15 booking_requirements() and confirm_booking_when_requirements_complete():
  * once the security deposit is verified and both documents are approved (the
- * driver's license still valid), a pending booking moves to vehicle preparation.
+ * driver's license still valid on the return date), a pending booking moves
+ * to vehicle preparation.
  * Approving the last payment or document is what triggers it.
  */
 final class BookingConfirmer
@@ -28,6 +29,8 @@ final class BookingConfirmer
     ) {
     }
 
+    public const LICENSE_TOO_SHORT = 'The driver’s license on file expires before the scheduled return. Upload a renewed license before the rental can go ahead.';
+
     public function isReady(Booking $booking): bool
     {
         $documents = $this->documents->findForUser($booking->getUser());
@@ -37,7 +40,19 @@ final class BookingConfirmer
             }
         }
 
-        return $this->ledger->summary($booking)->depositVerified();
+        return $this->licenseCovers($booking, $booking->getReturnAt()) && $this->ledger->summary($booking)->depositVerified();
+    }
+
+    /**
+     * The customer's driver's license, if it has an expiry date, is still valid
+     * on the given return (it must be valid for the whole rental).
+     */
+    public function licenseCovers(Booking $booking, \DateTimeImmutable $returnAt): bool
+    {
+        $license = $this->documents->findForUser($booking->getUser())[CustomerDocument::TYPE_DRIVERS_LICENSE] ?? null;
+        $expiry = $license?->getExpiryDate();
+
+        return null === $expiry || $expiry->setTime(23, 59, 59) >= $returnAt;
     }
 
     /**

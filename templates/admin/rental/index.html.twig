@@ -72,7 +72,10 @@
                         <td>{{ rental.user.name }}</td>
                         <td>{{ rental.pickupAt|date('M j, g:i A') }}<small>to {{ rental.returnAt|date('M j, g:i A') }}</small></td>
                         <td><span class="status-badge status-badge--{{ rental.vehicle.availabilityStatus|status_class }}">{{ rental.vehicle.availabilityStatus|humanize_label }}</span></td>
-                        <td><span class="status-badge status-badge--{{ rental.status|status_class }}">{{ rental.status|humanize_label }}</span></td>
+                        <td>
+                            <span class="status-badge status-badge--{{ rental.status|status_class }}">{{ rental.status|humanize_label }}</span>
+                            {% if rental.overdue(now) %}<span class="status-badge status-badge--danger">Overdue</span>{% elseif rental.status == 'ready' and rental.pickupAt < now %}<span class="status-badge status-badge--warning">Not collected</span>{% endif %}
+                        </td>
                         <td><a class="btn btn-outline btn-sm" href="{{ path('app_admin_rentals', {reference: rental.reference}) }}">Open</a></td>
                     </tr>
                 {% else %}
@@ -147,7 +150,14 @@
                         {% if action == 'checkin' %}
                             <div class="col-md-4">
                                 <label class="form-label" for="extraCharges">Extra charges (PHP)</label>
-                                <input class="form-control" id="extraCharges" name="extra_charges" type="number" min="0" max="1000000" value="0" required>
+                                <input class="form-control" id="extraCharges" name="extra_charges" type="number" min="0" max="1000000" value="{{ late_fee }}" aria-describedby="extraChargesHelp" required>
+                                <div class="form-text" id="extraChargesHelp">
+                                    {% if late_fee > 0 %}
+                                        Includes a late-return fee of {{ late_fee|money }} ({{ late_days }} day{{ late_days == 1 ? '' : 's' }} × {{ selected.dailyRate|money }}). Add any damage or fuel charges.
+                                    {% else %}
+                                        Damage, fuel and any other charges. Returns more than an hour late are charged the daily rate per started day.
+                                    {% endif %}
+                                </div>
                             </div>
                         {% endif %}
                         <div class="col-12">
@@ -169,8 +179,9 @@
                             <input type="hidden" name="_token" value="{{ csrf_token('rental-settle-' ~ selected.id) }}">
                             <div class="col-md-3"><label class="form-label" for="damageCharges">Damage charges</label><input class="form-control" id="damageCharges" name="damage_charges" type="number" min="0" value="0" required></div>
                             <div class="col-md-3"><label class="form-label" for="fuelCharges">Fuel charges</label><input class="form-control" id="fuelCharges" name="fuel_charges" type="number" min="0" value="0" required></div>
-                            <div class="col-md-3"><label class="form-label" for="lateCharges">Late charges</label><input class="form-control" id="lateCharges" name="late_charges" type="number" min="0" value="0" required></div>
-                            <div class="col-md-3"><label class="form-label" for="otherCharges">Other recorded charges</label><input class="form-control" id="otherCharges" name="other_charges" type="number" min="0" value="{{ preview.inspectionCharge }}" required></div>
+                            {% set suggested_late = min(late_fee, preview.inspectionCharge) %}
+                            <div class="col-md-3"><label class="form-label" for="lateCharges">Late charges</label><input class="form-control" id="lateCharges" name="late_charges" type="number" min="0" value="{{ suggested_late }}" required>{% if late_fee > 0 %}<small class="form-text">Returned {{ late_days }} day{{ late_days == 1 ? '' : 's' }} late: {{ late_fee|money }}.</small>{% endif %}</div>
+                            <div class="col-md-3"><label class="form-label" for="otherCharges">Other recorded charges</label><input class="form-control" id="otherCharges" name="other_charges" type="number" min="0" value="{{ preview.inspectionCharge - suggested_late }}" required></div>
                             <div class="col-12"><small class="display-note">These four amounts must total {{ preview.inspectionCharge|money }}, the charge already recorded during return inspection.</small></div>
                             <div class="col-12"><label class="form-label" for="settlementNotes">Settlement notes</label><textarea class="form-control" id="settlementNotes" name="settlement_notes" rows="3" maxlength="3000"></textarea></div>
                             <div class="col-12"><button class="btn btn-primary" type="submit">Finalize Return Settlement</button></div>

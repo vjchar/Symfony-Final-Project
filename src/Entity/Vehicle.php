@@ -3,6 +3,7 @@
 namespace App\Entity;
 
 use App\Repository\VehicleRepository;
+use App\Validator\NoUpcomingBookingsWhenOffline;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
@@ -13,6 +14,7 @@ use Symfony\Component\Validator\Constraints as Assert;
 #[ORM\Index(name: 'idx_vehicles_category', columns: ['category', 'is_active'])]
 #[ORM\HasLifecycleCallbacks]
 #[UniqueEntity('slug', message: 'That vehicle slug is already used.')]
+#[NoUpcomingBookingsWhenOffline]
 class Vehicle
 {
     // Choice lists and ranges below mirror v15 includes/admin-vehicle-service.php.

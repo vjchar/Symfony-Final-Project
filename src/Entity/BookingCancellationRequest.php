@@ -94,6 +94,21 @@ class BookingCancellationRequest
         $this->reviewedBy = $admin;
     }
 
+    /**
+     * The booking was closed another way (it expired, was rejected or was
+     * cancelled by the rental team): a pending request is granted with it.
+     */
+    public function closeWithBooking(string $note, ?User $admin = null): void
+    {
+        if (!$this->isPending()) {
+            return;
+        }
+        $this->status = self::STATUS_APPROVED;
+        $this->adminNote = mb_substr(trim($note), 0, 2000);
+        $this->reviewedAt = new \DateTimeImmutable();
+        $this->reviewedBy = $admin;
+    }
+
     public function isPending(): bool
     {
         return self::STATUS_PENDING === $this->status;

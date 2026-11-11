@@ -15,8 +15,9 @@ use Doctrine\ORM\Mapping as ORM;
  * return moves its return and re-prices it. The
  * rental desk moves it on: ready → active (checkout) → returned (check-in) →
  * completed, stamping v15's ready_at, started_at, returned_at and completed_at.
- * (v15's approved_at, rejected_at and no_show_at arrive with the admin
- * bookings status controls.)
+ * An administrator can also reject a pending booking, cancel one before
+ * pickup or mark an uncollected one as a no-show; an unpaid pending booking
+ * expires on its own (RentalSweeper).
  */
 #[ORM\Entity(repositoryClass: BookingRepository::class)]
 #[ORM\Table(name: 'bookings')]
@@ -113,6 +114,20 @@ class Booking
 
     #[ORM\Column(nullable: true)]
     private ?\DateTimeImmutable $completedAt = null;
+
+    #[ORM\Column(nullable: true)]
+    private ?\DateTimeImmutable $rejectedAt = null;
+
+    #[ORM\Column(nullable: true)]
+    private ?\DateTimeImmutable $noShowAt = null;
+
+    // set once the customer and the desk were told the rental is overdue; cleared when the return moves
+    #[ORM\Column(nullable: true)]
+    private ?\DateTimeImmutable $overdueNotifiedAt = null;
+
+    // set once the desk was told the vehicle was not collected at pickup
+    #[ORM\Column(nullable: true)]
+    private ?\DateTimeImmutable $missedPickupNotifiedAt = null;
 
     #[ORM\Column(type: Types::TEXT, nullable: true)]
     private ?string $adminNotes = null;
@@ -259,10 +274,64 @@ class Booking
         $this->readyAt = null;
     }
 
-    public function cancel(): void
+    public function cancel(string $notes = ''): void
     {
         $this->status = 'cancelled';
         $this->cancelledAt = new \DateTimeImmutable();
+        $this->setAdminNotes($notes);
+    }
+
+    /**
+     * An administrator turns down a booking that is still pending.
+     */
+    public function reject(string $notes): void
+    {
+        $this->moveTo('pending', 'rejected', 'Only a pending booking can be rejected.');
+        $this->rejectedAt = new \DateTimeImmutable();
+        $this->setAdminNotes($notes);
+    }
+
+    /**
+     * The customer never collected (or received) the vehicle after pickup time.
+     */
+    public function markNoShow(string $notes = ''): void
+    {
+        if (!\in_array($this->status, ['confirmed', 'ready'], true)) {
+            throw new \DomainException('Only a confirmed or ready booking can be marked as a no-show.');
+        }
+        if ($this->pickupAt > new \DateTimeImmutable()) {
+            throw new \DomainException('A booking can only be marked as a no-show after its pickup time.');
+        }
+        $this->status = 'no_show';
+        $this->noShowAt = new \DateTimeImmutable();
+        $this->readyAt = null;
+        $this->setAdminNotes($notes);
+    }
+
+    public function markOverdueNotified(): void
+    {
+        $this->overdueNotifiedAt = new \DateTimeImmutable();
+    }
+
+    public function markMissedPickupNotified(): void
+    {
+        $this->missedPickupNotifiedAt = new \DateTimeImmutable();
+    }
+
+    /**
+     * An active rental past its scheduled return.
+     */
+    public function isOverdue(\DateTimeImmutable $now = new \DateTimeImmutable()): bool
+    {
+        return 'active' === $this->status && $this->returnAt < $now;
+    }
+
+    /**
+     * The booking's own daily rate (subtotal over billed days).
+     */
+    public function getDailyRate(): int
+    {
+        return intdiv($this->subtotal, $this->getDays());
     }
 
     /**
@@ -298,6 +367,7 @@ class Booking
     {
         $this->keepOriginalReturn();
         $this->returnAt = $returnAt;
+        $this->overdueNotifiedAt = null;
         $this->subtotal = $subtotal;
         $this->addonsTotal = $addonsTotal;
         $this->discount = $discount;
@@ -402,6 +472,26 @@ class Booking
     public function getCompletedAt(): ?\DateTimeImmutable
     {
         return $this->completedAt;
+    }
+
+    public function getRejectedAt(): ?\DateTimeImmutable
+    {
+        return $this->rejectedAt;
+    }
+
+    public function getNoShowAt(): ?\DateTimeImmutable
+    {
+        return $this->noShowAt;
+    }
+
+    public function getOverdueNotifiedAt(): ?\DateTimeImmutable
+    {
+        return $this->overdueNotifiedAt;
+    }
+
+    public function getMissedPickupNotifiedAt(): ?\DateTimeImmutable
+    {
+        return $this->missedPickupNotifiedAt;
     }
 
     public function getAdminNotes(): string

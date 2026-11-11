@@ -17,6 +17,7 @@ use App\Repository\RentalAdjustmentRequestRepository;
 use App\Repository\RentalInspectionRepository;
 use App\Service\AuditLogger;
 use App\Service\Booking\BookingConfirmer;
+use App\Service\Booking\RentalAdjustmentManager;
 use App\Service\Booking\RunsInTransaction;
 use App\Service\NotificationCenter;
 use App\Service\Payment\PaymentLedger;
@@ -45,6 +46,7 @@ final class RentalDesk
         private readonly PaymentRefundRepository $refunds,
         private readonly PaymentLedger $ledger,
         private readonly BookingConfirmer $confirmer,
+        private readonly RentalAdjustmentManager $adjustmentManager,
         private readonly RefundManager $refundManager,
         private readonly SettlementRefresher $settlementRefresher,
         private readonly VehicleStatusSync $vehicles,
@@ -71,6 +73,9 @@ final class RentalDesk
             }
             if (true === $this->cancellations->findLatestFor($booking)?->isPending()) {
                 throw new \DomainException('Resolve the pending cancellation request before marking this vehicle ready.');
+            }
+            if (!$this->confirmer->licenseCovers($booking, $booking->getReturnAt())) {
+                throw new \DomainException(BookingConfirmer::LICENSE_TOO_SHORT);
             }
             if (!$this->confirmer->isReady($booking)) {
                 throw new \DomainException('Payment and required documents must still be verified before the vehicle can be marked ready.');
@@ -113,6 +118,9 @@ final class RentalDesk
     {
         $this->transactional(function () use ($booking, $reading, $admin): void {
             $this->entityManager->refresh($booking, LockMode::PESSIMISTIC_WRITE);
+            if ('ready' === $booking->getStatus() && !$this->confirmer->licenseCovers($booking, $booking->getReturnAt())) {
+                throw new \DomainException(BookingConfirmer::LICENSE_TOO_SHORT);
+            }
             $booking->checkOut();
             $this->record($booking, RentalInspection::TYPE_CHECKOUT, $reading, $admin);
             $this->entityManager->flush();
@@ -125,8 +133,9 @@ final class RentalDesk
     }
 
     /**
-     * v15 checkin_booking(): the return inspection is recorded, any open early
-     * return or extension request is closed, and the deposit waits for settlement.
+     * v15 checkin_booking(): the return inspection is recorded, a pending early
+     * return is applied as it happened, any other open request is closed, and
+     * the deposit waits for settlement.
      *
      * @throws \InvalidArgumentException|\DomainException with the v15 message
      */
@@ -134,6 +143,9 @@ final class RentalDesk
     {
         $this->transactional(function () use ($booking, $reading, $admin): void {
             $this->entityManager->refresh($booking, LockMode::PESSIMISTIC_WRITE);
+            if ('active' === $booking->getStatus()) {
+                $this->adjustmentManager->applyPendingEarlyReturnAtCheckIn($booking, $admin);
+            }
             $booking->checkIn();
             $checkout = $this->inspections->findOneForBooking($booking, RentalInspection::TYPE_CHECKOUT);
             if (null === $checkout || $reading->odometer < $checkout->getOdometer()) {

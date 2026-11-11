@@ -49,6 +49,7 @@ final class RentalAdjustmentManager
         private readonly PaymentRepository $payments,
         private readonly PaymentRefundRepository $refunds,
         private readonly RefundManager $refundManager,
+        private readonly BookingConfirmer $confirmer,
         private readonly AuditLogger $auditLogger,
         private readonly NotificationCenter $notifications,
     ) {
@@ -236,11 +237,38 @@ final class RentalAdjustmentManager
      */
     private function approveEarlyReturn(RentalAdjustmentRequest $adjustment, User $admin, string $note): void
     {
-        $booking = $adjustment->getBooking();
         if ($adjustment->getRequestedReturnAt() <= new \DateTimeImmutable()) {
             throw new \DomainException('The requested early-return time has already passed. Reject the request or record the return at check-in.');
         }
-        $pricing = $this->earlyReturnPricing($booking, $adjustment->getRequestedReturnAt());
+        $this->activateEarlyReturn($adjustment, $adjustment->getRequestedReturnAt(), $admin, $note);
+    }
+
+    /**
+     * RentalDesk::checkIn(): the vehicle is back before the desk reviewed a
+     * pending early return, so the return is applied as it actually happened.
+     * Runs inside the check-in transaction, before the booking is marked returned.
+     */
+    public function applyPendingEarlyReturnAtCheckIn(Booking $booking, User $admin): void
+    {
+        $adjustment = $this->adjustments->findUnresolvedFor($booking);
+        if (null === $adjustment || $adjustment->isExtension() || !$adjustment->isPending()) {
+            return;
+        }
+        // billed from pickup, so a vehicle back before pickup still costs one day
+        $returnedAt = max(new \DateTimeImmutable(), $booking->getPickupAt()->modify('+1 second'));
+        if ($returnedAt >= $booking->getReturnAt()) {
+            return; // not early any more: check-in closes the request
+        }
+        $this->activateEarlyReturn($adjustment, $returnedAt, $admin, 'Applied at check-in: the vehicle was returned before the request was reviewed.');
+    }
+
+    /**
+     * @throws \InvalidArgumentException|\DomainException
+     */
+    private function activateEarlyReturn(RentalAdjustmentRequest $adjustment, \DateTimeImmutable $returnAt, User $admin, string $note): void
+    {
+        $booking = $adjustment->getBooking();
+        $pricing = $this->earlyReturnPricing($booking, $returnAt);
         // what was paid towards the rental (never the deposit), beyond the new total
         $credit = min($pricing->reduction, max(0, $this->refundableRentalPayments($booking) - $pricing->total));
 
@@ -400,6 +428,9 @@ final class RentalAdjustmentManager
         if (!$this->bookings->isVehicleAvailable($vehicle, $currentReturn, $requestedReturnAt, $booking)
             || $this->maintenance->hasConflict($vehicle, $currentReturn, $requestedReturnAt)) {
             throw new \DomainException('This vehicle is unavailable for the requested extension period.');
+        }
+        if (!$this->confirmer->licenseCovers($booking, $requestedReturnAt)) {
+            throw new \DomainException('Your driver’s license expires before the requested return. Upload a renewed license before extending the rental.');
         }
     }
 

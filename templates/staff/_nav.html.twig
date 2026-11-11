@@ -1,0 +1,63 @@
+{# Staff navigation: the admin sidebar's look, with only the front-desk sections. #}
+{% set staff_links = [
+    {route: 'app_staff', label: 'Overview', icon: 'bi-speedometer2'},
+    {route: 'app_staff_bookings', label: 'Bookings', icon: 'bi-calendar2-check'},
+    {route: 'app_staff_rentals', label: 'Rental Desk', icon: 'bi-key'},
+    {route: 'app_staff_documents', label: 'Documents', icon: 'bi-person-vcard'},
+    {route: 'app_staff_messages', label: 'Messages', icon: 'bi-envelope'},
+    {route: 'app_staff_maintenance', label: 'Maintenance', icon: 'bi-tools'},
+    {route: 'app_notifications', label: 'Notifications', icon: 'bi-bell'},
+    {route: 'app_profile', label: 'My Profile', icon: 'bi-person-gear'},
+] %}
+{% set current_route = app.request.attributes.get('_route') ?? '' %}
+<input
+    class="admin-nav-control"
+    id="adminNavigationControl"
+    type="checkbox"
+    aria-controls="adminSidebar"
+    aria-expanded="false"
+    aria-label="Open or close the staff menu">
+
+<label class="admin-nav-toggle" for="adminNavigationControl">
+    <i class="bi bi-list"></i>
+    <span>Staff menu</span>
+</label>
+
+<aside class="admin-nav" id="adminSidebar" aria-label="Staff sections">
+    <div class="admin-nav__brand">
+        <a href="{{ path('app_staff') }}">
+            <img src="{{ asset('images/logo/Logo.png') }}" alt="VJ Car Rental">
+            <span>Staff Workspace</span>
+        </a>
+    </div>
+
+    <nav class="admin-nav__links">
+        {% for link in staff_links %}
+            {# a section stays highlighted on its sub-pages, e.g. /staff/maintenance/5/edit #}
+            {% set active = current_route == link.route or (link.route != 'app_staff' and current_route starts with link.route ~ '_') %}
+            <a class="{{ active ? 'active' }}" href="{{ path(link.route) }}" {{ active ? 'aria-current="page"' }}>
+                <i class="bi {{ link.icon }}" aria-hidden="true"></i>
+                <span>{{ link.label }}</span>
+            </a>
+        {% endfor %}
+    </nav>
+
+    <div class="admin-nav__footer">
+        <a href="{{ path('app_home') }}">
+            <i class="bi bi-box-arrow-up-right"></i>
+            <span>View customer site</span>
+        </a>
+        <form method="post" action="{{ path('app_logout') }}">
+            <input type="hidden" name="_csrf_token" value="{{ csrf_token('logout') }}">
+            <button type="submit">
+                <i class="bi bi-box-arrow-right"></i>
+                <span>Sign out</span>
+            </button>
+        </form>
+    </div>
+</aside>
+
+<label
+    class="admin-nav-backdrop"
+    for="adminNavigationControl"
+    aria-label="Close staff menu"></label>

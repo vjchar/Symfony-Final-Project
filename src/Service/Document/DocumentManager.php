@@ -69,7 +69,11 @@ final class DocumentManager
         }
         $this->notifications->notifyUser($customer, $title, $message, 'document', $context);
         $this->entityManager->flush();
-        $this->auditLogger->log('customer_document_'.$status, 'customer_document', $document->getId(), [], $admin);
+        $this->auditLogger->log('customer_document_'.$status, 'customer_document', $document->getId(), array_filter([
+            'document_type' => $document->getDocumentType(),
+            'customer_id' => $customer->getId(),
+            'notes' => $document->getAdminNotes(),
+        ], static fn (mixed $value): bool => '' !== $value) + AuditLogger::actor($admin), $admin);
     }
 
     public function checklist(User $user): DocumentChecklist

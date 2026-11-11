@@ -1,0 +1,125 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Staff Overview | VJ Car Rental{% endblock %}
+
+{% block admin_context %}1{% endblock %}
+
+{% macro booking_rows(bookings, empty, time_label, time_of) %}
+    {% for booking in bookings %}
+        <a class="staff-task" href="{{ path('app_staff_rentals', {reference: booking.reference}) }}#rental-desk">
+            <span class="staff-task__main">
+                <strong>{{ booking.reference }}</strong>
+                <small>{{ booking.vehicle.name }} · {{ booking.user.name }}</small>
+            </span>
+            <span class="staff-task__time">
+                <small>{{ time_label }}</small>
+                {{ attribute(booking, time_of)|date('M j, g:i A') }}
+            </span>
+            <i class="bi bi-chevron-right" aria-hidden="true"></i>
+        </a>
+    {% else %}
+        <p class="staff-task-empty"><i class="bi bi-check2-circle" aria-hidden="true"></i> {{ empty }}</p>
+    {% endfor %}
+{% endmacro %}
+
+{% block body %}
+{% import _self as ui %}
+{{ include(is_granted('ROLE_ADMIN') ? 'admin/_nav.html.twig' : 'staff/_nav.html.twig') }}
+<section class="admin-hero admin-dashboard-hero">
+    <div class="container">
+        <div class="admin-dashboard-hero__copy">
+            <span class="section-kicker">Staff workspace</span>
+            <h1>Hello, {{ app.user.firstName }}</h1>
+            <p>Prepare vehicles, hand them over, take them back, and keep customers answered.</p>
+            <div class="admin-dashboard-hero__meta" aria-label="Today">
+                <span><i class="bi bi-calendar3" aria-hidden="true"></i> {{ now|date('l, F j, Y') }}</span>
+            </div>
+        </div>
+        <div class="d-flex flex-wrap gap-2">
+            <a class="btn btn-primary admin-dashboard-hero__action" href="{{ path('app_staff_rentals') }}"><i class="bi bi-key" aria-hidden="true"></i> Open rental desk</a>
+            <a class="btn btn-outline-light admin-dashboard-hero__action" href="{{ path('app_staff_maintenance_new') }}"><i class="bi bi-tools" aria-hidden="true"></i> Log maintenance</a>
+        </div>
+    </div>
+</section>
+
+<section class="content-section admin-section admin-dashboard">
+    <div class="container">
+        <div class="admin-stats admin-dashboard-stats staff-stats" aria-label="Today's work">
+            {% for stat in [
+                {mod: preparing ? 'attention' : 'clear', icon: 'bi-wrench-adjustable', label: 'To prepare', value: preparing|length, text: 'Confirmed, vehicle not ready yet', route: 'app_staff_bookings'},
+                {mod: 'booking', icon: 'bi-key', label: 'Pickups', value: pickups|length, text: 'Ready and waiting for the customer', route: 'app_staff_rentals'},
+                {mod: overdue ? 'attention' : 'fleet', icon: 'bi-car-front', label: 'On the road', value: active|length, text: overdue ? overdue|length ~ ' overdue' : 'None overdue', route: 'app_staff_rentals'},
+                {mod: pending_documents ? 'attention' : 'clear', icon: 'bi-person-vcard', label: 'Documents', value: pending_documents, text: pending_documents ? 'Waiting for verification' : 'All checked', route: 'app_staff_documents'},
+                {mod: new_messages ? 'attention' : 'clear', icon: 'bi-envelope', label: 'New messages', value: new_messages, text: new_messages ? 'Needs a reply' : 'Inbox is clear', route: 'app_staff_messages'},
+            ] %}
+                <a class="dashboard-stat dashboard-stat--{{ stat.mod }} staff-stat-link" href="{{ path(stat.route) }}" data-stat="{{ stat.label|lower|replace({' ': '-'}) }}">
+                    <span class="dashboard-stat__icon" aria-hidden="true"><i class="bi {{ stat.icon }}"></i></span>
+                    <span class="dashboard-stat__content">
+                        <small>{{ stat.label }}</small>
+                        <strong>{{ stat.value }}</strong>
+                        <span>{{ stat.text }}</span>
+                    </span>
+                </a>
+            {% endfor %}
+        </div>
+
+        <div class="staff-board">
+            <section class="dashboard-panel" id="today-pickups">
+                <div class="dashboard-panel__header">
+                    <div>
+                        <span class="section-kicker">Hand over</span>
+                        <h2>Pickups</h2>
+                        <p>Prepared vehicles waiting for their pickup inspection.</p>
+                    </div>
+                </div>
+                {{ ui.booking_rows(pickups, 'No vehicles are waiting for pickup.', 'Pickup', 'pickupAt') }}
+            </section>
+
+            <section class="dashboard-panel" id="today-returns">
+                <div class="dashboard-panel__header">
+                    <div>
+                        <span class="section-kicker">Take back</span>
+                        <h2>Returns</h2>
+                        <p>Rentals on the road, soonest return first.</p>
+                    </div>
+                </div>
+                {{ ui.booking_rows(active|sort((a, b) => a.returnAt <=> b.returnAt), 'No rentals are on the road.', 'Due back', 'returnAt') }}
+            </section>
+
+            <section class="dashboard-panel" id="today-preparation">
+                <div class="dashboard-panel__header">
+                    <div>
+                        <span class="section-kicker">Get ready</span>
+                        <h2>Vehicles to prepare</h2>
+                        <p>Payment and documents verified. Clean, fuel and mark them ready.</p>
+                    </div>
+                    <a class="dashboard-panel__link" href="{{ path('app_staff_bookings') }}#preparation-queue">Open <i class="bi bi-arrow-right" aria-hidden="true"></i></a>
+                </div>
+                {% for booking in preparing %}
+                    <a class="staff-task" href="{{ path('app_staff_bookings') }}#preparation-queue">
+                        <span class="staff-task__main">
+                            <strong>{{ booking.reference }}</strong>
+                            <small>{{ booking.vehicle.name }} · {{ booking.user.name }}</small>
+                        </span>
+                        <span class="staff-task__time"><small>Pickup</small>{{ booking.pickupAt|date('M j, g:i A') }}</span>
+                        <i class="bi bi-chevron-right" aria-hidden="true"></i>
+                    </a>
+                {% else %}
+                    <p class="staff-task-empty"><i class="bi bi-check2-circle" aria-hidden="true"></i> Nothing to prepare right now.</p>
+                {% endfor %}
+            </section>
+
+            <section class="dashboard-panel" id="awaiting-settlement">
+                <div class="dashboard-panel__header">
+                    <div>
+                        <span class="section-kicker">With the administrator</span>
+                        <h2>Awaiting settlement</h2>
+                        <p>Returned vehicles. An administrator settles the deposit and closes the rental.</p>
+                    </div>
+                </div>
+                {{ ui.booking_rows(returned, 'No returns are waiting for settlement.', 'Returned', 'returnedAt') }}
+            </section>
+        </div>
+    </div>
+</section>
+{% endblock %}

@@ -16,9 +16,10 @@
     <div class="container">
         <form class="admin-search row g-2 mb-3" method="get" action="{{ path('app_admin_audit') }}">
             <div class="col-md-3"><label class="form-label" for="auditAction">Action contains</label><input class="form-control" id="auditAction" name="action" value="{{ filters.action }}" placeholder="e.g. refund"></div>
-            <div class="col-md-3"><label class="form-label" for="auditType">Record type</label><select class="form-select" id="auditType" name="type"><option value="">All records</option>{% for type in types %}<option value="{{ type }}" {{ filters.type == type ? 'selected' }}>{{ type|humanize_label }}</option>{% endfor %}</select></div>
+            <div class="col-md-2"><label class="form-label" for="auditType">Record type</label><select class="form-select" id="auditType" name="type"><option value="">All records</option>{% for type in types %}<option value="{{ type }}" {{ filters.type == type ? 'selected' }}>{{ type|humanize_label }}</option>{% endfor %}</select></div>
             <div class="col-md-2"><label class="form-label" for="auditRecord">Record ID</label><input class="form-control" id="auditRecord" name="record" inputmode="numeric" value="{{ filters.record }}"></div>
-            <div class="col-md-3"><label class="form-label" for="auditActor">Changed by</label><input class="form-control" id="auditActor" name="actor" value="{{ filters.actor }}" placeholder="Name or email"></div>
+            <div class="col-md-2"><label class="form-label" for="auditActor">Changed by</label><input class="form-control" id="auditActor" name="actor" value="{{ filters.actor }}" placeholder="Name or email"></div>
+            <div class="col-md-2"><label class="form-label" for="auditRole">Role</label><select class="form-select" id="auditRole" name="role"><option value="">Everyone</option>{% for role in ['admin', 'staff', 'customer'] %}<option value="{{ role }}" {{ filters.role == role ? 'selected' }}>{{ role|humanize_label }}</option>{% endfor %}</select></div>
             <div class="col-md-1 d-flex align-items-end"><button class="btn btn-primary w-100" type="submit">Filter</button></div>
         </form>
         <div class="admin-table-wrap">
@@ -30,7 +31,7 @@
                         <td>{{ log.createdAt|date('M j, Y g:i:s A') }}</td>
                         <td><strong>{{ log.action|humanize_label }}</strong></td>
                         <td>{{ log.entityType|humanize_label }}{% if log.entityId %} <small>#{{ log.entityId }}</small>{% endif %}</td>
-                        <td>{% if log.user %}{{ log.user.name }}<small>{{ log.user.email }}</small>{% else %}<small>System or signed out</small>{% endif %}</td>
+                        <td>{% if log.user %}{{ log.user.name }}{% if log.actorRole %} <span class="audit-role audit-role--{{ log.actorRole }}">{{ log.actorRole|humanize_label }}</span>{% endif %}<small>{{ log.user.email }}</small>{% elseif log.actorRole %}<small>Deleted {{ log.actorRole }} account</small>{% else %}<small>System or signed out</small>{% endif %}</td>
                         <td>{% if log.metadata is not empty %}<small><code>{{ log.metadata|json_encode(constant('JSON_UNESCAPED_UNICODE') b-or constant('JSON_UNESCAPED_SLASHES')) }}</code></small>{% else %}—{% endif %}</td>
                     </tr>
                 {% else %}

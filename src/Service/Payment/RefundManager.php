@@ -182,7 +182,7 @@ final class RefundManager
             'booking_id' => $payment->getBooking()->getId(),
             'payment_id' => $payment->getId(),
             'amount' => $amountValue,
-            'admin_id' => $admin->getId(),
+            ...AuditLogger::actor($admin),
         ], $admin);
 
         return $refund;

@@ -18,8 +18,9 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 /**
  * v15 secure-file.php and review-photo.php: private uploads are served only
- * to their owner and to administrators. Anything else is a plain 404, so the
- * response never reveals whether a file exists.
+ * to their owner and to administrators; customer documents also to staff, who
+ * verify them. Anything else is a plain 404, so the response never reveals
+ * whether a file exists.
  */
 #[IsGranted('IS_AUTHENTICATED')]
 final class SecureFileController extends AbstractController
@@ -35,7 +36,7 @@ final class SecureFileController extends AbstractController
     {
         $document = $this->entityManager->find(CustomerDocument::class, $id);
 
-        return $this->serve($user, $document?->getUser(), PrivateFileStorage::DOCUMENTS, (string) $document?->getFilename());
+        return $this->serve($user, $document?->getUser(), PrivateFileStorage::DOCUMENTS, (string) $document?->getFilename(), staffMayView: true);
     }
 
     #[Route('/files/payment/{id}', name: 'app_file_payment', requirements: ['id' => '\d+'], methods: ['GET'])]
@@ -55,9 +56,13 @@ final class SecureFileController extends AbstractController
         return $this->serve($user, null === $filename ? null : $review->getUser(), PrivateFileStorage::REVIEWS, (string) $filename);
     }
 
-    private function serve(User $viewer, ?User $owner, string $area, string $filename): Response
+    private function serve(User $viewer, ?User $owner, string $area, string $filename, bool $staffMayView = false): Response
     {
-        $allowed = null !== $owner && ($viewer->isAdmin() || $owner->getId() === $viewer->getId());
+        $allowed = null !== $owner && (
+            $viewer->isAdmin()
+            || ($staffMayView && $viewer->isStaff())
+            || $owner->getId() === $viewer->getId()
+        );
         $path = $allowed ? $this->storage->path($area, $filename) : null;
         if (null === $path) {
             throw $this->createNotFoundException('File not found.');

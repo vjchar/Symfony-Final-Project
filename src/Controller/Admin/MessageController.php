@@ -5,9 +5,7 @@ namespace App\Controller\Admin;
 use App\Entity\ContactMessage;
 use App\Entity\User;
 use App\Repository\ContactMessageRepository;
-use App\Service\AuditLogger;
 use App\Service\ContactReplyManager;
-use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -69,8 +67,8 @@ final class MessageController extends AbstractController
     public function update(
         Request $request,
         ContactMessageRepository $messages,
-        EntityManagerInterface $entityManager,
-        AuditLogger $auditLogger,
+        ContactReplyManager $replies,
+        #[CurrentUser] User $admin,
         #[MapQueryParameter] string $status = 'all',
     ): Response {
         $payload = $request->getPayload();
@@ -92,10 +90,7 @@ final class MessageController extends AbstractController
         }
 
         try {
-            $newStatus = $payload->getString('status');
-            $message->setStatus($newStatus);
-            $entityManager->flush();
-            $auditLogger->log('contact_message_updated', 'contact_message', $messageId, ['status' => $newStatus]);
+            $replies->updateStatus($message, $payload->getString('status'), $admin);
             $this->addFlash('success', 'Enquiry status updated.');
         } catch (\DomainException $error) {
             $this->addFlash('danger', $error->getMessage());

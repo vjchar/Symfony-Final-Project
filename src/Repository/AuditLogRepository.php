@@ -23,7 +23,7 @@ class AuditLogRepository extends ServiceEntityRepository
      *
      * @return Page<AuditLog>
      */
-    public function search(string $action = '', string $entityType = '', ?int $entityId = null, string $actor = '', int $page = 1): Page
+    public function search(string $action = '', string $entityType = '', ?int $entityId = null, string $actor = '', int $page = 1, string $role = ''): Page
     {
         $qb = $this->createQueryBuilder('a')
             ->addSelect('u')
@@ -38,6 +38,9 @@ class AuditLogRepository extends ServiceEntityRepository
         }
         if (null !== $entityId) {
             $qb->andWhere('a.entityId = :entityId')->setParameter('entityId', $entityId);
+        }
+        if ('' !== $role) {
+            $qb->andWhere('a.actorRole = :role')->setParameter('role', $role);
         }
         if ('' !== $actor = trim($actor)) {
             $qb->andWhere('LOWER(u.name) LIKE :actor OR LOWER(u.email) LIKE :actor')

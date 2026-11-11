@@ -2,6 +2,7 @@
 
 namespace App\Controller\Admin;
 
+use App\Entity\User;
 use App\Repository\AuditLogRepository;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response;
@@ -23,16 +24,18 @@ final class AuditController extends AbstractController
         #[MapQueryParameter] string $type = '',
         #[MapQueryParameter] string $record = '',
         #[MapQueryParameter] string $actor = '',
+        #[MapQueryParameter] string $role = '',
         #[MapQueryParameter] int $page = 1,
     ): Response {
         $types = $logs->findEntityTypes();
         $type = \in_array($type, $types, true) ? $type : '';
         $recordId = ctype_digit($record) ? (int) $record : null;
+        $role = \in_array($role, User::ROLES, true) ? $role : '';
 
         return $this->render('admin/audit/index.html.twig', [
-            'logs' => $logs->search($action, $type, $recordId, $actor, $page),
+            'logs' => $logs->search($action, $type, $recordId, $actor, $page, $role),
             'types' => $types,
-            'filters' => ['action' => trim($action), 'type' => $type, 'record' => null === $recordId ? '' : (string) $recordId, 'actor' => trim($actor)],
+            'filters' => ['action' => trim($action), 'type' => $type, 'record' => null === $recordId ? '' : (string) $recordId, 'actor' => trim($actor), 'role' => $role],
         ]);
     }
 }

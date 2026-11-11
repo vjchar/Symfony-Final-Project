@@ -55,6 +55,19 @@ final class ContactReplyManager
 
         $message->recordReply($reply, $admin);
         $this->entityManager->flush();
-        $this->auditLogger->log('contact_message_replied', 'contact_message', $message->getId(), [], $admin);
+        $this->auditLogger->log('contact_message_replied', 'contact_message', $message->getId(), ['status' => $message->getStatus(), ...AuditLogger::actor($admin)], $admin);
+    }
+
+    /**
+     * Moves the enquiry between the inbox queues (new, in progress, resolved…).
+     *
+     * @throws \DomainException for an unknown status
+     */
+    public function updateStatus(ContactMessage $message, string $status, User $by): void
+    {
+        $from = $message->getStatus();
+        $message->setStatus($status);
+        $this->entityManager->flush();
+        $this->auditLogger->log('contact_message_updated', 'contact_message', $message->getId(), ['from' => $from, 'status' => $status, ...AuditLogger::actor($by)], $by);
     }
 }

@@ -62,7 +62,7 @@ class LoginAuthenticator extends AbstractLoginFormAuthenticator
         if ($user instanceof User && $user->isStaff()) {
             $this->flash($request, 'success', 'Welcome back.');
 
-            return new RedirectResponse($this->urlGenerator->generate('app_staff_maintenance'), Response::HTTP_SEE_OTHER);
+            return new RedirectResponse($this->urlGenerator->generate('app_staff'), Response::HTTP_SEE_OTHER);
         }
 
         $this->flash($request, 'success', 'Welcome back.');

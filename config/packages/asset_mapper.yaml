@@ -9,3 +9,7 @@ when@prod:
     framework:
         asset_mapper:
             missing_import_mode: warn
+            # Serve assets on the fly so prod runs on the Symfony local server
+            # (shared through ngrok) without "asset-map:compile" after every change.
+            # On a real production host, remove this and run asset-map:compile on deploy.
+            server: true

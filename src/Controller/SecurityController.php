@@ -23,7 +23,7 @@ final class SecurityController extends AbstractController
         if ($this->getUser()) {
             return match (true) {
                 $this->isGranted('ROLE_ADMIN') => $this->redirectToRoute('app_admin'),
-                $this->isGranted('ROLE_STAFF') => $this->redirectToRoute('app_staff_maintenance'),
+                $this->isGranted('ROLE_STAFF') => $this->redirectToRoute('app_staff'),
                 default => $this->redirect($returnTo ?? $this->generateUrl('app_account')),
             };
         }
@@ -44,7 +44,7 @@ final class SecurityController extends AbstractController
     {
         return match (true) {
             $this->isGranted('ROLE_ADMIN') => $this->redirectToRoute('app_admin'),
-            $this->isGranted('ROLE_STAFF') => $this->redirectToRoute('app_staff_maintenance'),
+            $this->isGranted('ROLE_STAFF') => $this->redirectToRoute('app_staff'),
             null !== $this->getUser() => $this->redirectToRoute('app_account'),
             default => $this->redirectToRoute('app_login'),
         };

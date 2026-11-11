@@ -63,7 +63,8 @@ final class PageUrlGenerator
         'admin-audit' => 'app_admin_audit',
         'health' => 'app_admin_health',
         'admin-login' => 'app_admin_login',
-        'staff' => 'app_staff_maintenance',
+        'staff' => 'app_staff',
+        'staff-maintenance' => 'app_staff_maintenance',
     ];
 
     public function __construct(

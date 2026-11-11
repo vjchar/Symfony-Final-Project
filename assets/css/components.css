@@ -1961,11 +1961,11 @@ main {
 }
 
 /* Report cards size to their own content instead of inheriting the tallest card. */
-body[data-page="admin-reports.php"] .dashboard-grid {
+body[data-page="app_admin_reports"] .dashboard-grid {
   align-items: start;
 }
 
-body[data-page="admin-reports.php"] .dashboard-panel {
+body[data-page="app_admin_reports"] .dashboard-panel {
   width: 100%;
   min-height: 0;
 }
@@ -2258,11 +2258,11 @@ body[data-page="admin-reports.php"] .dashboard-panel {
 }
 
 /* Administrator dashboard */
-body[data-page="admin.php"] .admin-dashboard-hero {
+:is(body[data-page="app_admin"], body[data-page="app_staff"]) .admin-dashboard-hero {
   padding-block: clamp(40px, 4vw, 56px);
 }
 
-body[data-page="admin.php"] .admin-dashboard-hero .container {
+:is(body[data-page="app_admin"], body[data-page="app_staff"]) .admin-dashboard-hero .container {
   align-items: center;
 }
 
@@ -2314,7 +2314,7 @@ body[data-page="admin.php"] .admin-dashboard-hero .container {
   background: #dff2ff;
 }
 
-body[data-page="admin.php"] .admin-dashboard {
+:is(body[data-page="app_admin"], body[data-page="app_staff"]) .admin-dashboard {
   padding-top: 32px;
   padding-bottom: clamp(54px, 6vw, 82px);
 }
@@ -2324,7 +2324,7 @@ body[data-page="admin.php"] .admin-dashboard {
   margin-bottom: 24px;
 }
 
-body[data-page="admin.php"] .admin-dashboard-stats .dashboard-stat {
+:is(body[data-page="app_admin"], body[data-page="app_staff"]) .admin-dashboard-stats .dashboard-stat {
   position: relative;
   display: grid;
   min-height: 144px;
@@ -2335,7 +2335,7 @@ body[data-page="admin.php"] .admin-dashboard-stats .dashboard-stat {
   overflow: hidden;
 }
 
-body[data-page="admin.php"] .admin-dashboard-stats .dashboard-stat::after {
+:is(body[data-page="app_admin"], body[data-page="app_staff"]) .admin-dashboard-stats .dashboard-stat::after {
   position: absolute;
   inset: auto 0 0;
   height: 4px;
@@ -2371,7 +2371,7 @@ body[data-page="admin.php"] .admin-dashboard-stats .dashboard-stat::after {
   background: color-mix(in srgb, var(--dashboard-stat-accent) 10%, white);
 }
 
-body[data-page="admin.php"] .admin-dashboard-stats .dashboard-stat__icon i {
+:is(body[data-page="app_admin"], body[data-page="app_staff"]) .admin-dashboard-stats .dashboard-stat__icon i {
   color: inherit;
   font-size: 1.25rem;
 }
@@ -2381,7 +2381,7 @@ body[data-page="admin.php"] .admin-dashboard-stats .dashboard-stat__icon i {
   min-width: 0;
 }
 
-body[data-page="admin.php"] .admin-dashboard-stats .dashboard-stat__content small {
+:is(body[data-page="app_admin"], body[data-page="app_staff"]) .admin-dashboard-stats .dashboard-stat__content small {
   color: #52667e;
   font-size: 0.72rem;
   font-weight: 800;
@@ -2390,7 +2390,7 @@ body[data-page="admin.php"] .admin-dashboard-stats .dashboard-stat__content smal
   letter-spacing: 0.055em;
 }
 
-body[data-page="admin.php"] .admin-dashboard-stats .dashboard-stat__content strong {
+:is(body[data-page="app_admin"], body[data-page="app_staff"]) .admin-dashboard-stats .dashboard-stat__content strong {
   margin: 3px 0 1px;
   overflow-wrap: anywhere;
   font-size: clamp(1.75rem, 2.1vw, 2.15rem);
@@ -2420,27 +2420,27 @@ body[data-page="admin.php"] .admin-dashboard-stats .dashboard-stat__content stro
   margin-top: 24px;
 }
 
-body[data-page="admin.php"] .dashboard-panel {
+:is(body[data-page="app_admin"], body[data-page="app_staff"]) .dashboard-panel {
   padding: clamp(22px, 2.4vw, 28px);
   border-radius: 20px;
 }
 
-body[data-page="admin.php"] .dashboard-panel__header {
+:is(body[data-page="app_admin"], body[data-page="app_staff"]) .dashboard-panel__header {
   align-items: flex-start;
   margin-bottom: 20px;
 }
 
-body[data-page="admin.php"] .dashboard-panel__header > div {
+:is(body[data-page="app_admin"], body[data-page="app_staff"]) .dashboard-panel__header > div {
   min-width: 0;
 }
 
-body[data-page="admin.php"] .dashboard-panel__header h2 {
+:is(body[data-page="app_admin"], body[data-page="app_staff"]) .dashboard-panel__header h2 {
   margin: 2px 0 3px;
   font-size: clamp(1.55rem, 2vw, 1.9rem);
   line-height: 1.18;
 }
 
-body[data-page="admin.php"] .dashboard-panel__header p {
+:is(body[data-page="app_admin"], body[data-page="app_staff"]) .dashboard-panel__header p {
   margin: 0;
   color: var(--muted);
   font-size: 0.8rem;
@@ -2729,7 +2729,7 @@ body[data-page="admin.php"] .dashboard-panel__header p {
   color: #7890aa;
 }
 
-body[data-page="admin.php"] .dashboard-empty {
+:is(body[data-page="app_admin"], body[data-page="app_staff"]) .dashboard-empty {
   display: grid;
   min-height: 160px;
   align-content: center;
@@ -2740,7 +2740,7 @@ body[data-page="admin.php"] .dashboard-empty {
   background: rgba(240, 248, 254, 0.64);
 }
 
-body[data-page="admin.php"] .dashboard-empty--compact {
+:is(body[data-page="app_admin"], body[data-page="app_staff"]) .dashboard-empty--compact {
   min-height: 128px;
 }
 
@@ -2756,12 +2756,12 @@ body[data-page="admin.php"] .dashboard-empty--compact {
   background: rgba(47, 142, 208, 0.11);
 }
 
-body[data-page="admin.php"] .dashboard-empty strong {
+:is(body[data-page="app_admin"], body[data-page="app_staff"]) .dashboard-empty strong {
   color: var(--navy);
   font-size: 0.92rem;
 }
 
-body[data-page="admin.php"] .dashboard-empty p {
+:is(body[data-page="app_admin"], body[data-page="app_staff"]) .dashboard-empty p {
   margin: 3px 0 0;
   color: var(--muted);
   font-size: 0.78rem;
@@ -2774,13 +2774,13 @@ body[data-page="admin.php"] .dashboard-empty p {
 }
 
 @media (max-width: 991.98px) {
-  body[data-page="admin.php"] .admin-dashboard-hero .container {
+  :is(body[data-page="app_admin"], body[data-page="app_staff"]) .admin-dashboard-hero .container {
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
     align-items: end;
   }
 
-  body[data-page="admin.php"] .admin-dashboard-hero {
+  :is(body[data-page="app_admin"], body[data-page="app_staff"]) .admin-dashboard-hero {
     padding-top: 96px;
   }
 
@@ -2790,12 +2790,12 @@ body[data-page="admin.php"] .dashboard-empty p {
 }
 
 @media (max-width: 767.98px) {
-  body[data-page="admin.php"] .admin-dashboard-hero .container {
+  :is(body[data-page="app_admin"], body[data-page="app_staff"]) .admin-dashboard-hero .container {
     grid-template-columns: 1fr;
     gap: 24px;
   }
 
-  body[data-page="admin.php"] .admin-dashboard-hero h1 {
+  :is(body[data-page="app_admin"], body[data-page="app_staff"]) .admin-dashboard-hero h1 {
     font-size: clamp(2.15rem, 10vw, 2.45rem);
     text-wrap: wrap;
   }
@@ -2809,11 +2809,11 @@ body[data-page="admin.php"] .dashboard-empty p {
     width: 100%;
   }
 
-  body[data-page="admin.php"] .admin-dashboard {
+  :is(body[data-page="app_admin"], body[data-page="app_staff"]) .admin-dashboard {
     padding-top: 24px;
   }
 
-  body[data-page="admin.php"] .admin-dashboard-stats .dashboard-stat {
+  :is(body[data-page="app_admin"], body[data-page="app_staff"]) .admin-dashboard-stats .dashboard-stat {
     min-height: 126px;
     grid-template-columns: 46px minmax(0, 1fr);
     gap: 14px;
@@ -2825,7 +2825,7 @@ body[data-page="admin.php"] .dashboard-empty p {
     height: 46px;
   }
 
-  body[data-page="admin.php"] .dashboard-panel__header {
+  :is(body[data-page="app_admin"], body[data-page="app_staff"]) .dashboard-panel__header {
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
     gap: 12px;
@@ -2863,7 +2863,7 @@ body[data-page="admin.php"] .dashboard-empty p {
     background: rgba(255, 255, 255, 0.92);
   }
 
-  body[data-page="admin.php"] .dashboard-booking-table td {
+  :is(body[data-page="app_admin"], body[data-page="app_staff"]) .dashboard-booking-table td {
     display: grid;
     min-width: 0;
     grid-template-columns: 92px minmax(0, 1fr);
@@ -2874,7 +2874,7 @@ body[data-page="admin.php"] .dashboard-empty p {
     overflow-wrap: anywhere;
   }
 
-  body[data-page="admin.php"] .dashboard-booking-table td:first-child {
+  :is(body[data-page="app_admin"], body[data-page="app_staff"]) .dashboard-booking-table td:first-child {
     border-top: 0;
   }
 
@@ -2899,7 +2899,7 @@ body[data-page="admin.php"] .dashboard-empty p {
 }
 
 @media (max-width: 399.98px) {
-  body[data-page="admin.php"] .dashboard-panel__header {
+  :is(body[data-page="app_admin"], body[data-page="app_staff"]) .dashboard-panel__header {
     grid-template-columns: 1fr;
   }
 

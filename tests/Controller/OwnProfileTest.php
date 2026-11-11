@@ -43,7 +43,7 @@ final class OwnProfileTest extends WebTestCase
     public static function accounts(): iterable
     {
         yield 'admin' => [User::ROLE_ADMIN, 'profile.admin@test.vj', '/admin'];
-        yield 'staff' => [User::ROLE_STAFF, 'profile.staff@test.vj', '/staff/maintenance'];
+        yield 'staff' => [User::ROLE_STAFF, 'profile.staff@test.vj', '/staff'];
     }
 
     #[DataProvider('accounts')]

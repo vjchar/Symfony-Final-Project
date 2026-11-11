@@ -61,7 +61,7 @@ final class BookingStatusManager
             return $this->close($booking, $admin, 'Booking rejected by the rental team.', 'Booking Rejected', sprintf('Booking %s was not approved. Reason: %s', $booking->getReference(), $reason));
         });
 
-        $this->auditLogger->log('booking_status_updated', 'booking', $booking->getId(), ['from' => 'pending', 'to' => 'rejected', 'admin_id' => $admin->getId(), 'refund' => $refund], $admin);
+        $this->auditLogger->log('booking_status_updated', 'booking', $booking->getId(), ['from' => 'pending', 'to' => 'rejected', ...AuditLogger::actor($admin), 'refund' => $refund], $admin);
     }
 
     /**
@@ -81,7 +81,7 @@ final class BookingStatusManager
             return [$from, $this->close($booking, $admin, 'Booking cancelled by the rental team.', 'Booking Cancelled by VJ Car Rental', sprintf('The rental team cancelled booking %s. Reason: %s', $booking->getReference(), $reason))];
         });
 
-        $this->auditLogger->log('booking_status_updated', 'booking', $booking->getId(), ['from' => $from, 'to' => 'cancelled', 'admin_id' => $admin->getId(), 'refund' => $refund], $admin);
+        $this->auditLogger->log('booking_status_updated', 'booking', $booking->getId(), ['from' => $from, 'to' => 'cancelled', ...AuditLogger::actor($admin), 'refund' => $refund], $admin);
     }
 
     /**
@@ -106,7 +106,7 @@ final class BookingStatusManager
             return $from;
         });
 
-        $this->auditLogger->log('booking_status_updated', 'booking', $booking->getId(), ['from' => $from, 'to' => 'no_show', 'admin_id' => $admin->getId()], $admin);
+        $this->auditLogger->log('booking_status_updated', 'booking', $booking->getId(), ['from' => $from, 'to' => 'no_show', ...AuditLogger::actor($admin)], $admin);
     }
 
     /**

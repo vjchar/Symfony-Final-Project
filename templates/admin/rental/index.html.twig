@@ -110,72 +110,7 @@
                 {% endif %}
 
                 {% if selected.status in ['ready', 'active'] %}
-                    {% set action = selected.status == 'ready' ? 'checkout' : 'checkin' %}
-                    {% set prior = inspections.checkout ?? null %}
-                    {% set minimum_odometer = prior ? prior.odometer : 0 %}
-                    <form method="post" class="row g-3 rental-inspection-form" action="{{ path('app_admin_rental_' ~ action, {reference: reference}) }}"
-                        {% if action == 'checkin' and prior %}
-                            data-controller="return-charges"
-                            data-return-charges-checkout-odometer-value="{{ prior.odometer }}"
-                            data-return-charges-checkout-fuel-value="{{ prior.fuelPercent }}"
-                            data-return-charges-km-allowance-value="{{ km_allowance }}"
-                            data-return-charges-km-rate-value="{{ excess_km_rate }}"
-                            data-return-charges-refuel-rate-value="{{ refuel_rate }}"
-                            data-return-charges-late-fee-value="{{ late_fee }}"
-                        {% endif %}>
-                        <input type="hidden" name="_token" value="{{ csrf_token('rental-' ~ action ~ '-' ~ selected.id) }}">
-                        <div class="col-md-4">
-                            <label class="form-label" for="odometer">Odometer (km)</label>
-                            <input class="form-control" id="odometer" name="odometer" type="number" min="{{ minimum_odometer }}" max="2000000" placeholder="Enter the dashboard reading" aria-describedby="odometerHelp" data-return-charges-target="odometer" data-action="input->return-charges#update" required>
-                            <div class="form-text" id="odometerHelp">
-                                {% if prior %}
-                                    Return reading must be at least {{ minimum_odometer|number_format }} km.
-                                {% else %}
-                                    Enter the actual dashboard reading before releasing the vehicle.
-                                {% endif %}
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label" for="fuelPercent">Fuel / charge (%)</label>
-                            <input class="form-control" id="fuelPercent" name="fuel_percent" type="number" min="0" max="100" value="{{ prior ? prior.fuelPercent : 100 }}" data-return-charges-target="fuel" data-action="input->return-charges#update" required>
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label" for="bodyCondition">Vehicle condition</label>
-                            <select class="form-select" id="bodyCondition" name="body_condition" required>
-                                <option value="excellent">Excellent</option>
-                                <option value="good" selected>Good</option>
-                                <option value="fair">Fair</option>
-                                <option value="damaged">Damaged</option>
-                            </select>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label" for="inspectionNotes">Inspection notes</label>
-                            <textarea class="form-control" id="inspectionNotes" name="notes" rows="3" maxlength="3000"></textarea>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label" for="damageNotes">Damage / exception notes</label>
-                            <textarea class="form-control" id="damageNotes" name="damage_notes" rows="3" maxlength="3000"></textarea>
-                        </div>
-                        {% if action == 'checkin' %}
-                            <div class="col-md-4">
-                                <label class="form-label" for="extraCharges">Extra charges (PHP)</label>
-                                <input class="form-control" id="extraCharges" name="extra_charges" type="number" min="0" max="1000000" value="{{ late_fee }}" aria-describedby="extraChargesHelp" data-return-charges-target="total" data-action="input->return-charges#edited" required>
-                                <div class="form-text" id="extraChargesHelp">
-                                    {% if late_fee > 0 %}
-                                        Includes a late-return fee of {{ late_fee|money }} ({{ late_days }} day{{ late_days == 1 ? '' : 's' }} × {{ selected.dailyRate|money }}).
-                                    {% endif %}
-                                    Excess mileage ({{ km_allowance > 0 ? km_allowance|number_format ~ ' km included, ' ~ excess_km_rate|money ~ ' per extra km' : 'unlimited' }}) and refuelling ({{ refuel_rate|money }} per started 10% below checkout) are added as you enter the readings. Add any damage charges.
-                                    <span data-return-charges-target="breakdown"></span>
-                                </div>
-                            </div>
-                        {% endif %}
-                        <div class="col-12">
-                            <button class="btn btn-primary" type="submit">
-                                <i class="bi bi-{{ action == 'checkout' ? 'key' : 'clipboard-check' }}" aria-hidden="true"></i>
-                                Record {{ action|humanize_label }}
-                            </button>
-                        </div>
-                    </form>
+                    {{ include('admin/rental/_inspection_form.html.twig', {action_route: 'app_admin_rental_'}) }}
                 {% else %}
                     <div class="payment-overview">
                         <article><span>Security deposit held</span><strong>{{ preview.depositHeld|money }}</strong></article>

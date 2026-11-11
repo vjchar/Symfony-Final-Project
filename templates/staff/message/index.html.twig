@@ -1,0 +1,30 @@
+{% extends 'staff/base.html.twig' %}
+
+{% block title %}Messages | Staff | VJ Car Rental{% endblock %}
+
+{% block staff_kicker %}Customer care inbox{% endblock %}
+{% block staff_heading %}Messages{% endblock %}
+{% block staff_intro %}<p>Answer enquiries from the contact form. Replies are emailed to the customer and signed with your name.</p>{% endblock %}
+
+{% block staff_body %}
+<div class="admin-filter-tabs">
+    {% for status in filters %}
+        <a class="{{ filter == status ? 'active' }}" href="{{ path('app_staff_messages', {status: status}) }}">{{ status|humanize_label }}</a>
+    {% endfor %}
+</div>
+<div class="admin-message-list">
+    {% for message in messages %}
+        {{ include('admin/message/_card.html.twig', {
+            reply_url: path('app_staff_message_reply', {id: message.id, status: filter}),
+            status_url: path('app_staff_message_status', {id: message.id, status: filter}),
+        }) }}
+    {% else %}
+        <div class="empty-state">
+            <i class="bi bi-inbox"></i>
+            <h3>No messages here</h3>
+            <p>The selected enquiry queue is currently clear.</p>
+        </div>
+    {% endfor %}
+    {{ include('admin/_pagination.html.twig', {page: messages}) }}
+</div>
+{% endblock %}

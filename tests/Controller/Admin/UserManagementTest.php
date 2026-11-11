@@ -131,7 +131,7 @@ final class UserManagementTest extends WebTestCase
         $this->client->request('GET', '/login');
         $this->client->submitForm('Sign In', ['email' => 'new.staff@test.vj', 'password' => self::NEW_PASSWORD]);
 
-        self::assertResponseRedirects('/staff/maintenance');
+        self::assertResponseRedirects('/staff');
     }
 
     public function testRejectsADuplicateEmailOrWeakPassword(): void

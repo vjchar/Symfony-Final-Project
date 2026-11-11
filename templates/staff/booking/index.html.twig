@@ -1,0 +1,110 @@
+{% extends 'staff/base.html.twig' %}
+
+{% block title %}Bookings | Staff | VJ Car Rental{% endblock %}
+
+{% block staff_kicker %}Reservations{% endblock %}
+{% block staff_heading %}Bookings{% endblock %}
+{% block staff_intro %}<p>Prepare confirmed vehicles for handover and close bookings the customer never collected. Rejections, cancellations and change requests are handled by an administrator.</p>{% endblock %}
+
+{% block staff_body %}
+<div class="admin-ops-queues">
+    <article class="admin-editor" id="preparation-queue">
+        <div class="admin-editor__heading">
+            <div>
+                <span class="section-kicker">Vehicle preparation</span>
+                <h2>Ready for preparation</h2>
+                <p>Payment and documents are verified. Clean and fuel the vehicle, then mark it ready. The customer is notified right away.</p>
+            </div>
+            <span class="status-badge status-badge--info">{{ preparing|length }} confirmed</span>
+        </div>
+        <div class="admin-table-wrap">
+            <table class="admin-table">
+                <thead><tr><th>Booking</th><th>Customer</th><th>Handover</th><th>Fleet state</th><th>Action</th></tr></thead>
+                <tbody>
+                {% for booking in preparing %}
+                    <tr>
+                        <td><strong>{{ booking.reference }}</strong><small>{{ booking.vehicle.name }}</small></td>
+                        <td>{{ booking.user.name }}<small>{{ booking.user.phone ?: booking.user.email }}</small></td>
+                        <td>{{ booking.pickupAt|date('M j, Y g:i A') }}<small>{{ booking.pickupMethod }} · {{ booking.delivery ? (booking.deliveryAddress ?: 'Delivery address on booking') : booking.pickupLocation }}</small></td>
+                        <td><span class="status-badge status-badge--{{ booking.vehicle.availabilityStatus|status_class }}">{{ booking.vehicle.availabilityStatus|humanize_label }}</span></td>
+                        <td>
+                            <form class="admin-inline-form" method="post" action="{{ path('app_staff_booking_ready', {id: booking.id}) }}">
+                                <input type="hidden" name="_token" value="{{ csrf_token('booking-ready-' ~ booking.id) }}">
+                                <input class="form-control form-control-sm" name="note" maxlength="3000" placeholder="Preparation note" aria-label="Preparation note for {{ booking.reference }}">
+                                <button class="btn btn-primary btn-sm" type="submit"><i class="bi bi-key" aria-hidden="true"></i> {{ booking.delivery ? 'Ready for Delivery' : 'Ready for Pickup' }}</button>
+                            </form>
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr><td colspan="5" class="staff-empty-cell"><i class="bi bi-check2-circle" aria-hidden="true"></i> No confirmed bookings are waiting for preparation.</td></tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </article>
+
+    <article class="admin-editor mt-4" id="uncollected">
+        <div class="admin-editor__heading">
+            <div>
+                <span class="section-kicker">Missed pickups</span>
+                <h2>Not collected</h2>
+                <p>The pickup time has passed without a handover. Mark the booking as a no-show once you have tried to reach the customer. Nothing is refunded automatically.</p>
+            </div>
+            <span class="status-badge status-badge--{{ uncollected ? 'warning' : 'success' }}">{{ uncollected|length }}</span>
+        </div>
+        <div class="admin-table-wrap">
+            <table class="admin-table">
+                <thead><tr><th>Booking</th><th>Customer</th><th>Pickup</th><th>Status</th><th>Action</th></tr></thead>
+                <tbody>
+                {% for booking in uncollected %}
+                    <tr>
+                        <td><strong>{{ booking.reference }}</strong><small>{{ booking.vehicle.name }}</small></td>
+                        <td>{{ booking.user.name }}<small>{{ booking.user.phone ?: booking.user.email }}</small></td>
+                        <td>{{ booking.pickupAt|date('M j, Y g:i A') }}<small><span class="status-badge status-badge--warning">Not collected</span></small></td>
+                        <td><span class="status-badge status-badge--{{ booking.status|status_class }}">{{ booking.status|humanize_label }}</span></td>
+                        <td>
+                            <form class="admin-inline-form" method="post" action="{{ path('app_staff_booking_no_show', {id: booking.id}) }}" data-confirm="Mark booking {{ booking.reference }} as a no-show? The customer is notified.">
+                                <input type="hidden" name="_token" value="{{ csrf_token('booking-no-show-' ~ booking.id) }}">
+                                <input class="form-control form-control-sm" name="note" maxlength="2000" placeholder="Note (optional)" aria-label="Note for {{ booking.reference }}">
+                                <button class="btn btn-outline btn-sm" type="submit">Mark No-show</button>
+                            </form>
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr><td colspan="5" class="staff-empty-cell"><i class="bi bi-check2-circle" aria-hidden="true"></i> Every pickup so far has been collected.</td></tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </article>
+
+    <article class="admin-editor mt-4" id="upcoming">
+        <div class="admin-editor__heading">
+            <div>
+                <span class="section-kicker">Schedule</span>
+                <h2>Upcoming pickups</h2>
+                <p>Every booking that has not been handed over yet, soonest first.</p>
+            </div>
+            <span class="dashboard-queue__count">{{ upcoming|length }}</span>
+        </div>
+        <div class="admin-table-wrap">
+            <table class="admin-table">
+                <thead><tr><th>Booking</th><th>Customer</th><th>Pickup</th><th>Return</th><th>Status</th></tr></thead>
+                <tbody>
+                {% for booking in upcoming %}
+                    <tr>
+                        <td><strong>{{ booking.reference }}</strong><small>{{ booking.vehicle.name }}</small></td>
+                        <td>{{ booking.user.name }}<small>{{ booking.user.phone ?: booking.user.email }}</small></td>
+                        <td>{{ booking.pickupAt|date('M j, Y g:i A') }}<small>{{ booking.delivery ? 'Delivery' : booking.pickupLocation }}</small></td>
+                        <td>{{ booking.returnAt|date('M j, Y g:i A') }}</td>
+                        <td><span class="status-badge status-badge--{{ booking.status|status_class }}">{{ booking.status|humanize_label }}</span></td>
+                    </tr>
+                {% else %}
+                    <tr><td colspan="5" class="staff-empty-cell">No upcoming pickups.</td></tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </article>
+</div>
+{% endblock %}

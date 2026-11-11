@@ -399,7 +399,7 @@ textarea.form-control {
   min-width: 0;
 }
 
-body[data-page="admin-reports.php"] .dashboard-panel {
+body[data-page="app_admin_reports"] .dashboard-panel {
   align-self: start;
 }
 

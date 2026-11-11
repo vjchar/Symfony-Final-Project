@@ -4,6 +4,7 @@ namespace App\Tests\Controller\Admin;
 
 use App\Entity\AuditLog;
 use App\Entity\ContactMessage;
+use App\Entity\User;
 use App\Tests\LogsInUsers;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
@@ -82,7 +83,9 @@ final class MessageControllerTest extends WebTestCase
 
         self::assertSame('read', $this->em()->find(ContactMessage::class, $message->getId())->getStatus());
         $audit = $this->em()->getRepository(AuditLog::class)->findOneBy(['action' => 'contact_message_updated', 'entityId' => $message->getId()]);
-        self::assertSame(['status' => 'read'], $audit->getMetadata());
+        $admin = $this->em()->getRepository(User::class)->findOneBy(['email' => self::ADMIN_EMAIL]);
+        self::assertEquals(['from' => 'new', 'status' => 'read', 'admin_id' => $admin->getId()], $audit->getMetadata());
+        self::assertSame(User::ROLE_ADMIN, $audit->getActorRole());
     }
 
     public function testRejectsAnInvalidStatusOrToken(): void

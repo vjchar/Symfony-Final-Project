@@ -22,6 +22,10 @@ class AuditLog
     #[ORM\JoinColumn(onDelete: 'SET NULL')]
     private ?User $user;
 
+    // the actor's role when they acted (admin, staff or customer); null for the system
+    #[ORM\Column(length: 20, nullable: true)]
+    private ?string $actorRole;
+
     #[ORM\Column(length: 100)]
     private string $action;
 
@@ -47,6 +51,7 @@ class AuditLog
     public function __construct(?User $user, string $action, string $entityType, ?int $entityId, array $metadata, string $ipHash)
     {
         $this->user = $user;
+        $this->actorRole = $user?->getRole();
         $this->action = $action;
         $this->entityType = $entityType;
         $this->entityId = $entityId;
@@ -81,6 +86,11 @@ class AuditLog
     }
 
     /** @return array<string, mixed> */
+    public function getActorRole(): ?string
+    {
+        return $this->actorRole;
+    }
+
     public function getMetadata(): array
     {
         return $this->metadata ?? [];

@@ -105,8 +105,8 @@ final class RentalDesk
             $this->entityManager->flush();
         });
 
-        $this->auditLogger->log($booking->isDelivery() ? 'vehicle_ready_for_delivery' : 'vehicle_ready_for_pickup', 'booking', $booking->getId(), ['admin_id' => $admin->getId(), 'pickup_method' => $booking->getPickupMethod()], $admin);
-        $this->auditLogger->log('booking_status_updated', 'booking', $booking->getId(), ['from' => 'confirmed', 'to' => 'ready', 'admin_id' => $admin->getId()], $admin);
+        $this->auditLogger->log($booking->isDelivery() ? 'vehicle_ready_for_delivery' : 'vehicle_ready_for_pickup', 'booking', $booking->getId(), [...AuditLogger::actor($admin), 'pickup_method' => $booking->getPickupMethod()], $admin);
+        $this->auditLogger->log('booking_status_updated', 'booking', $booking->getId(), ['from' => 'confirmed', 'to' => 'ready', ...AuditLogger::actor($admin)], $admin);
     }
 
     /**
@@ -129,7 +129,7 @@ final class RentalDesk
             $this->entityManager->flush();
         });
 
-        $this->auditLogger->log('rental_checked_out', 'booking', $booking->getId(), [], $admin);
+        $this->auditLogger->log('rental_checked_out', 'booking', $booking->getId(), ['from' => 'ready', 'to' => 'active', ...self::readingDetails($reading), ...AuditLogger::actor($admin)], $admin);
     }
 
     /**
@@ -161,7 +161,7 @@ final class RentalDesk
             $this->entityManager->flush();
         });
 
-        $this->auditLogger->log('rental_checked_in', 'booking', $booking->getId(), [], $admin);
+        $this->auditLogger->log('rental_checked_in', 'booking', $booking->getId(), ['from' => 'active', 'to' => 'returned', ...self::readingDetails($reading), 'extra_charges' => $reading->extraCharges, ...AuditLogger::actor($admin)], $admin);
     }
 
     /**
@@ -280,7 +280,7 @@ final class RentalDesk
             $this->entityManager->flush();
         });
 
-        $this->auditLogger->log('booking_status_updated', 'booking', $booking->getId(), ['from' => 'returned', 'to' => 'completed', 'admin_id' => $admin->getId()], $admin);
+        $this->auditLogger->log('booking_status_updated', 'booking', $booking->getId(), ['from' => 'returned', 'to' => 'completed', ...AuditLogger::actor($admin)], $admin);
     }
 
     private function record(Booking $booking, string $type, InspectionReading $reading, User $admin): void
@@ -288,5 +288,20 @@ final class RentalDesk
         $inspection = $this->inspections->findOneForBooking($booking, $type) ?? new RentalInspection($booking, $type, $admin);
         $inspection->record($reading->odometer, $reading->fuelPercent, $reading->bodyCondition, $reading->notes, $reading->damageNotes, $reading->extraCharges, $admin);
         $this->entityManager->persist($inspection);
+    }
+
+    /**
+     * What an inspection recorded, for the audit trail.
+     *
+     * @return array<string, int|string>
+     */
+    private static function readingDetails(InspectionReading $reading): array
+    {
+        return array_filter([
+            'odometer' => $reading->odometer,
+            'fuel_percent' => $reading->fuelPercent,
+            'condition' => $reading->bodyCondition,
+            'damage_notes' => $reading->damageNotes,
+        ], static fn (int|string $value): bool => '' !== $value);
     }
 }

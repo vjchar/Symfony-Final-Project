@@ -264,7 +264,7 @@ final class MaintenanceControllerTest extends WebTestCase
         $html = $container->get('twig')->render('@Twig/Exception/error403.html.twig');
 
         $page = new Crawler($html);
-        self::assertSame('Go to Staff Workspace', trim($page->filter('.error-page a[href="/staff/maintenance"]')->text()));
+        self::assertSame('Go to Staff Workspace', trim($page->filter('.error-page a[href="/staff"]')->text()));
         self::assertCount(0, $page->filter('.error-page a[href="/account"]'));
     }
 
@@ -278,10 +278,10 @@ final class MaintenanceControllerTest extends WebTestCase
     public function testSignedInStaffAreSentToTheirWorkspace(): void
     {
         $this->client->request('GET', '/login');
-        self::assertResponseRedirects('/staff/maintenance');
+        self::assertResponseRedirects('/staff');
 
         $this->client->request('GET', '/admin-login');
-        self::assertResponseRedirects('/staff/maintenance');
+        self::assertResponseRedirects('/staff');
     }
 
     public function testCustomersCannotOpenTheStaffWorkspace(): void

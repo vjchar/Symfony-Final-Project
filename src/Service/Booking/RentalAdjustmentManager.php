@@ -205,7 +205,7 @@ final class RentalAdjustmentManager
             return 'rental_extension_approved';
         });
 
-        $this->auditLogger->log($action, 'rental_adjustment', $adjustment->getId(), ['admin_id' => $admin->getId(), 'price_difference' => $adjustment->getPriceDifference()], $admin);
+        $this->auditLogger->log($action, 'rental_adjustment', $adjustment->getId(), [...AuditLogger::actor($admin), 'price_difference' => $adjustment->getPriceDifference()], $admin);
     }
 
     /**
@@ -303,7 +303,7 @@ final class RentalAdjustmentManager
         $this->entityManager->flush();
 
         $this->auditLogger->log('early_return_activated', 'rental_adjustment', $adjustment->getId(), [
-            'admin_id' => $admin->getId(),
+            ...AuditLogger::actor($admin),
             'new_return_at' => $pricing->requestedReturnAt->format('Y-m-d H:i:s'),
             'reduction' => $pricing->reduction,
             'refund' => $credit,
@@ -410,7 +410,7 @@ final class RentalAdjustmentManager
         $adjustment->getBooking()->extendTo($pricing->requestedReturnAt, $pricing->subtotal, $pricing->addonsTotal, $pricing->discount, $pricing->total);
         $adjustment->markActivated($pricing->priceDifference);
         $this->entityManager->flush();
-        $this->auditLogger->log('extension_activated', 'rental_adjustment', $adjustment->getId(), ['admin_id' => $admin->getId(), 'new_return_at' => $pricing->requestedReturnAt->format('Y-m-d H:i:s')], $admin);
+        $this->auditLogger->log('extension_activated', 'rental_adjustment', $adjustment->getId(), [...AuditLogger::actor($admin), 'new_return_at' => $pricing->requestedReturnAt->format('Y-m-d H:i:s')], $admin);
     }
 
     /**

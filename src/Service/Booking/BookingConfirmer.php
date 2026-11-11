@@ -73,7 +73,7 @@ final class BookingConfirmer
             $booking,
         );
         $this->entityManager->flush();
-        $this->auditLogger->log('booking_status_updated', 'booking', $booking->getId(), ['from' => 'pending', 'to' => 'confirmed', 'admin_id' => $admin->getId()], $admin);
+        $this->auditLogger->log('booking_status_updated', 'booking', $booking->getId(), ['from' => 'pending', 'to' => 'confirmed', ...AuditLogger::actor($admin)], $admin);
 
         return true;
     }

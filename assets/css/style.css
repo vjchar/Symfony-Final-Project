@@ -4643,7 +4643,7 @@ main > section:nth-of-type(even):not(.home-hero):not(.page-hero) {
 }
 [data-page^="admin-"] + main,
 body[data-page^="admin-"] .cta-band,
-body[data-page="admin.php"] .cta-band {
+:is(body[data-page="app_admin"], body[data-page="app_staff"]) .cta-band {
   display: none;
 }
 

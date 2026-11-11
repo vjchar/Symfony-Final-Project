@@ -1,0 +1,73 @@
+{% extends 'staff/base.html.twig' %}
+
+{% block title %}Rental Desk | Staff | VJ Car Rental{% endblock %}
+
+{% block staff_kicker %}Pickup and return{% endblock %}
+{% block staff_heading %}Rental Desk{% endblock %}
+{% block staff_intro %}<p>Hand prepared vehicles over and take them back. Record the odometer, fuel and condition every time; an administrator settles the deposit after the return.</p>{% endblock %}
+
+{% block staff_body %}
+<div class="admin-table-wrap" aria-label="Rentals at the desk" id="rental-queue">
+    <table class="admin-table">
+        <thead><tr><th>Booking</th><th>Customer</th><th>Schedule</th><th>Fleet state</th><th>Status</th><th><span class="visually-hidden">Action</span></th></tr></thead>
+        <tbody>
+        {% for rental in rentals %}
+            <tr class="{{ selected and selected.id == rental.id ? 'is-selected' }}">
+                <td><strong>{{ rental.reference }}</strong><small>{{ rental.vehicle.name }}</small></td>
+                <td>{{ rental.user.name }}<small>{{ rental.user.phone ?: rental.user.email }}</small></td>
+                <td>{{ rental.pickupAt|date('M j, g:i A') }}<small>to {{ rental.returnAt|date('M j, g:i A') }}</small></td>
+                <td><span class="status-badge status-badge--{{ rental.vehicle.availabilityStatus|status_class }}">{{ rental.vehicle.availabilityStatus|humanize_label }}</span></td>
+                <td>
+                    <span class="status-badge status-badge--{{ rental.status|status_class }}">{{ rental.status == 'returned' ? 'Awaiting settlement' : rental.status|humanize_label }}</span>
+                    {% if rental.overdue(now) %}<span class="status-badge status-badge--danger">Overdue</span>{% elseif rental.status == 'ready' and rental.pickupAt < now %}<span class="status-badge status-badge--warning">Not collected</span>{% endif %}
+                </td>
+                <td>
+                    {% set label = {ready: 'Hand over', active: 'Take back', returned: 'View'}[rental.status] %}
+                    <a class="btn {{ rental.status == 'returned' ? 'btn-outline' : 'btn-primary' }} btn-sm" href="{{ path('app_staff_rentals', {reference: rental.reference}) }}#rental-desk">{{ label }}</a>
+                </td>
+            </tr>
+        {% else %}
+            <tr><td colspan="6" class="staff-empty-cell"><i class="bi bi-check2-circle" aria-hidden="true"></i> No rentals currently need desk action.</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% if selected %}
+    <article class="admin-editor mt-4" id="rental-desk">
+        <div class="admin-editor__heading">
+            <div>
+                <span class="section-kicker">{{ selected.reference }} · {{ selected.user.name }}</span>
+                <h2>{{ selected.vehicle.name }}</h2>
+                <p>
+                    {{ selected.status == 'ready' ? 'Pickup inspection' : selected.status == 'active' ? 'Return inspection' : 'Returned' }}
+                    · {{ selected.pickupAt|date('M j, g:i A') }} to {{ selected.returnAt|date('M j, g:i A') }}
+                    · {{ selected.delivery ? 'Delivery: ' ~ (selected.deliveryAddress ?: 'address on booking') : selected.pickupLocation }}
+                </p>
+            </div>
+            <span class="status-badge status-badge--{{ selected.status|status_class }}">{{ selected.status|humanize_label }}</span>
+        </div>
+
+        {% if selected.status in ['ready', 'active'] %}
+            {{ include('admin/rental/_inspection_form.html.twig', {action_route: 'app_staff_rental_'}) }}
+        {% else %}
+            <div class="alert alert-info">
+                <i class="bi bi-hourglass-split" aria-hidden="true"></i>
+                Return recorded. An administrator settles the security deposit and completes this rental.
+            </div>
+        {% endif %}
+
+        {% if inspections %}
+            <div class="payment-overview mt-4" aria-label="Recorded inspections">
+                {% for type, inspection in inspections %}
+                    <article data-inspection="{{ type }}">
+                        <span>{{ type == 'checkout' ? 'At pickup' : 'At return' }}</span>
+                        <strong>{{ inspection.odometer|number_format }} km · {{ inspection.fuelPercent }}%</strong>
+                        <small>{{ inspection.bodyCondition|humanize_label }}{{ inspection.damageNotes ? ' · ' ~ inspection.damageNotes }} · by {{ inspection.recordedBy is same as(app.user) ? 'you' : inspection.recordedBy.name }}</small>
+                    </article>
+                {% endfor %}
+            </div>
+        {% endif %}
+    </article>
+{% endif %}
+{% endblock %}

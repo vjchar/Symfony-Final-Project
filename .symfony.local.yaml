@@ -1,0 +1,4 @@
+# Symfony CLI local server settings (used by "symfony server:start").
+http:
+    # Plain HTTP so "ngrok http 8000" can forward to it; ngrok provides HTTPS.
+    no_tls: true

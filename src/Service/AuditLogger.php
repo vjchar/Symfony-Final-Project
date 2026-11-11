@@ -27,6 +27,17 @@ final class AuditLogger
     }
 
     /**
+     * The acting team member for an entry's details, keyed by their role
+     * ("admin_id" or "staff_id") so a staff action is never filed as an admin's.
+     *
+     * @return array<string, int|null>
+     */
+    public static function actor(User $user): array
+    {
+        return [$user->getRole().'_id' => $user->getId()];
+    }
+
+    /**
      * @param array<string, mixed> $metadata
      */
     public function log(string $action, string $entityType, ?int $entityId = null, array $metadata = [], ?User $actor = null): void

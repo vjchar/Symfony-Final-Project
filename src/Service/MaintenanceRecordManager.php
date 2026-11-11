@@ -22,13 +22,13 @@ final class MaintenanceRecordManager
         $record->setCreatedBy($author);
         $this->entityManager->persist($record);
         $this->entityManager->flush();
-        $this->auditLogger->log('maintenance_created', 'maintenance_record', $record->getId());
+        $this->auditLogger->log('maintenance_created', 'maintenance_record', $record->getId(), self::details($record) + AuditLogger::actor($author), $author);
     }
 
     public function update(MaintenanceRecord $record): void
     {
         $this->entityManager->flush();
-        $this->auditLogger->log('maintenance_updated', 'maintenance_record', $record->getId());
+        $this->auditLogger->log('maintenance_updated', 'maintenance_record', $record->getId(), self::details($record));
     }
 
     /**
@@ -38,6 +38,7 @@ final class MaintenanceRecordManager
     public function delete(MaintenanceRecord $record): void
     {
         $id = $record->getId();
+        $details = self::details($record);
 
         if (MaintenanceRecord::STATUS_IN_PROGRESS === $record->getStatus()) {
             $record->changeStatus(MaintenanceRecord::STATUS_CANCELLED);
@@ -45,6 +46,21 @@ final class MaintenanceRecordManager
 
         $this->entityManager->remove($record);
         $this->entityManager->flush();
-        $this->auditLogger->log('maintenance_deleted', 'maintenance_record', $id);
+        $this->auditLogger->log('maintenance_deleted', 'maintenance_record', $id, $details);
+    }
+
+    /**
+     * Which vehicle and service a record is about, for the audit trail.
+     *
+     * @return array<string, int|string|null>
+     */
+    private static function details(MaintenanceRecord $record): array
+    {
+        return [
+            'vehicle_id' => $record->getVehicle()?->getId(),
+            'title' => $record->getTitle(),
+            'status' => $record->getStatus(),
+            'cost' => $record->getCost(),
+        ];
     }
 }
